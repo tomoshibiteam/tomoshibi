@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>TOMOSHIBI | 街歩き×謎解きパズルトレイル</title>
+    <link rel="manifest" href="/assets/manifest--6NP7Wp7.webmanifest">
+    <meta name="theme-color" content="#f7f0e5" />
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@300;400;500;700&family=Zen+Old+Mincho:wght@400;700&display=swap" rel="stylesheet">
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              sans: ['"Noto Sans JP"', 'sans-serif'],
+              serif: ['"Zen Old Mincho"', 'serif'],
+            },
+            colors: {
+              brand: {
+                base: '#f7f0e5', // Warm beige
+                dark: '#484132', // Requested dark olive/brown
+                text: '#44403c', // Stone 700
+                textLight: '#78716c', // Stone 500
+                gold: '#d97706', // Amber 600
+                goldLight: '#fbbf24', // Amber 400
+              }
+            },
+            backgroundImage: {
+              'hero-glow': 'radial-gradient(circle at 50% 50%, rgba(251, 191, 36, 0.15) 0%, rgba(247, 240, 229, 0) 60%)',
+            }
+          }
+        }
+      }
+    </script>
+    <style>
+      body {
+        background-color: #f7f0e5;
+        color: #44403c;
+      }
+      /* Custom scrollbar for webkit */
+      ::-webkit-scrollbar {
+        width: 8px;
+      }
+      ::-webkit-scrollbar-track {
+        background: #f7f0e5; 
+      }
+      ::-webkit-scrollbar-thumb {
+        background: #a8a29e; 
+        border-radius: 4px;
+      }
+      ::-webkit-scrollbar-thumb:hover {
+        background: #78716c; 
+      }
+    </style>
+
+<link rel="stylesheet" href="/index.css">
+  <script type="importmap">
+{
+  "imports": {
+    "react-dom/": "https://aistudiocdn.com/react-dom@^19.2.0/",
+    "react/": "https://aistudiocdn.com/react@^19.2.0/",
+    "react": "https://aistudiocdn.com/react@^19.2.0",
+    "lucide-react": "https://aistudiocdn.com/lucide-react@^0.554.0",
+    "framer-motion": "https://aistudiocdn.com/framer-motion@^12.23.24"
+  }
+}
+</script>
+  <script type="module" crossorigin src="/assets/index-DqFF3pti.js"></script>
+</head>
+  <body>
+    <div id="root"></div>
+</body>
+</html>

@@ -1,0 +1,844 @@
+
+> tomoshibi---city-puzzle-trail@0.0.0 dev
+> vite --host 127.0.0.1 --port 5173 --clearScreen false
+
+
+  VITE v6.4.1  ready in 81 ms
+
+  ➜  Local:   http://127.0.0.1:5173/
+10:41:26 PM [vite] (client) hmr update /App.tsx
+10:41:53 PM [vite] (client) hmr update /App.tsx
+10:43:14 PM [vite] (client) hmr update /App.tsx
+10:43:26 PM [vite] (client) hmr update /App.tsx
+10:43:37 PM [vite] (client) hmr update /App.tsx
+10:43:43 PM [vite] (client) hmr update /App.tsx
+10:44:05 PM [vite] (client) hmr update /App.tsx
+10:44:10 PM [vite] (client) hmr update /App.tsx
+10:44:18 PM [vite] (client) hmr update /App.tsx
+10:44:47 PM [vite] (client) hmr update /App.tsx
+10:45:17 PM [vite] (client) hmr update /App.tsx
+10:45:17 PM [vite] Internal server error: /Users/wataru/Downloads/tomoshibi---city-puzzle-trail/App.tsx: Expected corresponding JSX closing tag for <>. (1357:4)
+
+  1355 |         </div>
+  1356 |       </footer>
+> 1357 |     </div>
+       |     ^
+  1358 |   );
+  1359 | }
+  1360 |
+  Plugin: vite:react-babel
+  File: /Users/wataru/Downloads/tomoshibi---city-puzzle-trail/App.tsx:1357:4
+  1355|          </div>
+  1356|        </footer>
+  1357|      </div>
+     |      ^
+  1358|    );
+  1359|  }
+      at constructor (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:367:19)
+      at TypeScriptParserMixin.raise (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:6624:19)
+      at TypeScriptParserMixin.jsxParseElementAt (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:4749:14)
+      at TypeScriptParserMixin.jsxParseElement (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:4778:17)
+      at TypeScriptParserMixin.parseExprAtom (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:4788:19)
+      at TypeScriptParserMixin.parseExprSubscripts (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:11145:23)
+      at TypeScriptParserMixin.parseUpdate (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:11130:21)
+      at TypeScriptParserMixin.parseMaybeUnary (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:11110:23)
+      at TypeScriptParserMixin.parseMaybeUnary (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:9890:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:10963:61)
+      at TypeScriptParserMixin.parseExprOps (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:10968:23)
+      at TypeScriptParserMixin.parseMaybeConditional (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:10945:23)
+      at TypeScriptParserMixin.parseMaybeAssign (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:10895:21)
+      at /Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:9828:39
+      at TypeScriptParserMixin.tryParse (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:6932:20)
+      at TypeScriptParserMixin.parseMaybeAssign (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:9828:18)
+      at /Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:10864:39
+      at TypeScriptParserMixin.allowInAnd (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:12500:12)
+      at TypeScriptParserMixin.parseMaybeAssignAllowIn (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:10864:17)
+      at TypeScriptParserMixin.parseMaybeAssignAllowInOrVoidPattern (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:12567:17)
+      at TypeScriptParserMixin.parseParenAndDistinguishExpression (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:11747:28)
+      at TypeScriptParserMixin.parseExprAtom (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:11395:23)
+      at TypeScriptParserMixin.parseExprAtom (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:4793:20)
+      at TypeScriptParserMixin.parseExprSubscripts (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:11145:23)
+      at TypeScriptParserMixin.parseUpdate (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:11130:21)
+      at TypeScriptParserMixin.parseMaybeUnary (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:11110:23)
+      at TypeScriptParserMixin.parseMaybeUnary (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:9890:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:10963:61)
+      at TypeScriptParserMixin.parseExprOpBaseRightExpr (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:11050:34)
+      at TypeScriptParserMixin.parseExprOpRightExpr (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:11045:21)
+      at TypeScriptParserMixin.parseExprOp (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:11011:27)
+      at TypeScriptParserMixin.parseExprOp (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:9365:18)
+      at TypeScriptParserMixin.parseExprOps (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:10972:17)
+      at TypeScriptParserMixin.parseMaybeConditional (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:10945:23)
+      at TypeScriptParserMixin.parseMaybeAssign (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:10895:21)
+      at TypeScriptParserMixin.parseMaybeAssign (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:9839:20)
+      at TypeScriptParserMixin.parseExpressionBase (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:10848:23)
+      at /Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:10844:39
+      at TypeScriptParserMixin.allowInAnd (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:12500:12)
+      at TypeScriptParserMixin.parseExpression (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:10844:17)
+      at TypeScriptParserMixin.jsxParseExpressionContainer (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:4661:31)
+      at TypeScriptParserMixin.jsxParseElementAt (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:4740:36)
+      at TypeScriptParserMixin.jsxParseElement (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:4778:17)
+      at TypeScriptParserMixin.parseExprAtom (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:4788:19)
+      at TypeScriptParserMixin.parseExprSubscripts (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:11145:23)
+      at TypeScriptParserMixin.parseUpdate (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:11130:21)
+      at TypeScriptParserMixin.parseMaybeUnary (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:11110:23)
+      at TypeScriptParserMixin.parseMaybeUnary (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:9890:18)
+      at TypeScriptParserMixin.parseMaybeUnaryOrPrivate (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:10963:61)
+      at TypeScriptParserMixin.parseExprOps (/Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/@babel/parser/lib/index.js:10968:23)
+10:45:22 PM [vite] (client) hmr update /App.tsx
+10:45:59 PM [vite] (client) hmr update /App.tsx
+10:46:03 PM [vite] (client) hmr update /App.tsx
+10:55:56 PM [vite] (client) hmr update /App.tsx
+10:56:10 PM [vite] (client) hmr update /App.tsx
+10:57:11 PM [vite] (client) hmr update /App.tsx
+10:57:20 PM [vite] (client) hmr update /App.tsx
+10:57:27 PM [vite] (client) hmr update /App.tsx
+10:57:32 PM [vite] (client) hmr update /App.tsx
+10:57:41 PM [vite] (client) hmr update /App.tsx
+10:57:49 PM [vite] (client) hmr update /App.tsx
+10:58:03 PM [vite] (client) hmr update /App.tsx
+10:58:14 PM [vite] (client) hmr update /App.tsx
+11:01:57 PM [vite] (client) hmr update /App.tsx
+11:02:03 PM [vite] (client) hmr update /App.tsx
+11:02:17 PM [vite] (client) hmr update /App.tsx
+11:02:34 PM [vite] (client) hmr update /App.tsx
+11:03:08 PM [vite] (client) hmr update /App.tsx
+11:04:19 PM [vite] (client) hmr update /App.tsx
+11:04:35 PM [vite] (client) hmr update /App.tsx
+11:06:29 PM [vite] (client) hmr update /App.tsx
+11:06:35 PM [vite] (client) hmr update /App.tsx
+11:06:43 PM [vite] (client) hmr update /App.tsx
+11:06:46 PM [vite] (client) hmr update /App.tsx
+11:07:24 PM [vite] (client) hmr update /App.tsx
+11:07:30 PM [vite] (client) hmr update /App.tsx
+11:07:41 PM [vite] (client) hmr update /App.tsx
+11:07:47 PM [vite] (client) hmr update /App.tsx
+11:07:52 PM [vite] (client) hmr update /App.tsx
+11:07:59 PM [vite] (client) hmr update /App.tsx
+11:08:07 PM [vite] (client) hmr update /App.tsx
+11:08:15 PM [vite] (client) hmr update /App.tsx
+11:08:21 PM [vite] (client) hmr update /App.tsx
+11:08:27 PM [vite] (client) hmr update /App.tsx
+11:08:33 PM [vite] (client) hmr update /App.tsx
+11:08:39 PM [vite] (client) hmr update /App.tsx
+11:10:57 PM [vite] (client) hmr update /App.tsx
+11:11:01 PM [vite] (client) hmr update /App.tsx
+11:11:06 PM [vite] (client) hmr update /App.tsx
+11:11:27 PM [vite] (client) hmr update /App.tsx
+11:11:33 PM [vite] (client) hmr update /App.tsx
+11:11:51 PM [vite] (client) hmr update /App.tsx
+11:11:57 PM [vite] (client) hmr update /App.tsx
+11:12:08 PM [vite] (client) hmr update /App.tsx
+11:12:15 PM [vite] (client) hmr update /App.tsx
+11:12:58 PM [vite] (client) hmr update /App.tsx
+11:15:09 PM [vite] (client) hmr update /App.tsx
+11:15:15 PM [vite] (client) hmr update /App.tsx
+11:15:22 PM [vite] (client) hmr update /App.tsx
+11:15:29 PM [vite] (client) hmr update /App.tsx
+11:15:35 PM [vite] (client) hmr update /App.tsx
+11:15:39 PM [vite] (client) hmr update /App.tsx
+11:15:52 PM [vite] (client) hmr update /App.tsx
+11:16:05 PM [vite] (client) hmr update /App.tsx
+11:16:27 PM [vite] (client) hmr update /App.tsx
+11:16:32 PM [vite] (client) hmr update /App.tsx
+11:26:17 PM [vite] (client) hmr update /App.tsx
+11:26:26 PM [vite] (client) hmr update /App.tsx
+11:26:32 PM [vite] (client) hmr update /App.tsx
+11:26:41 PM [vite] (client) hmr update /App.tsx
+11:26:46 PM [vite] (client) hmr update /App.tsx
+11:26:51 PM [vite] (client) hmr update /App.tsx
+11:26:59 PM [vite] (client) hmr update /App.tsx
+11:27:07 PM [vite] (client) hmr update /App.tsx
+11:27:15 PM [vite] (client) hmr update /App.tsx
+11:27:25 PM [vite] (client) hmr update /App.tsx
+11:27:31 PM [vite] (client) hmr update /App.tsx
+11:27:35 PM [vite] (client) hmr update /App.tsx
+11:27:39 PM [vite] (client) hmr update /App.tsx
+11:27:47 PM [vite] (client) hmr update /App.tsx
+11:28:09 PM [vite] (client) hmr update /App.tsx
+11:28:15 PM [vite] (client) hmr update /App.tsx
+11:28:20 PM [vite] (client) hmr update /App.tsx
+11:31:36 PM [vite] (client) hmr update /App.tsx
+11:31:48 PM [vite] (client) hmr update /App.tsx
+11:32:38 PM [vite] (client) hmr update /App.tsx
+11:32:44 PM [vite] (client) hmr update /App.tsx
+11:32:56 PM [vite] (client) hmr update /App.tsx
+11:34:55 PM [vite] (client) hmr update /App.tsx
+11:37:00 PM [vite] (client) hmr update /App.tsx
+11:38:27 PM [vite] (client) hmr update /App.tsx
+11:39:27 PM [vite] (client) hmr update /App.tsx
+11:46:08 PM [vite] (client) hmr update /App.tsx
+11:46:13 PM [vite] (client) hmr update /App.tsx
+11:46:21 PM [vite] (client) hmr update /App.tsx
+11:46:27 PM [vite] (client) hmr update /App.tsx
+11:46:56 PM [vite] (client) hmr update /App.tsx
+11:47:02 PM [vite] (client) hmr update /App.tsx
+11:47:07 PM [vite] (client) hmr update /App.tsx
+11:47:14 PM [vite] (client) hmr update /App.tsx
+11:47:23 PM [vite] (client) hmr update /App.tsx
+11:47:36 PM [vite] (client) hmr update /App.tsx
+11:47:42 PM [vite] (client) hmr update /App.tsx
+11:55:00 PM [vite] (client) hmr update /App.tsx
+11:55:08 PM [vite] (client) hmr update /App.tsx
+11:55:16 PM [vite] (client) hmr update /App.tsx
+11:55:21 PM [vite] (client) hmr update /App.tsx
+11:55:28 PM [vite] (client) hmr update /App.tsx
+11:55:33 PM [vite] (client) hmr update /App.tsx
+11:55:39 PM [vite] (client) hmr update /App.tsx
+11:56:07 PM [vite] (client) hmr update /App.tsx
+11:56:15 PM [vite] (client) hmr update /App.tsx
+11:58:43 PM [vite] (client) hmr update /App.tsx
+12:03:35 AM [vite] (client) hmr update /App.tsx
+12:03:45 AM [vite] (client) hmr update /App.tsx
+12:04:12 AM [vite] (client) hmr update /App.tsx
+12:04:34 AM [vite] (client) hmr update /App.tsx
+12:06:32 AM [vite] (client) hmr update /App.tsx
+12:06:41 AM [vite] (client) hmr update /App.tsx
+12:08:24 AM [vite] (client) hmr update /App.tsx
+12:11:44 AM [vite] (client) hmr update /App.tsx
+12:14:13 AM [vite] (client) hmr update /App.tsx
+12:15:50 AM [vite] (client) hmr update /App.tsx
+12:16:09 AM [vite] (client) hmr update /App.tsx
+12:17:42 AM [vite] (client) hmr update /App.tsx
+12:17:56 AM [vite] (client) hmr update /App.tsx
+12:20:56 AM [vite] (client) hmr update /App.tsx
+12:24:47 AM [vite] (client) hmr update /App.tsx
+12:25:04 AM [vite] (client) hmr update /App.tsx
+12:25:15 AM [vite] (client) hmr update /App.tsx
+12:25:26 AM [vite] (client) hmr update /App.tsx
+12:25:36 AM [vite] (client) hmr update /App.tsx
+12:25:46 AM [vite] (client) hmr update /App.tsx
+12:33:38 AM [vite] (client) hmr update /App.tsx
+12:33:49 AM [vite] (client) hmr update /App.tsx
+12:34:06 AM [vite] (client) hmr update /App.tsx
+12:34:17 AM [vite] (client) hmr update /App.tsx
+12:38:53 AM [vite] (client) hmr update /App.tsx
+12:40:03 AM [vite] .env.local changed, restarting server...
+12:40:03 AM [vite] server restarted.
+12:40:56 AM [vite] (client) hmr update /App.tsx
+12:41:05 AM [vite] (client) hmr update /App.tsx
+12:47:38 AM [vite] (client) hmr update /App.tsx
+12:48:45 AM [vite] (client) hmr update /App.tsx
+12:49:52 AM [vite] (client) hmr update /App.tsx
+12:50:53 AM [vite] (client) hmr update /App.tsx
+12:51:12 AM [vite] (client) hmr update /App.tsx
+12:54:02 AM [vite] .env.local changed, restarting server...
+12:54:02 AM [vite] server restarted.
+12:54:05 AM [vite] .env.local changed, restarting server...
+12:54:05 AM [vite] server restarted.
+12:54:09 AM [vite] .env.local changed, restarting server...
+12:54:09 AM [vite] server restarted.
+12:54:22 AM [vite] .env.local changed, restarting server...
+12:54:22 AM [vite] server restarted.
+12:56:15 AM [vite] (client) hmr update /App.tsx
+12:56:24 AM [vite] (client) hmr update /App.tsx
+1:01:50 AM [vite] (client) hmr update /App.tsx
+1:02:06 AM [vite] (client) hmr update /App.tsx
+1:02:16 AM [vite] (client) hmr update /App.tsx
+1:02:23 AM [vite] (client) hmr update /App.tsx
+1:03:09 AM [vite] (client) hmr update /App.tsx
+1:03:32 AM [vite] (client) hmr update /App.tsx
+1:03:46 AM [vite] (client) hmr update /App.tsx
+1:05:19 AM [vite] (client) hmr update /App.tsx
+1:05:42 AM [vite] (client) hmr update /App.tsx
+1:08:26 AM [vite] .env.local changed, restarting server...
+1:08:26 AM [vite] server restarted.
+1:09:58 AM [vite] (client) hmr update /App.tsx
+1:10:10 AM [vite] (client) hmr update /App.tsx
+1:12:01 AM [vite] (client) hmr update /App.tsx
+1:19:27 AM [vite] (client) hmr update /App.tsx
+1:19:55 AM [vite] (client) hmr update /App.tsx
+1:20:42 AM [vite] (client) hmr update /App.tsx
+1:24:22 AM [vite] (client) hmr update /App.tsx
+1:25:21 AM [vite] (client) hmr update /App.tsx
+1:27:22 AM [vite] (client) hmr update /App.tsx
+1:27:34 AM [vite] (client) hmr update /App.tsx
+1:27:50 AM [vite] (client) hmr update /App.tsx
+1:29:46 AM [vite] (client) hmr update /App.tsx
+1:48:00 AM [vite] (client) hmr update /App.tsx
+1:48:23 AM [vite] (client) hmr update /App.tsx
+1:49:01 AM [vite] (client) hmr update /App.tsx
+1:49:10 AM [vite] (client) hmr update /App.tsx
+1:49:26 AM [vite] (client) hmr update /App.tsx
+1:49:39 AM [vite] (client) hmr update /App.tsx
+1:50:26 AM [vite] (client) hmr update /App.tsx
+1:59:53 AM [vite] (client) hmr update /App.tsx
+2:01:21 AM [vite] (client) hmr update /App.tsx
+2:06:41 AM [vite] (client) hmr update /App.tsx
+2:07:01 AM [vite] (client) hmr update /App.tsx
+2:07:15 AM [vite] (client) hmr update /App.tsx
+2:07:57 AM [vite] (client) hmr update /App.tsx
+2:08:24 AM [vite] (client) hmr update /App.tsx
+2:09:00 AM [vite] (client) hmr update /App.tsx
+2:11:58 AM [vite] (client) hmr update /App.tsx
+2:19:42 AM [vite] (client) hmr update /App.tsx
+2:19:54 AM [vite] (client) hmr update /App.tsx
+2:20:03 AM [vite] (client) hmr update /App.tsx
+2:20:12 AM [vite] (client) hmr update /App.tsx
+2:20:24 AM [vite] (client) hmr update /App.tsx
+2:20:40 AM [vite] (client) hmr update /App.tsx
+2:22:26 AM [vite] (client) hmr update /App.tsx
+2:23:48 AM [vite] (client) hmr update /App.tsx
+2:23:58 AM [vite] (client) hmr update /App.tsx
+2:24:14 AM [vite] (client) hmr update /App.tsx
+2:24:27 AM [vite] (client) hmr update /App.tsx
+2:24:38 AM [vite] (client) hmr update /App.tsx
+2:30:58 AM [vite] (client) hmr update /App.tsx
+2:31:09 AM [vite] (client) hmr update /App.tsx
+2:31:19 AM [vite] (client) hmr update /App.tsx
+2:31:31 AM [vite] (client) hmr update /App.tsx
+2:32:47 AM [vite] (client) hmr update /App.tsx
+2:50:09 AM [vite] (client) hmr update /App.tsx
+2:50:29 AM [vite] (client) hmr update /App.tsx
+2:50:49 AM [vite] (client) hmr update /App.tsx
+2:51:06 AM [vite] (client) hmr update /App.tsx
+2:52:09 AM [vite] (client) hmr update /App.tsx
+2:56:59 AM [vite] (client) hmr update /App.tsx
+2:57:20 AM [vite] (client) hmr update /App.tsx
+2:57:39 AM [vite] (client) hmr update /App.tsx
+2:57:55 AM [vite] (client) hmr update /App.tsx
+2:58:08 AM [vite] (client) hmr update /App.tsx
+3:01:10 AM [vite] (client) hmr update /App.tsx
+3:01:54 AM [vite] (client) hmr update /App.tsx
+3:09:47 AM [vite] (client) hmr update /App.tsx
+3:10:10 AM [vite] (client) hmr update /App.tsx
+3:10:38 AM [vite] (client) hmr update /App.tsx
+3:11:28 AM [vite] (client) hmr update /App.tsx
+3:11:52 AM [vite] (client) hmr update /App.tsx
+3:12:37 AM [vite] (client) hmr update /App.tsx
+3:13:18 AM [vite] (client) hmr update /App.tsx
+3:13:42 AM [vite] (client) hmr update /App.tsx
+3:14:09 AM [vite] (client) hmr update /App.tsx
+3:16:00 AM [vite] (client) hmr update /App.tsx
+3:16:58 AM [vite] (client) hmr update /App.tsx
+3:18:38 AM [vite] (client) hmr update /App.tsx
+3:20:46 AM [vite] (client) hmr update /App.tsx
+3:20:46 AM [vite] (client) hmr update /App.tsx
+3:21:22 AM [vite] (client) hmr update /App.tsx
+3:21:39 AM [vite] (client) hmr update /App.tsx
+3:24:43 AM [vite] (client) hmr update /App.tsx
+3:24:59 AM [vite] (client) hmr update /App.tsx
+3:25:40 AM [vite] (client) hmr update /App.tsx
+3:35:14 AM [vite] (client) hmr update /App.tsx
+3:36:00 AM [vite] (client) hmr update /App.tsx
+3:36:57 AM [vite] (client) hmr update /App.tsx
+3:37:30 AM [vite] (client) hmr update /App.tsx
+3:37:52 AM [vite] (client) hmr update /App.tsx
+3:38:10 AM [vite] (client) hmr update /App.tsx
+3:38:56 AM [vite] (client) hmr update /App.tsx
+3:39:21 AM [vite] (client) hmr update /App.tsx
+3:39:45 AM [vite] (client) hmr update /App.tsx
+3:40:12 AM [vite] (client) hmr update /App.tsx
+3:41:03 AM [vite] (client) hmr update /App.tsx
+3:41:33 AM [vite] (client) hmr update /App.tsx
+3:45:39 AM [vite] (client) hmr update /App.tsx
+3:47:29 AM [vite] (client) hmr update /App.tsx
+3:52:28 AM [vite] (client) hmr update /App.tsx
+3:52:45 AM [vite] (client) hmr update /App.tsx
+3:52:57 AM [vite] (client) hmr update /App.tsx
+3:53:26 AM [vite] (client) hmr update /App.tsx
+3:54:03 AM [vite] (client) hmr update /App.tsx
+4:03:48 AM [vite] (client) hmr update /App.tsx
+4:04:07 AM [vite] (client) hmr update /App.tsx
+4:04:33 AM [vite] (client) hmr update /App.tsx
+4:05:04 AM [vite] (client) hmr update /App.tsx
+4:05:24 AM [vite] (client) hmr update /App.tsx
+4:07:51 AM [vite] (client) hmr update /App.tsx
+4:13:02 AM [vite] (client) hmr update /App.tsx
+4:13:24 AM [vite] (client) hmr update /App.tsx
+4:13:47 AM [vite] (client) hmr update /App.tsx
+4:15:55 AM [vite] (client) hmr update /App.tsx
+4:17:11 AM [vite] (client) hmr update /App.tsx
+4:27:48 AM [vite] (client) page reload index.html
+4:28:41 AM [vite] (client) hmr update /App.tsx
+4:29:04 AM [vite] (client) hmr update /App.tsx
+4:29:27 AM [vite] (client) hmr update /App.tsx
+4:29:53 AM [vite] (client) hmr update /App.tsx
+4:29:53 AM [vite] (client) hmr update /App.tsx
+4:30:27 AM [vite] (client) hmr update /App.tsx
+4:30:51 AM [vite] (client) hmr update /App.tsx
+4:31:15 AM [vite] (client) hmr update /App.tsx
+4:31:41 AM [vite] (client) hmr update /App.tsx
+4:32:07 AM [vite] (client) hmr update /App.tsx
+4:32:37 AM [vite] (client) hmr update /App.tsx
+4:37:28 AM [vite] (client) hmr update /App.tsx
+4:37:59 AM [vite] (client) hmr update /App.tsx
+4:38:17 AM [vite] (client) hmr update /App.tsx
+4:38:42 AM [vite] (client) hmr update /App.tsx
+4:40:55 AM [vite] (client) hmr update /App.tsx
+5:08:03 AM [vite] (client) page reload index.tsx
+5:08:05 AM [vite] (client) Pre-transform error: Failed to resolve import "@supabase/supabase-js" from "supabaseClient.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/wataru/Downloads/tomoshibi---city-puzzle-trail/supabaseClient.ts:1:29
+  1  |  import { createClient } from "@supabase/supabase-js";
+     |                                ^
+  2  |  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  3  |  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+5:08:05 AM [vite] Internal server error: Failed to resolve import "@supabase/supabase-js" from "supabaseClient.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/wataru/Downloads/tomoshibi---city-puzzle-trail/supabaseClient.ts:1:29
+  1  |  import { createClient } from "@supabase/supabase-js";
+     |                                ^
+  2  |  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  3  |  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      at TransformPluginContext._formatLog (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42528:41)
+      at TransformPluginContext.error (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42525:16)
+      at normalizeUrl (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40504:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40623:37
+      at async Promise.all (index 0)
+      at async TransformPluginContext.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40550:7)
+      at async EnvironmentPluginContainer.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42323:18)
+      at async loadAndTransform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:35739:27)
+      at async viteTransformMiddleware (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:37254:24)
+5:08:06 AM [vite] Internal server error: Failed to resolve import "@supabase/supabase-js" from "supabaseClient.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/wataru/Downloads/tomoshibi---city-puzzle-trail/supabaseClient.ts:1:29
+  1  |  import { createClient } from "@supabase/supabase-js";
+     |                                ^
+  2  |  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  3  |  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      at TransformPluginContext._formatLog (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42528:41)
+      at TransformPluginContext.error (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42525:16)
+      at normalizeUrl (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40504:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40623:37
+      at async Promise.all (index 0)
+      at async TransformPluginContext.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40550:7)
+      at async EnvironmentPluginContainer.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42323:18)
+      at async loadAndTransform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:35739:27)
+      at async viteTransformMiddleware (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:37254:24)
+5:09:25 AM [vite] (client) hmr update /App.tsx
+5:09:26 AM [vite] Internal server error: Failed to resolve import "@supabase/supabase-js" from "supabaseClient.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/wataru/Downloads/tomoshibi---city-puzzle-trail/supabaseClient.ts:1:29
+  1  |  import { createClient } from "@supabase/supabase-js";
+     |                                ^
+  2  |  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  3  |  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      at TransformPluginContext._formatLog (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42528:41)
+      at TransformPluginContext.error (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42525:16)
+      at normalizeUrl (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40504:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40623:37
+      at async Promise.all (index 0)
+      at async TransformPluginContext.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40550:7)
+      at async EnvironmentPluginContainer.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42323:18)
+      at async loadAndTransform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:35739:27)
+      at async viteTransformMiddleware (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:37254:24)
+5:09:26 AM [vite] Internal server error: Failed to resolve import "@supabase/supabase-js" from "supabaseClient.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/wataru/Downloads/tomoshibi---city-puzzle-trail/supabaseClient.ts:1:29
+  1  |  import { createClient } from "@supabase/supabase-js";
+     |                                ^
+  2  |  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  3  |  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      at TransformPluginContext._formatLog (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42528:41)
+      at TransformPluginContext.error (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42525:16)
+      at normalizeUrl (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40504:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40623:37
+      at async Promise.all (index 0)
+      at async TransformPluginContext.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40550:7)
+      at async EnvironmentPluginContainer.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42323:18)
+      at async loadAndTransform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:35739:27)
+      at async viteTransformMiddleware (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:37254:24)
+5:09:46 AM [vite] (client) hmr update /App.tsx
+5:09:47 AM [vite] Internal server error: Failed to resolve import "@supabase/supabase-js" from "supabaseClient.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/wataru/Downloads/tomoshibi---city-puzzle-trail/supabaseClient.ts:1:29
+  1  |  import { createClient } from "@supabase/supabase-js";
+     |                                ^
+  2  |  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  3  |  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      at TransformPluginContext._formatLog (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42528:41)
+      at TransformPluginContext.error (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42525:16)
+      at normalizeUrl (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40504:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40623:37
+      at async Promise.all (index 0)
+      at async TransformPluginContext.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40550:7)
+      at async EnvironmentPluginContainer.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42323:18)
+      at async loadAndTransform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:35739:27)
+      at async viteTransformMiddleware (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:37254:24)
+5:09:47 AM [vite] Internal server error: Failed to resolve import "@supabase/supabase-js" from "supabaseClient.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/wataru/Downloads/tomoshibi---city-puzzle-trail/supabaseClient.ts:1:29
+  1  |  import { createClient } from "@supabase/supabase-js";
+     |                                ^
+  2  |  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  3  |  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      at TransformPluginContext._formatLog (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42528:41)
+      at TransformPluginContext.error (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42525:16)
+      at normalizeUrl (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40504:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40623:37
+      at async Promise.all (index 0)
+      at async TransformPluginContext.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40550:7)
+      at async EnvironmentPluginContainer.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42323:18)
+      at async loadAndTransform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:35739:27)
+      at async viteTransformMiddleware (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:37254:24)
+5:10:44 AM [vite] (client) hmr update /App.tsx
+5:10:45 AM [vite] Internal server error: Failed to resolve import "@supabase/supabase-js" from "supabaseClient.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/wataru/Downloads/tomoshibi---city-puzzle-trail/supabaseClient.ts:1:29
+  1  |  import { createClient } from "@supabase/supabase-js";
+     |                                ^
+  2  |  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  3  |  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      at TransformPluginContext._formatLog (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42528:41)
+      at TransformPluginContext.error (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42525:16)
+      at normalizeUrl (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40504:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40623:37
+      at async Promise.all (index 0)
+      at async TransformPluginContext.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40550:7)
+      at async EnvironmentPluginContainer.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42323:18)
+      at async loadAndTransform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:35739:27)
+      at async viteTransformMiddleware (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:37254:24)
+5:11:08 AM [vite] (client) hmr update /App.tsx
+5:11:09 AM [vite] Internal server error: Failed to resolve import "@supabase/supabase-js" from "supabaseClient.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/wataru/Downloads/tomoshibi---city-puzzle-trail/supabaseClient.ts:1:29
+  1  |  import { createClient } from "@supabase/supabase-js";
+     |                                ^
+  2  |  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  3  |  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      at TransformPluginContext._formatLog (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42528:41)
+      at TransformPluginContext.error (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42525:16)
+      at normalizeUrl (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40504:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40623:37
+      at async Promise.all (index 0)
+      at async TransformPluginContext.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40550:7)
+      at async EnvironmentPluginContainer.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42323:18)
+      at async loadAndTransform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:35739:27)
+      at async viteTransformMiddleware (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:37254:24)
+5:11:55 AM [vite] (client) hmr update /App.tsx
+5:11:56 AM [vite] Internal server error: Failed to resolve import "@supabase/supabase-js" from "supabaseClient.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/wataru/Downloads/tomoshibi---city-puzzle-trail/supabaseClient.ts:1:29
+  1  |  import { createClient } from "@supabase/supabase-js";
+     |                                ^
+  2  |  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  3  |  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      at TransformPluginContext._formatLog (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42528:41)
+      at TransformPluginContext.error (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42525:16)
+      at normalizeUrl (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40504:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40623:37
+      at async Promise.all (index 0)
+      at async TransformPluginContext.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40550:7)
+      at async EnvironmentPluginContainer.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42323:18)
+      at async loadAndTransform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:35739:27)
+      at async viteTransformMiddleware (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:37254:24)
+5:12:12 AM [vite] (client) hmr update /App.tsx
+5:12:12 AM [vite] Internal server error: Failed to resolve import "@supabase/supabase-js" from "supabaseClient.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/wataru/Downloads/tomoshibi---city-puzzle-trail/supabaseClient.ts:1:29
+  1  |  import { createClient } from "@supabase/supabase-js";
+     |                                ^
+  2  |  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  3  |  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      at TransformPluginContext._formatLog (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42528:41)
+      at TransformPluginContext.error (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42525:16)
+      at normalizeUrl (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40504:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40623:37
+      at async Promise.all (index 0)
+      at async TransformPluginContext.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40550:7)
+      at async EnvironmentPluginContainer.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42323:18)
+      at async loadAndTransform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:35739:27)
+      at async viteTransformMiddleware (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:37254:24)
+5:13:25 AM [vite] (client) hmr update /App.tsx
+5:13:25 AM [vite] Internal server error: Failed to resolve import "@supabase/supabase-js" from "supabaseClient.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/wataru/Downloads/tomoshibi---city-puzzle-trail/supabaseClient.ts:1:29
+  1  |  import { createClient } from "@supabase/supabase-js";
+     |                                ^
+  2  |  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  3  |  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      at TransformPluginContext._formatLog (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42528:41)
+      at TransformPluginContext.error (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42525:16)
+      at normalizeUrl (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40504:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40623:37
+      at async Promise.all (index 0)
+      at async TransformPluginContext.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40550:7)
+      at async EnvironmentPluginContainer.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42323:18)
+      at async loadAndTransform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:35739:27)
+      at async viteTransformMiddleware (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:37254:24)
+5:14:17 AM [vite] (client) hmr update /App.tsx
+5:14:17 AM [vite] Internal server error: Failed to resolve import "@supabase/supabase-js" from "supabaseClient.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/wataru/Downloads/tomoshibi---city-puzzle-trail/supabaseClient.ts:1:29
+  1  |  import { createClient } from "@supabase/supabase-js";
+     |                                ^
+  2  |  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  3  |  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      at TransformPluginContext._formatLog (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42528:41)
+      at TransformPluginContext.error (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42525:16)
+      at normalizeUrl (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40504:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40623:37
+      at async Promise.all (index 0)
+      at async TransformPluginContext.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40550:7)
+      at async EnvironmentPluginContainer.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42323:18)
+      at async loadAndTransform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:35739:27)
+      at async viteTransformMiddleware (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:37254:24)
+5:14:27 AM [vite] (client) hmr update /App.tsx
+5:14:27 AM [vite] Internal server error: Failed to resolve import "@supabase/supabase-js" from "supabaseClient.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/wataru/Downloads/tomoshibi---city-puzzle-trail/supabaseClient.ts:1:29
+  1  |  import { createClient } from "@supabase/supabase-js";
+     |                                ^
+  2  |  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  3  |  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      at TransformPluginContext._formatLog (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42528:41)
+      at TransformPluginContext.error (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42525:16)
+      at normalizeUrl (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40504:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40623:37
+      at async Promise.all (index 0)
+      at async TransformPluginContext.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40550:7)
+      at async EnvironmentPluginContainer.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42323:18)
+      at async loadAndTransform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:35739:27)
+      at async viteTransformMiddleware (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:37254:24)
+5:15:06 AM [vite] (client) hmr update /App.tsx
+5:15:07 AM [vite] Internal server error: Failed to resolve import "@supabase/supabase-js" from "supabaseClient.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/wataru/Downloads/tomoshibi---city-puzzle-trail/supabaseClient.ts:1:29
+  1  |  import { createClient } from "@supabase/supabase-js";
+     |                                ^
+  2  |  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  3  |  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      at TransformPluginContext._formatLog (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42528:41)
+      at TransformPluginContext.error (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42525:16)
+      at normalizeUrl (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40504:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40623:37
+      at async Promise.all (index 0)
+      at async TransformPluginContext.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40550:7)
+      at async EnvironmentPluginContainer.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42323:18)
+      at async loadAndTransform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:35739:27)
+      at async viteTransformMiddleware (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:37254:24)
+5:15:58 AM [vite] .env.local changed, restarting server...
+5:15:59 AM [vite] server restarted.
+5:16:50 AM [vite] Internal server error: Failed to resolve import "@supabase/supabase-js" from "supabaseClient.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/wataru/Downloads/tomoshibi---city-puzzle-trail/supabaseClient.ts:1:29
+  1  |  import { createClient } from "@supabase/supabase-js";
+     |                                ^
+  2  |  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  3  |  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      at TransformPluginContext._formatLog (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42528:41)
+      at TransformPluginContext.error (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42525:16)
+      at normalizeUrl (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40504:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40623:37
+      at async Promise.all (index 0)
+      at async TransformPluginContext.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40550:7)
+      at async EnvironmentPluginContainer.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42323:18)
+      at async loadAndTransform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:35739:27)
+5:16:50 AM [vite] (client) Pre-transform error: Failed to resolve import "@supabase/supabase-js" from "supabaseClient.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/wataru/Downloads/tomoshibi---city-puzzle-trail/supabaseClient.ts:1:29
+  1  |  import { createClient } from "@supabase/supabase-js";
+     |                                ^
+  2  |  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  3  |  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+5:16:52 AM [vite] Internal server error: Failed to resolve import "@supabase/supabase-js" from "supabaseClient.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/wataru/Downloads/tomoshibi---city-puzzle-trail/supabaseClient.ts:1:29
+  1  |  import { createClient } from "@supabase/supabase-js";
+     |                                ^
+  2  |  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  3  |  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      at TransformPluginContext._formatLog (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42528:41)
+      at TransformPluginContext.error (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42525:16)
+      at normalizeUrl (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40504:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40623:37
+      at async Promise.all (index 0)
+      at async TransformPluginContext.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40550:7)
+      at async EnvironmentPluginContainer.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42323:18)
+      at async loadAndTransform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:35739:27)
+      at async viteTransformMiddleware (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:37254:24)
+5:16:55 AM [vite] Internal server error: Failed to resolve import "@supabase/supabase-js" from "supabaseClient.ts". Does the file exist?
+  Plugin: vite:import-analysis
+  File: /Users/wataru/Downloads/tomoshibi---city-puzzle-trail/supabaseClient.ts:1:29
+  1  |  import { createClient } from "@supabase/supabase-js";
+     |                                ^
+  2  |  const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+  3  |  const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+      at TransformPluginContext._formatLog (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42528:41)
+      at TransformPluginContext.error (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42525:16)
+      at normalizeUrl (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40504:23)
+      at process.processTicksAndRejections (node:internal/process/task_queues:105:5)
+      at async file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40623:37
+      at async Promise.all (index 0)
+      at async TransformPluginContext.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:40550:7)
+      at async EnvironmentPluginContainer.transform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:42323:18)
+      at async loadAndTransform (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:35739:27)
+      at async viteTransformMiddleware (file:///Users/wataru/Downloads/tomoshibi---city-puzzle-trail/node_modules/vite/dist/node/chunks/dep-D4NMHUTW.js:37254:24)
+5:21:12 AM [vite] (client) ✨ new dependencies optimized: @supabase/supabase-js
+5:21:12 AM [vite] (client) ✨ optimized dependencies changed. reloading
+5:24:54 AM [vite] (client) hmr update /App.tsx
+5:25:17 AM [vite] (client) hmr update /App.tsx
+5:25:38 AM [vite] (client) hmr update /App.tsx
+5:28:28 AM [vite] (client) hmr update /AuthProvider.tsx
+5:28:28 AM [vite] (client) hmr invalidate /AuthProvider.tsx Could not Fast Refresh ("useAuth" export is incompatible). Learn more at https://github.com/vitejs/vite-plugin-react/tree/main/packages/plugin-react#consistent-components-exports
+5:28:28 AM [vite] (client) page reload AuthProvider.tsx
+5:28:53 AM [vite] (client) hmr update /App.tsx
+5:33:06 AM [vite] (client) hmr update /App.tsx
+5:33:26 AM [vite] (client) hmr update /App.tsx
+5:49:15 AM [vite] (client) hmr update /App.tsx
+5:49:33 AM [vite] (client) hmr update /App.tsx
+5:49:52 AM [vite] (client) hmr update /App.tsx
+5:50:12 AM [vite] (client) hmr update /App.tsx
+5:50:34 AM [vite] (client) hmr update /App.tsx
+5:50:57 AM [vite] (client) hmr update /App.tsx
+5:51:17 AM [vite] (client) hmr update /App.tsx
+5:53:40 AM [vite] (client) hmr update /App.tsx
+5:54:04 AM [vite] (client) hmr update /App.tsx
+5:54:28 AM [vite] (client) hmr update /App.tsx
+5:56:02 AM [vite] (client) hmr update /App.tsx
+5:56:28 AM [vite] (client) hmr update /App.tsx
+5:57:02 AM [vite] (client) hmr update /App.tsx
+5:58:44 AM [vite] (client) hmr update /App.tsx
+5:59:32 AM [vite] (client) hmr update /App.tsx
+6:00:00 AM [vite] (client) hmr update /App.tsx
+6:00:54 AM [vite] (client) hmr update /App.tsx
+6:01:29 AM [vite] (client) hmr update /App.tsx
+6:14:03 AM [vite] (client) hmr update /App.tsx
+6:14:33 AM [vite] (client) hmr update /App.tsx
+6:15:26 AM [vite] (client) hmr update /App.tsx
+6:15:59 AM [vite] (client) hmr update /App.tsx
+6:16:25 AM [vite] (client) hmr update /App.tsx
+6:17:00 AM [vite] (client) hmr update /App.tsx
+6:17:41 AM [vite] (client) hmr update /App.tsx
+6:18:13 AM [vite] (client) hmr update /App.tsx
+6:18:47 AM [vite] (client) hmr update /App.tsx
+6:19:23 AM [vite] (client) hmr update /App.tsx
+6:22:56 AM [vite] (client) hmr update /App.tsx
+6:23:48 AM [vite] (client) hmr update /App.tsx
+6:24:16 AM [vite] (client) hmr update /App.tsx
+6:28:42 AM [vite] (client) hmr update /App.tsx
+6:29:09 AM [vite] (client) hmr update /App.tsx
+6:29:30 AM [vite] (client) hmr update /App.tsx
+6:35:47 AM [vite] (client) hmr update /App.tsx
+6:36:18 AM [vite] (client) hmr update /App.tsx
+6:37:01 AM [vite] (client) hmr update /App.tsx
+6:39:29 AM [vite] (client) hmr update /App.tsx
+6:41:34 AM [vite] (client) hmr update /App.tsx
+6:43:19 AM [vite] (client) hmr update /App.tsx
+6:45:29 AM [vite] (client) hmr update /App.tsx
+6:45:52 AM [vite] (client) hmr update /App.tsx
+6:48:21 AM [vite] (client) hmr update /App.tsx
+6:52:35 AM [vite] (client) hmr update /App.tsx
+6:57:01 AM [vite] (client) hmr update /App.tsx
+6:57:23 AM [vite] (client) hmr update /App.tsx
+6:58:06 AM [vite] (client) hmr update /App.tsx
+6:58:32 AM [vite] (client) hmr update /App.tsx
+7:05:34 AM [vite] (client) hmr update /App.tsx
+7:14:05 AM [vite] (client) hmr update /App.tsx
+7:16:34 AM [vite] (client) hmr update /App.tsx
+7:16:49 AM [vite] (client) hmr update /App.tsx
+7:20:03 AM [vite] (client) hmr update /App.tsx
+7:20:21 AM [vite] (client) hmr update /App.tsx
+7:20:35 AM [vite] (client) hmr update /App.tsx
+7:20:55 AM [vite] (client) hmr update /App.tsx
+7:24:57 AM [vite] (client) hmr update /App.tsx
+7:25:08 AM [vite] (client) hmr update /App.tsx
+7:25:17 AM [vite] (client) hmr update /App.tsx
+7:26:16 AM [vite] (client) hmr update /App.tsx
+7:26:29 AM [vite] (client) hmr update /App.tsx
+7:26:40 AM [vite] (client) hmr update /App.tsx
+7:26:50 AM [vite] (client) hmr update /App.tsx
+7:27:11 AM [vite] (client) hmr update /App.tsx
+7:28:38 AM [vite] (client) hmr update /App.tsx
+7:35:05 AM [vite] (client) hmr update /App.tsx
+7:35:17 AM [vite] (client) hmr update /App.tsx
+7:35:39 AM [vite] (client) hmr update /App.tsx
+7:35:49 AM [vite] (client) hmr update /App.tsx
+7:36:04 AM [vite] (client) hmr update /App.tsx
+7:37:06 AM [vite] (client) hmr update /App.tsx
+7:37:17 AM [vite] (client) hmr update /App.tsx
+7:37:27 AM [vite] (client) hmr update /App.tsx
+7:37:39 AM [vite] (client) hmr update /App.tsx
+7:37:51 AM [vite] (client) hmr update /App.tsx
+7:38:06 AM [vite] (client) hmr update /App.tsx
+7:38:17 AM [vite] (client) hmr update /App.tsx
+7:38:25 AM [vite] (client) hmr update /App.tsx
+7:46:57 AM [vite] (client) hmr update /App.tsx
+7:47:06 AM [vite] (client) hmr update /App.tsx
+7:47:17 AM [vite] (client) hmr update /App.tsx
+7:47:26 AM [vite] (client) hmr update /App.tsx
+7:47:38 AM [vite] (client) hmr update /App.tsx
+7:47:51 AM [vite] (client) hmr update /App.tsx
+7:48:03 AM [vite] (client) hmr update /App.tsx
+7:48:16 AM [vite] (client) hmr update /App.tsx
+7:48:34 AM [vite] (client) hmr update /App.tsx
+7:48:49 AM [vite] (client) hmr update /App.tsx
+7:49:05 AM [vite] (client) hmr update /App.tsx
+7:54:10 AM [vite] (client) hmr update /App.tsx
+7:54:27 AM [vite] (client) hmr update /App.tsx
+7:54:41 AM [vite] (client) hmr update /App.tsx
+7:54:53 AM [vite] (client) hmr update /App.tsx
+7:55:05 AM [vite] (client) hmr update /App.tsx
+7:55:12 AM [vite] (client) hmr update /App.tsx
+7:55:23 AM [vite] (client) hmr update /App.tsx
+7:55:32 AM [vite] (client) hmr update /App.tsx
+7:56:12 AM [vite] (client) hmr update /App.tsx
+7:56:20 AM [vite] (client) hmr update /App.tsx
+7:56:32 AM [vite] (client) hmr update /App.tsx
+7:56:42 AM [vite] (client) hmr update /App.tsx
+7:56:51 AM [vite] (client) hmr update /App.tsx
+7:56:59 AM [vite] (client) hmr update /App.tsx
+7:57:09 AM [vite] (client) hmr update /App.tsx
+7:57:17 AM [vite] (client) hmr update /App.tsx
+7:57:26 AM [vite] (client) hmr update /App.tsx
+7:57:43 AM [vite] (client) hmr update /App.tsx
+7:57:53 AM [vite] (client) hmr update /App.tsx
+7:58:05 AM [vite] (client) hmr update /App.tsx
+7:58:17 AM [vite] (client) hmr update /App.tsx
+7:59:10 AM [vite] (client) hmr update /App.tsx
+7:59:44 AM [vite] (client) hmr update /App.tsx
+8:00:00 AM [vite] (client) hmr update /App.tsx
+8:00:10 AM [vite] (client) hmr update /App.tsx
+8:02:48 AM [vite] (client) hmr update /App.tsx
+8:03:00 AM [vite] (client) hmr update /App.tsx
+8:03:10 AM [vite] (client) hmr update /App.tsx
+8:04:17 AM [vite] (client) hmr update /App.tsx
+8:04:33 AM [vite] (client) hmr update /App.tsx
+8:06:29 AM [vite] (client) hmr update /App.tsx
+8:06:42 AM [vite] (client) hmr update /App.tsx
+8:11:21 AM [vite] (client) hmr update /App.tsx
+8:11:43 AM [vite] (client) hmr update /App.tsx
+8:12:39 AM [vite] (client) hmr update /App.tsx
+8:10:19 PM [vite] (client) hmr update /App.tsx
+8:11:22 PM [vite] (client) hmr update /App.tsx
+8:12:21 PM [vite] (client) hmr update /App.tsx
+8:12:33 PM [vite] (client) hmr update /App.tsx
+8:13:53 PM [vite] (client) hmr update /App.tsx
+8:14:01 PM [vite] (client) hmr update /App.tsx
+8:14:07 PM [vite] (client) hmr update /App.tsx
+8:14:21 PM [vite] (client) hmr update /App.tsx
+8:14:30 PM [vite] (client) hmr update /App.tsx
+8:14:53 PM [vite] (client) hmr update /App.tsx
+8:15:07 PM [vite] (client) hmr update /App.tsx
+8:15:15 PM [vite] (client) hmr update /App.tsx
+8:15:19 PM [vite] (client) hmr update /App.tsx
+8:16:23 PM [vite] (client) hmr update /App.tsx
+8:16:29 PM [vite] (client) hmr update /App.tsx
+8:16:45 PM [vite] (client) hmr update /App.tsx
+8:17:00 PM [vite] (client) hmr update /App.tsx
+8:17:42 PM [vite] (client) hmr update /App.tsx
+12:01:32 PM [vite] (client) hmr update /App.tsx
+12:01:37 PM [vite] (client) hmr update /App.tsx
+12:26:54 PM [vite] (client) hmr update /AuthProvider.tsx, /App.tsx
+12:26:55 PM [vite] (client) hmr update /App.tsx
+12:26:55 PM [vite] (client) hmr update /AuthProvider.tsx
+12:26:55 PM [vite] (client) page reload index.tsx
+12:26:55 PM [vite] (client) page reload index.html
+12:26:55 PM [vite] vite.config.ts changed, restarting server...
+12:26:55 PM [vite] server restarted.

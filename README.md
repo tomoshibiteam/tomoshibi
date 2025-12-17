@@ -17,8 +17,8 @@ Lovable のモバイルアプリと tomoshibi city trail の LP/アプリを `ap
 1. ルートで依存関係をインストール: `npm install`
 2. ビルド: `npm run build`（LPとモバイル両方を dist 出力）
 3. サーバー起動: `npm start`
-   - LP: `http://localhost:3000/`
-   - モバイル: `http://localhost:3000/mobile`
+   - LP: `http://localhost:4175/`
+   - モバイル: `http://localhost:4176/`
 
 ### モバイルアプリ (`apps/mobile`)
 - 環境変数: `.env` に `VITE_SUPABASE_URL`, `VITE_SUPABASE_PUBLISHABLE_KEY`, `VITE_SUPABASE_PROJECT_ID`

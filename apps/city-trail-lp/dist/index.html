@@ -4,7 +4,7 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>TOMOSHIBI | 街歩き×謎解きパズルトレイル</title>
-    <link rel="manifest" href="/assets/manifest--6NP7Wp7.webmanifest">
+    <link rel="manifest" href="/assets/manifest-C3p79fdR.webmanifest">
     <meta name="theme-color" content="#f7f0e5" />
     
     <!-- Google Fonts -->
@@ -58,6 +58,20 @@
       ::-webkit-scrollbar-thumb:hover {
         background: #78716c; 
       }
+      /* Map marker animations */
+      @keyframes markerAppear {
+        0% { transform: scale(0) translateY(-10px); opacity: 0; }
+        50% { transform: scale(1.2) translateY(0); }
+        100% { transform: scale(1) translateY(0); opacity: 1; }
+      }
+      @keyframes markerPulse {
+        0%, 100% { transform: scale(1); box-shadow: 0 4px 20px rgba(217, 119, 6, 0.4); }
+        50% { transform: scale(1.05); box-shadow: 0 6px 30px rgba(217, 119, 6, 0.6); }
+      }
+      @keyframes shadowPulse {
+        0%, 100% { transform: translateX(-50%) scale(1); opacity: 0.3; }
+        50% { transform: translateX(-50%) scale(1.2); opacity: 0.5; }
+      }
     </style>
 
 <link rel="stylesheet" href="/index.css">
@@ -72,7 +86,7 @@
   }
 }
 </script>
-  <script type="module" crossorigin src="/assets/index-DqFF3pti.js"></script>
+  <script type="module" crossorigin src="/assets/index-DmDbAFtb.js"></script>
 </head>
   <body>
     <div id="root"></div>

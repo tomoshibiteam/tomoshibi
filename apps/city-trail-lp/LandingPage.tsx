@@ -8496,8 +8496,12 @@ export default function LandingPage() {
                       onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                       className="flex items-center gap-3 pl-3 pr-4 py-2 rounded-full border border-stone-300 bg-white/90 backdrop-blur text-sm font-bold text-brand-dark hover:border-brand-gold hover:text-brand-gold transition-all shadow-sm"
                     >
-                      <span className="w-8 h-8 rounded-full bg-brand-dark text-white flex items-center justify-center font-bold">
-                        {currentUserEmail.charAt(0).toUpperCase()}
+                      <span className="w-8 h-8 rounded-full bg-brand-dark text-white flex items-center justify-center font-bold overflow-hidden">
+                        {profile?.avatar_url ? (
+                          <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                        ) : (
+                          currentUserEmail.charAt(0).toUpperCase()
+                        )}
                       </span>
                     </button>
 
@@ -8628,8 +8632,12 @@ export default function LandingPage() {
                   {!loading && currentUserEmail ? (
                     <div className="flex flex-col gap-2 border border-stone-200 rounded-lg p-3 bg-white">
                       <div className="flex items-center gap-2">
-                        <span className="w-9 h-9 rounded-full bg-brand-dark text-white flex items-center justify-center font-bold">
-                          {currentUserEmail.charAt(0).toUpperCase()}
+                        <span className="w-9 h-9 rounded-full bg-brand-dark text-white flex items-center justify-center font-bold overflow-hidden">
+                          {profile?.avatar_url ? (
+                            <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                          ) : (
+                            currentUserEmail.charAt(0).toUpperCase()
+                          )}
                         </span>
                       </div>
                       <button

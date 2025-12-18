@@ -1,0 +1,218 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* TOMOSHIBI Design System - やわらかい・上品・ちょっと大人なワクワク感 */
+
+@layer base {
+  :root {
+    /* Background: 薄いベージュ〜アイボリー系 */
+    --background: 35 100% 97%;
+    --foreground: 20 30% 18%;
+
+    /* Cards: 白系 */
+    --card: 0 0% 100%;
+    --card-foreground: 20 30% 18%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 20 30% 18%;
+
+    /* Primary: オレンジ〜アンバー系 */
+    --primary: 25 95% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary: やや薄いオレンジ */
+    --secondary: 35 80% 92%;
+    --secondary-foreground: 20 30% 18%;
+
+    /* Muted: ベージュ系 */
+    --muted: 35 40% 90%;
+    --muted-foreground: 20 15% 45%;
+
+    /* Accent: ゴールド〜イエロー */
+    --accent: 40 90% 50%;
+    --accent-foreground: 20 30% 18%;
+
+    --destructive: 0 65% 55%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 35 30% 88%;
+    --input: 35 40% 94%;
+    --ring: 25 95% 55%;
+
+    --radius: 1rem;
+
+    /* TOMOSHIBI specific colors */
+    --tomoshibi-brown: 20 30% 18%;
+    --tomoshibi-orange: 25 95% 55%;
+    --tomoshibi-amber: 35 85% 50%;
+    --tomoshibi-gold: 45 90% 55%;
+    --tomoshibi-beige: 35 100% 97%;
+    --tomoshibi-beige-dark: 35 50% 90%;
+    --tomoshibi-navy: 220 50% 25%;
+    
+    --chart-1: 25 95% 55%;
+    --chart-2: 40 90% 50%;
+    --chart-3: 35 85% 50%;
+    --chart-4: 45 90% 55%;
+    --chart-5: 20 30% 18%;
+    
+    --gradient-warm: linear-gradient(135deg, hsl(45 90% 60%), hsl(30 90% 55%), hsl(20 80% 45%));
+    --gradient-sunset: linear-gradient(180deg, hsl(45 95% 70%), hsl(30 95% 60%), hsl(25 80% 50%));
+    
+    --shadow-card: 0 2px 12px rgba(60, 40, 20, 0.06);
+    --shadow-elevated: 0 8px 30px rgba(60, 40, 20, 0.12);
+
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+
+  .dark {
+    --background: 25 20% 10%;
+    --foreground: 35 30% 95%;
+
+    --card: 25 20% 14%;
+    --card-foreground: 35 30% 95%;
+
+    --popover: 25 20% 14%;
+    --popover-foreground: 35 30% 95%;
+
+    --primary: 25 95% 55%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 25 25% 20%;
+    --secondary-foreground: 35 30% 95%;
+
+    --muted: 25 20% 18%;
+    --muted-foreground: 35 20% 55%;
+
+    --accent: 40 90% 50%;
+    --accent-foreground: 25 20% 10%;
+
+    --destructive: 0 65% 50%;
+    --destructive-foreground: 35 30% 95%;
+
+    --border: 25 20% 20%;
+    --input: 25 20% 18%;
+    --ring: 25 95% 55%;
+
+    --tomoshibi-brown: 35 30% 95%;
+    --tomoshibi-orange: 25 95% 55%;
+    --tomoshibi-amber: 35 85% 50%;
+    --tomoshibi-gold: 45 90% 55%;
+    --tomoshibi-beige: 25 20% 10%;
+    --tomoshibi-beige-dark: 25 20% 16%;
+    --tomoshibi-navy: 220 50% 70%;
+
+    --chart-1: 25 95% 60%;
+    --chart-2: 40 90% 55%;
+    --chart-3: 35 85% 55%;
+    --chart-4: 45 90% 60%;
+    --chart-5: 35 30% 95%;
+
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground font-sans antialiased;
+    font-size: 16px;
+    line-height: 1.75;
+    font-weight: 400;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 700;
+    line-height: 1.5;
+  }
+  
+  h1 {
+    font-size: 22px;
+    @apply text-foreground;
+  }
+  
+  h2 {
+    font-size: 18px;
+    @apply text-foreground;
+  }
+  
+  .text-emphasis {
+    font-weight: 400;
+    font-size: 14px;
+    line-height: 1.7;
+    @apply text-muted-foreground;
+  }
+  
+  p {
+    @apply text-foreground;
+  }
+}
+
+@layer utilities {
+  .gradient-warm {
+    background: var(--gradient-warm);
+  }
+  
+  .gradient-sunset {
+    background: var(--gradient-sunset);
+  }
+  
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+  
+  .shadow-elevated {
+    box-shadow: var(--shadow-elevated);
+  }
+  
+  .card-style {
+    @apply bg-card border border-border text-card-foreground rounded-2xl;
+    box-shadow: var(--shadow-card);
+  }
+
+  .bg-tomoshibi-beige {
+    background-color: hsl(var(--tomoshibi-beige));
+  }
+
+  .bg-tomoshibi-beige-dark {
+    background-color: hsl(var(--tomoshibi-beige-dark));
+  }
+
+  .text-tomoshibi-brown {
+    color: hsl(var(--tomoshibi-brown));
+  }
+
+  .text-tomoshibi-orange {
+    color: hsl(var(--tomoshibi-orange));
+  }
+
+  .bg-tomoshibi-orange {
+    background-color: hsl(var(--tomoshibi-orange));
+  }
+
+  .bg-tomoshibi-navy {
+    background-color: hsl(var(--tomoshibi-navy));
+  }
+
+  .text-tomoshibi-navy {
+    color: hsl(var(--tomoshibi-navy));
+  }
+}

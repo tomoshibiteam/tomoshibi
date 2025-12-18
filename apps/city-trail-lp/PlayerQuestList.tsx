@@ -13,7 +13,11 @@ import {
     X,
     ChevronDown,
     Grid3X3,
-    List
+    List,
+    Sparkles,
+    Flame,
+    Map,
+    Footprints
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { TomoshibiLogo } from './TomoshibiLogo';
@@ -76,59 +80,81 @@ const DifficultyBadge = ({ level, labels }: { level: Quest['difficulty']; labels
     );
 };
 
-// Grid Card
+// Grid Card - Enhanced with glassmorphism and better visuals
 const QuestGridCard = ({ quest, onSelect }: { quest: Quest; onSelect: (quest: Quest) => void }) => {
     return (
-        <div
+        <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            whileHover={{ y: -6, transition: { duration: 0.2 } }}
             onClick={() => onSelect(quest)}
-            className="group bg-white rounded-xl overflow-hidden cursor-pointer border border-stone-200 hover:border-brand-gold hover:shadow-lg transition-all duration-200"
+            className="group relative bg-white/80 backdrop-blur-sm rounded-2xl overflow-hidden cursor-pointer border border-stone-200/60 hover:border-amber-400/60 shadow-sm hover:shadow-xl hover:shadow-amber-100/50 transition-all duration-300"
         >
             {/* Cover Image */}
             <div className="relative aspect-[4/3] overflow-hidden">
                 <img
                     src={quest.cover}
                     alt={quest.title}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                    className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                 />
+                {/* Gradient overlay */}
+                <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/20 to-transparent opacity-60 group-hover:opacity-40 transition-opacity duration-300" />
 
-                {/* Rating Badge */}
+                {/* Decorative corner glow */}
+                <div className="absolute -top-10 -right-10 w-32 h-32 bg-amber-400/20 rounded-full blur-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
+
+                {/* Rating Badge - Enhanced */}
                 {quest.rating > 0 && (
-                    <div className="absolute top-3 left-3 flex items-center gap-1 px-2 py-1 bg-white/95 backdrop-blur-sm rounded-md shadow-sm">
-                        <Star size={12} className="text-amber-500 fill-amber-500" />
+                    <div className="absolute top-3 left-3 flex items-center gap-1.5 px-2.5 py-1.5 bg-white/95 backdrop-blur-md rounded-lg shadow-lg border border-white/50">
+                        <Star size={13} className="text-amber-500 fill-amber-500" />
                         <span className="text-sm font-bold text-stone-800">{quest.rating.toFixed(1)}</span>
-                        <span className="text-xs text-stone-500">({quest.reviews})</span>
+                        <span className="text-[10px] text-stone-500">({quest.reviews})</span>
                     </div>
                 )}
-            </div>
 
-            {/* Content */}
-            <div className="p-4">
-                <div className="flex items-center gap-2 text-xs text-stone-500 mb-2">
-                    <MapPin size={12} />
-                    <span>{quest.area}</span>
-                    <span className="text-stone-300">•</span>
-                    <DifficultyBadge level={quest.difficulty} />
-                </div>
-
-                <h3 className="font-bold text-stone-900 leading-snug mb-3 line-clamp-2 group-hover:text-brand-gold transition-colors">
-                    {quest.title}
-                </h3>
-
-                <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-3 text-stone-500">
-                        <div className="flex items-center gap-1">
-                            <Clock size={14} />
+                {/* Bottom info overlay */}
+                <div className="absolute bottom-0 left-0 right-0 p-4">
+                    <div className="flex items-center gap-2 text-white/90 text-xs">
+                        <div className="flex items-center gap-1 px-2 py-1 bg-white/20 backdrop-blur-sm rounded-full">
+                            <Clock size={12} />
                             <span>約{Math.round(quest.durationMin / 5) * 5}分</span>
                         </div>
-                        <div className="flex items-center gap-1">
-                            <Compass size={14} />
+                        <div className="flex items-center gap-1 px-2 py-1 bg-white/20 backdrop-blur-sm rounded-full">
+                            <Compass size={12} />
                             <span>{quest.distanceKm.toFixed(1)}km</span>
                         </div>
                     </div>
-                    <ChevronRight size={18} className="text-stone-400 group-hover:text-brand-gold transition-colors" />
                 </div>
             </div>
-        </div>
+
+            {/* Content */}
+            <div className="p-4 relative">
+                {/* Subtle glow effect on hover */}
+                <div className="absolute inset-0 bg-gradient-to-br from-amber-50/0 to-amber-100/0 group-hover:from-amber-50/50 group-hover:to-amber-100/30 transition-all duration-300" />
+
+                <div className="relative">
+                    <div className="flex items-center gap-2 text-xs text-stone-500 mb-2">
+                        <MapPin size={12} className="text-amber-600" />
+                        <span className="font-medium">{quest.area}</span>
+                        <span className="text-stone-300">•</span>
+                        <DifficultyBadge level={quest.difficulty} />
+                    </div>
+
+                    <h3 className="font-bold text-stone-900 leading-snug mb-3 line-clamp-2 group-hover:text-amber-700 transition-colors duration-200">
+                        {quest.title}
+                    </h3>
+
+                    <div className="flex items-center justify-between">
+                        <p className="text-xs text-stone-500 line-clamp-1 flex-1 mr-2">
+                            {quest.description || '街を歩きながら謎を解く冒険'}
+                        </p>
+                        <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-md group-hover:shadow-amber-200 transition-shadow">
+                            <ChevronRight size={16} className="text-white" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </motion.div>
     );
 };
 
@@ -192,7 +218,7 @@ const QuestListCard = ({ quest, onSelect }: { quest: Quest; onSelect: (quest: Qu
     );
 };
 
-// Filter Chip
+// Filter Chip - Enhanced with animation
 const FilterChip = ({
     label,
     active,
@@ -204,20 +230,22 @@ const FilterChip = ({
     onClick: () => void;
     count?: number;
 }) => (
-    <button
+    <motion.button
+        whileHover={{ scale: 1.03 }}
+        whileTap={{ scale: 0.97 }}
         onClick={onClick}
-        className={`flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium transition-all whitespace-nowrap ${active
-            ? 'bg-brand-dark text-white'
-            : 'bg-white border border-stone-200 text-stone-600 hover:border-stone-400'
+        className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium transition-all duration-300 whitespace-nowrap ${active
+            ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-md shadow-amber-200/50'
+            : 'bg-white/80 backdrop-blur-sm border border-stone-200 text-stone-600 hover:border-amber-300 hover:bg-amber-50/50'
             }`}
     >
         {label}
         {count !== undefined && (
-            <span className={`text-xs ${active ? 'text-white/70' : 'text-stone-400'}`}>
+            <span className={`text-xs px-1.5 py-0.5 rounded-full ${active ? 'bg-white/20 text-white' : 'bg-stone-100 text-stone-500'}`}>
                 {count}
             </span>
         )}
-    </button>
+    </motion.button>
 );
 
 // Sort Dropdown
@@ -470,31 +498,25 @@ export default function PlayerQuestList({
     };
 
     return (
-        <div className="min-h-screen bg-stone-50 pt-24">
-            {/* Search count shown below header */}
-            <div className="container mx-auto px-4 mb-4">
-                <div className="text-sm font-medium text-stone-500">
-                    {loading ? tr.loading : tr.questCount(filteredQuests.length)}
-                </div>
-            </div>
+        <div className="min-h-screen bg-gradient-to-b from-stone-50 via-stone-50 to-amber-50/30 pt-20">
 
-            {/* Search & Filter Bar */}
-            <div className="bg-white border-b border-stone-200 py-4">
+            {/* Search & Filter Bar - Enhanced */}
+            <div className="sticky top-16 z-30 bg-white/80 backdrop-blur-lg border-b border-stone-200/60 py-4 shadow-sm">
                 <div className="container mx-auto px-4">
-                    {/* Search Input */}
+                    {/* Search Input - Enhanced */}
                     <div className="relative mb-4">
-                        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-stone-400" />
+                        <Search size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-amber-500" />
                         <input
                             type="text"
                             placeholder={tr.searchPlaceholder}
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-12 pr-4 py-3 bg-stone-100 border border-transparent rounded-xl text-sm placeholder-stone-400 focus:outline-none focus:border-brand-gold focus:bg-white transition-colors"
+                            className="w-full pl-12 pr-4 py-3.5 bg-stone-50 border-2 border-stone-200 rounded-xl text-sm placeholder-stone-400 focus:outline-none focus:border-amber-400 focus:bg-white focus:shadow-lg focus:shadow-amber-100/50 transition-all duration-300"
                         />
                         {searchQuery && (
                             <button
                                 onClick={() => setSearchQuery('')}
-                                className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600"
+                                className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 transition-colors"
                             >
                                 <X size={18} />
                             </button>
@@ -598,32 +620,78 @@ export default function PlayerQuestList({
             </div>
 
             {/* Content */}
-            <main className="container mx-auto px-4 py-6">
+            <main className="container mx-auto px-4 py-8">
                 {loading ? (
-                    <div className={viewMode === 'grid' ? 'grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5' : 'space-y-4'}>
-                        {[1, 2, 3, 4, 5, 6].map(i => (
-                            <div
+                    <div className={viewMode === 'grid' ? 'grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6' : 'space-y-4'}>
+                        {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+                            <motion.div
                                 key={i}
-                                className={`bg-white rounded-xl animate-pulse ${viewMode === 'grid' ? 'aspect-[4/5]' : 'h-36'}`}
-                            />
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: i * 0.1 }}
+                                className={`relative bg-white rounded-2xl overflow-hidden ${viewMode === 'grid' ? 'aspect-[4/5]' : 'h-36'}`}
+                            >
+                                <div className="absolute inset-0 bg-gradient-to-r from-stone-100 via-stone-50 to-stone-100 animate-pulse" />
+                                <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/60 to-transparent -translate-x-full animate-[shimmer_2s_infinite]" />
+                            </motion.div>
                         ))}
                     </div>
                 ) : filteredQuests.length === 0 ? (
-                    <div className="py-20 text-center">
-                        <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-stone-100 flex items-center justify-center">
-                            <Search className="text-stone-400" size={24} />
-                        </div>
-                        <p className="text-stone-600 font-medium mb-1">{tr.noQuestsFound}</p>
-                        <p className="text-stone-400 text-sm mb-4">{tr.tryDifferent}</p>
-                        {hasActiveFilters && (
-                            <button
-                                onClick={clearFilters}
-                                className="px-4 py-2 bg-brand-dark text-white text-sm font-medium rounded-lg hover:bg-brand-gold transition-colors"
+                    <motion.div
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="py-16 text-center"
+                    >
+                        {/* Animated Lantern Illustration */}
+                        <div className="relative w-32 h-32 mx-auto mb-6">
+                            <motion.div
+                                className="absolute inset-0 rounded-full bg-gradient-to-br from-amber-200/50 to-amber-400/30"
+                                animate={{ scale: [1, 1.1, 1], opacity: [0.5, 0.8, 0.5] }}
+                                transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                            />
+                            <div className="absolute inset-4 rounded-full bg-gradient-to-br from-amber-100 to-amber-200 flex items-center justify-center">
+                                <motion.div
+                                    animate={{ rotate: [0, 10, -10, 0] }}
+                                    transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+                                >
+                                    <Compass className="text-amber-600" size={40} />
+                                </motion.div>
+                            </div>
+                            {/* Floating sparkles */}
+                            <motion.div
+                                className="absolute -top-2 -right-2"
+                                animate={{ y: [0, -5, 0], opacity: [0.5, 1, 0.5] }}
+                                transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
                             >
+                                <Sparkles className="text-amber-400" size={16} />
+                            </motion.div>
+                            <motion.div
+                                className="absolute -bottom-1 -left-1"
+                                animate={{ y: [0, -3, 0], opacity: [0.3, 0.7, 0.3] }}
+                                transition={{ duration: 2.5, repeat: Infinity, ease: "easeInOut", delay: 0.5 }}
+                            >
+                                <Sparkles className="text-amber-300" size={12} />
+                            </motion.div>
+                        </div>
+
+                        <h3 className="text-xl font-bold text-stone-800 mb-2">
+                            新たな冒険を探そう
+                        </h3>
+                        <p className="text-stone-500 text-sm mb-6 max-w-sm mx-auto">
+                            {tr.noQuestsFound}。{tr.tryDifferent}
+                        </p>
+                        {hasActiveFilters && (
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={clearFilters}
+                                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-amber-500 to-amber-600 text-white text-sm font-medium rounded-full shadow-lg shadow-amber-200/50 hover:shadow-xl hover:shadow-amber-300/50 transition-shadow"
+                            >
+                                <X size={16} />
                                 {tr.clearFilters}
-                            </button>
+                            </motion.button>
                         )}
-                    </div>
+                    </motion.div>
                 ) : viewMode === 'grid' ? (
                     <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
                         {filteredQuests.map((quest) => (

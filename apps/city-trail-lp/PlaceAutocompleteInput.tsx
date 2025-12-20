@@ -6,15 +6,35 @@ interface PlaceAutocompleteInputProps {
     placeholder?: string;
     className?: string;
     defaultValue?: string;
+    value?: string;  // controlled value
+    onValueChange?: (value: string) => void;  // callback for value changes
 }
 
 export const PlaceAutocompleteInput = ({
     onPlaceSelect,
     placeholder = "Search for a place",
     className,
-    defaultValue = ""
+    defaultValue = "",
+    value: controlledValue,
+    onValueChange
 }: PlaceAutocompleteInputProps) => {
+    const isControlled = controlledValue !== undefined;
     const [inputValue, setInputValue] = useState(defaultValue);
+
+    // For controlled mode, sync with external value
+    useEffect(() => {
+        if (isControlled && controlledValue !== inputValue) {
+            setInputValue(controlledValue);
+        }
+    }, [controlledValue, isControlled]);
+
+    // For uncontrolled mode, sync with defaultValue
+    useEffect(() => {
+        if (!isControlled) {
+            setInputValue(defaultValue);
+        }
+    }, [defaultValue, isControlled]);
+
     const [options, setOptions] = useState<google.maps.places.AutocompletePrediction[]>([]);
     const [isOpen, setIsOpen] = useState(false);
 
@@ -25,10 +45,6 @@ export const PlaceAutocompleteInput = ({
 
     const inputRef = useRef<HTMLInputElement>(null);
     const wrapperRef = useRef<HTMLDivElement>(null);
-
-    useEffect(() => {
-        setInputValue(defaultValue);
-    }, [defaultValue]);
 
     useEffect(() => {
         if (!placesLibrary) return;

@@ -602,6 +602,15 @@ interface AiDraftInput {
   target: string;
   targetLanguages: string[];
   notes: string;
+  // Advanced settings
+  spotCount?: string;
+  estimatedPlayTime?: string;
+  artStyle?: string;
+  storyTone?: string;
+  characterCount?: string;
+  specialRequirements?: string;
+  includeSpots?: string; // 特定のスポットを含める
+  challengeTypes?: string[]; // 謎、クイズ、ミッション
 }
 
 interface AiDialogueLine {
@@ -2218,6 +2227,7 @@ function CreatorWorkspacePage({
 }) {
   const [showAiDraftModal, setShowAiDraftModal] = useState(false);
   const [aiDraftMessage, setAiDraftMessage] = useState<string | null>(null);
+  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
   const [aiDraftInput, setAiDraftInput] = useState<AiDraftInput>({
     area: '',
     theme: '',
@@ -2225,6 +2235,15 @@ function CreatorWorkspacePage({
     target: '',
     targetLanguages: ['日本語'],
     notes: '',
+    // Advanced settings defaults
+    spotCount: '7',
+    estimatedPlayTime: '',
+    artStyle: '',
+    storyTone: '',
+    characterCount: '',
+    specialRequirements: '',
+    includeSpots: '',
+    challengeTypes: ['謎', 'クイズ', 'ミッション'],
   });
 
   const handleAiDraftSubmit = async () => {
@@ -2713,8 +2732,8 @@ function CreatorWorkspacePage({
 
       {
         showAiDraftModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 md:p-8">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-8">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 md:p-8">
               <div className="flex items-start justify-between gap-4 mb-4">
                 <div>
                   <p className="text-xs text-amber-700 font-bold uppercase">AI Assist</p>
@@ -2819,16 +2838,161 @@ function CreatorWorkspacePage({
                   </div>
                 </div>
               </div>
+
+              {/* 詳細設定の開閉ボタン */}
               <div className="mb-4">
-                <label className="block text-xs font-bold text-stone-600 mb-1">追加要望（任意）</label>
-                <textarea
-                  className="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-gold/40"
-                  rows={3}
-                  placeholder="例: 3スポット構成で最後は神社、ロジック系の謎を入れたい"
-                  value={aiDraftInput.notes}
-                  onChange={(e) => setAiDraftInput((prev) => ({ ...prev, notes: e.target.value }))}
-                />
+                <button
+                  type="button"
+                  onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
+                  className="flex items-center gap-2 text-sm font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
+                >
+                  <ChevronDown
+                    size={16}
+                    className={`transition-transform duration-200 ${showAdvancedSettings ? 'rotate-180' : ''}`}
+                  />
+                  {showAdvancedSettings ? '詳細設定を閉じる' : '詳細設定を開く'}
+                </button>
+
+                {/* 詳細設定パネル */}
+                {showAdvancedSettings && (
+                  <div className="mt-4 p-4 bg-stone-50 rounded-xl border border-stone-200 space-y-4">
+                    <p className="text-xs text-stone-500 mb-3">
+                      より詳細な情報を提供することで、AIがより精度の高いクエストを生成できます。
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-stone-600 mb-1">スポット数</label>
+                        <select
+                          className="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-gold/40 bg-white"
+                          value={aiDraftInput.spotCount || '7'}
+                          onChange={(e) => setAiDraftInput((prev) => ({ ...prev, spotCount: e.target.value }))}
+                        >
+                          <option value="5">5スポット（短め）</option>
+                          <option value="6">6スポット</option>
+                          <option value="7">7スポット（推奨）</option>
+                          <option value="8">8スポット</option>
+                          <option value="10">10スポット（長め）</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-stone-600 mb-1">想定プレイ時間</label>
+                        <select
+                          className="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-gold/40 bg-white"
+                          value={aiDraftInput.estimatedPlayTime || ''}
+                          onChange={(e) => setAiDraftInput((prev) => ({ ...prev, estimatedPlayTime: e.target.value }))}
+                        >
+                          <option value="">自動（AIにおまかせ）</option>
+                          <option value="30分">30分程度</option>
+                          <option value="1時間">1時間程度</option>
+                          <option value="1.5時間">1.5時間程度</option>
+                          <option value="2時間">2時間程度</option>
+                          <option value="2時間以上">2時間以上</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-stone-600 mb-1">アートスタイル・世界観</label>
+                        <input
+                          className="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-gold/40"
+                          placeholder="例: レトロ、ファンタジー、サイバーパンク、和風など"
+                          value={aiDraftInput.artStyle || ''}
+                          onChange={(e) => setAiDraftInput((prev) => ({ ...prev, artStyle: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-stone-600 mb-1">物語のトーン</label>
+                        <input
+                          className="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-gold/40"
+                          placeholder="例: シリアス、コメディ、ほのぼの、ホラーなど"
+                          value={aiDraftInput.storyTone || ''}
+                          onChange={(e) => setAiDraftInput((prev) => ({ ...prev, storyTone: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-stone-600 mb-1">登場人物の人数</label>
+                        <select
+                          className="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-gold/40 bg-white"
+                          value={aiDraftInput.characterCount || ''}
+                          onChange={(e) => setAiDraftInput((prev) => ({ ...prev, characterCount: e.target.value }))}
+                        >
+                          <option value="">自動（AIにおまかせ）</option>
+                          <option value="2">2人（最小）</option>
+                          <option value="3">3人</option>
+                          <option value="4">4人（標準）</option>
+                          <option value="5">5人以上</option>
+                        </select>
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-bold text-stone-600 mb-1">特別な指定・要件</label>
+                        <textarea
+                          className="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-gold/40"
+                          rows={2}
+                          placeholder="例: 特定の歴史人物を登場させたい、謎解きに暗号を使いたい、ラストは感動的に、など"
+                          value={aiDraftInput.specialRequirements || ''}
+                          onChange={(e) => setAiDraftInput((prev) => ({ ...prev, specialRequirements: e.target.value }))}
+                        />
+                      </div>
+
+                      {/* 特定スポット */}
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-bold text-stone-600 mb-1">含めたいスポット（任意）</label>
+                        <textarea
+                          className="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-gold/40"
+                          rows={2}
+                          placeholder="例: 東京タワー、増上寺、芝公園など（改行またはカンマで区切り）"
+                          value={aiDraftInput.includeSpots || ''}
+                          onChange={(e) => setAiDraftInput((prev) => ({ ...prev, includeSpots: e.target.value }))}
+                        />
+                        <p className="text-[10px] text-stone-400 mt-1">指定したスポットは必ずルートに含められます</p>
+                      </div>
+
+                      {/* チャレンジタイプ */}
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-bold text-stone-600 mb-2">スポットで出題するチャレンジタイプ</label>
+                        <div className="flex flex-wrap gap-4">
+                          {[
+                            { value: '謎', label: '謎解き', desc: '論理パズルや暗号など' },
+                            { value: 'クイズ', label: 'クイズ', desc: '知識を問う質問' },
+                            { value: 'ミッション', label: 'ミッション', desc: '写真撮影や行動タスク' }
+                          ].map((type) => (
+                            <label
+                              key={type.value}
+                              className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all ${(aiDraftInput.challengeTypes || []).includes(type.value)
+                                ? 'border-brand-gold bg-brand-gold/10'
+                                : 'border-stone-200 bg-white hover:border-stone-300'
+                                }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={(aiDraftInput.challengeTypes || []).includes(type.value)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setAiDraftInput((prev) => ({
+                                      ...prev,
+                                      challengeTypes: [...(prev.challengeTypes || []), type.value]
+                                    }));
+                                  } else {
+                                    setAiDraftInput((prev) => ({
+                                      ...prev,
+                                      challengeTypes: (prev.challengeTypes || []).filter(t => t !== type.value)
+                                    }));
+                                  }
+                                }}
+                                className="w-4 h-4 rounded border-stone-300 text-brand-gold focus:ring-brand-gold"
+                              />
+                              <div>
+                                <span className="text-sm font-bold text-stone-700">{type.label}</span>
+                                <p className="text-[10px] text-stone-400">{type.desc}</p>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                        <p className="text-[10px] text-stone-400 mt-2">選択したタイプからAIがバランス良くチャレンジを生成します</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
+
 
               {aiDraftError && <p className="text-sm text-red-600 mb-2">エラー: {aiDraftError}</p>}
               {aiDraftMessage && <p className="text-sm text-emerald-700 mb-2">{aiDraftMessage}</p>}
@@ -7881,6 +8045,14 @@ export default function LandingPage() {
 - ターゲット: ${input.target || '未指定'}
 - 対応言語: ${input.targetLanguages.join(', ')}
 - 追加要望: ${input.notes || '特になし'}
+${input.spotCount ? `- スポット数: ${input.spotCount}スポット` : '- スポット数: 7スポット（デフォルト）'}
+${input.estimatedPlayTime ? `- 想定プレイ時間: ${input.estimatedPlayTime}` : ''}
+${input.artStyle ? `- アートスタイル・世界観: ${input.artStyle}` : ''}
+${input.storyTone ? `- 物語のトーン: ${input.storyTone}` : ''}
+${input.characterCount ? `- 登場人物の人数: ${input.characterCount}人` : ''}
+${input.specialRequirements ? `- 特別な指定・要件: ${input.specialRequirements}` : ''}
+${input.includeSpots ? `- 必ず含めるスポット: ${input.includeSpots}` : ''}
+${(input.challengeTypes || []).length > 0 ? `- チャレンジタイプ: ${(input.challengeTypes || []).join('、')}（これらのタイプからバランスよく出題）` : ''}
 `.trim();
 
       const res = await fetch(

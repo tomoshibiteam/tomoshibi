@@ -53,6 +53,7 @@ import PlayerGameView from './PlayerGameView';
 import PlayerQuestList from './PlayerQuestList';
 import PlayerQuestDetail from './PlayerQuestDetail';
 import CreatorMultilingual from './CreatorMultilingual';
+import QuestCreatorCanvas from './QuestCreatorCanvas';
 import { supabase } from './supabaseClient';
 
 declare global {
@@ -6474,7 +6475,7 @@ function AdminReviewPage({
 
 export default function LandingPage() {
   const initialPath = typeof window !== 'undefined' ? window.location.pathname : '/';
-  const initialActivePage: 'home' | 'quests' | 'quest-detail' | 'creators' | 'auth' | 'profile' | 'creator-start' | 'creator-workspace' | 'creator-spot-detail' | 'creator-storytelling' | 'creator-test-run' | 'creator-submitted' | 'creator-analytics' | 'admin-dashboard' | 'admin-review' | 'player' =
+  const initialActivePage: 'home' | 'quests' | 'quest-detail' | 'creators' | 'auth' | 'profile' | 'creator-start' | 'creator-canvas' | 'creator-workspace' | 'creator-spot-detail' | 'creator-storytelling' | 'creator-test-run' | 'creator-submitted' | 'creator-analytics' | 'admin-dashboard' | 'admin-review' | 'player' =
     initialPath === '/play'
       ? 'player'
       : initialPath === '/creator' || initialPath === '/creator/workspace'
@@ -6504,7 +6505,7 @@ export default function LandingPage() {
   const [currentLang, setCurrentLang] = useState<Language>('ja');
   const t = LC[currentLang];
 
-  const [activePage, setActivePage] = useState<'home' | 'quests' | 'quest-detail' | 'creators' | 'auth' | 'profile' | 'creator-start' | 'creator-workspace' | 'creator-spot-detail' | 'creator-storytelling' | 'creator-test-run' | 'creator-submitted' | 'creator-analytics' | 'admin-dashboard' | 'admin-review' | 'player'>(initialActivePage);
+  const [activePage, setActivePage] = useState<'home' | 'quests' | 'quest-detail' | 'creators' | 'auth' | 'profile' | 'creator-start' | 'creator-canvas' | 'creator-workspace' | 'creator-spot-detail' | 'creator-storytelling' | 'creator-test-run' | 'creator-submitted' | 'creator-analytics' | 'admin-dashboard' | 'admin-review' | 'player'>(initialActivePage);
   const [selectedQuest, setSelectedQuest] = useState<Quest | null>(null);
   const [activeFilter, setActiveFilter] = useState<string>('all');
   const [sortKey, setSortKey] = useState<'popular' | 'short' | 'distance'>('popular');
@@ -7085,6 +7086,8 @@ export default function LandingPage() {
         return '/profile';
       case 'creator-start':
         return '/creator/start';
+      case 'creator-canvas':
+        return questId ? `/creator/canvas/${questId}` : '/creator/canvas';
       case 'creator-mystery-setup':
         return '/creator/mystery-setup';
       case 'creator-route-spots':
@@ -7165,6 +7168,10 @@ export default function LandingPage() {
     if (pathname === '/auth/forgot') return { page: 'auth' as AppPage, authMode: 'forgot' as AuthMode };
     if (pathname === '/profile') return { page: 'profile' as AppPage };
     if (pathname === '/creator/start') return { page: 'creator-start' as AppPage };
+    if (pathname === '/creator/canvas' || pathname.startsWith('/creator/canvas/')) {
+      const qId = pathname.split('/')[3] || null;
+      return { page: 'creator-canvas' as AppPage, questId: qId };
+    }
     if (pathname === '/creator/mystery-setup') return { page: 'creator-mystery-setup' as AppPage };
     if (pathname === '/creator/route-spots') return { page: 'creator-route-spots' as AppPage };
     if (pathname.startsWith('/creator/route-spots/')) {
@@ -7550,15 +7557,18 @@ export default function LandingPage() {
     }
   };
 
-  const openCreatorOnboarding = () => {
+  const openCreatorOnboarding = async () => {
     // Require login to create a quest
     if (!user) {
       goToAuth('login');
       return;
     }
-    setShowCreatorOnboarding(true);
-    setCreatorOnboardingStep(0);
-    setIsUserMenuOpen(false);
+    // Skip modal and go directly to creator canvas
+    const newQuestId = questId || await createDraftQuest();
+    if (newQuestId) {
+      applyRoute('creator-canvas', { questId: newQuestId });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const closeCreatorOnboarding = () => {
@@ -8554,7 +8564,11 @@ ${(input.challengeTypes || []).length > 0 ? `- チャレンジタイプ: ${(inpu
       {/* --- Navigation (LP/other pages only) --- */}
       {activePage !== 'creator-mystery-setup' && activePage !== 'creator-workspace' && activePage !== 'creator-route-spots' && activePage !== 'creator-spot-detail' && activePage !== 'creator-storytelling' && activePage !== 'creator-test-run' && activePage !== 'creator-submitted' && activePage !== 'creator-analytics' && activePage !== 'player' && (
         <nav
-          className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white/80 backdrop-blur-md py-4 shadow-lg border-b border-stone-200/50' : 'bg-transparent py-6'
+          className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${activePage === 'creator-canvas'
+              ? 'bg-white py-4 shadow-sm border-b border-stone-200'
+              : isScrolled
+                ? 'bg-white/80 backdrop-blur-md py-4 shadow-lg border-b border-stone-200/50'
+                : 'bg-transparent py-6'
             }`}
         >
           <div className="container mx-auto px-4 md:px-8 flex items-center justify-between">
@@ -8980,6 +8994,16 @@ ${(input.challengeTypes || []).length > 0 ? `- チャレンジタイプ: ${(inpu
             }
           }}
           onOpenOnboarding={openCreatorOnboarding}
+        />
+      )}
+
+      {activePage === 'creator-canvas' && (
+        <QuestCreatorCanvas
+          questId={questId}
+          onBack={() => goToProfile()}
+          onLogoHome={() => goHome()}
+          onPublish={handlePublish}
+          onTestRun={() => goToTestRun()}
         />
       )}
 
@@ -10019,7 +10043,7 @@ ${(input.challengeTypes || []).length > 0 ? `- チャレンジタイプ: ${(inpu
       </AnimatePresence>
 
       {/* --- Footer & Final CTA (shared, hide on creator pages) --- */}
-      {activePage !== 'creator-mystery-setup' && activePage !== 'creator-workspace' && activePage !== 'creator-route-spots' && activePage !== 'creator-spot-detail' && activePage !== 'creator-storytelling' && (
+      {activePage !== 'creator-canvas' && activePage !== 'creator-mystery-setup' && activePage !== 'creator-workspace' && activePage !== 'creator-route-spots' && activePage !== 'creator-spot-detail' && activePage !== 'creator-storytelling' && (
         <footer id="contact" className="bg-brand-dark pt-20 pb-10 border-t border-brand-dark/50 mt-10">
           <div className="container mx-auto px-4 md:px-8">
 

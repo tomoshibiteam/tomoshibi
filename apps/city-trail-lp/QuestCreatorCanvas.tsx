@@ -21,6 +21,7 @@ import {
     Edit,
     Users,
     X,
+    Save,
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { useAuth } from './AuthProvider';
@@ -239,6 +240,10 @@ export default function QuestCreatorCanvas({
         story: false,
         preview: false,
     });
+
+    // Saving state
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
     const hasContent = basicInfo !== null || spots.length > 0 || story !== null;
 
@@ -539,13 +544,17 @@ export default function QuestCreatorCanvas({
 
     const saveToDatabase = async (qId: string, result: any, mappedSpots: SpotData[]) => {
         try {
-            await supabase.from('quests').update({
+            // Use upsert to create or update the quest, include creator_id for profile listing
+            await supabase.from('quests').upsert({
+                id: qId,
+                creator_id: user?.id,
                 title: result.title,
                 description: result.description,
                 area_name: result.area,
                 tags: result.tags,
                 status: 'draft',
-            }).eq('id', qId);
+                mode: 'PRIVATE',
+            }, { onConflict: 'id' });
 
             const spotRows = mappedSpots.map((s, idx) => ({
                 id: crypto.randomUUID(),
@@ -588,6 +597,45 @@ export default function QuestCreatorCanvas({
             }
         } catch (err) {
             console.error('Save to DB error:', err);
+        }
+    };
+
+    // Manual save handler
+    const handleSaveQuest = async () => {
+        if (!questId || !basicInfo) {
+            setSaveMessage('保存するコンテンツがありません');
+            setTimeout(() => setSaveMessage(null), 3000);
+            return;
+        }
+
+        setIsSaving(true);
+        setSaveMessage(null);
+
+        try {
+            // Build result object from current state
+            const result = {
+                title: basicInfo.title,
+                description: basicInfo.description,
+                area: basicInfo.area,
+                tags: basicInfo.tags,
+                story: story ? {
+                    prologueBody: story.prologueBody,
+                    epilogueBody: story.epilogueBody,
+                    castName: story.castName,
+                    castTone: story.castTone,
+                    characters: story.characters,
+                } : null,
+            };
+
+            await saveToDatabase(questId, result, spots);
+            setSaveMessage('保存しました！');
+            setTimeout(() => setSaveMessage(null), 3000);
+        } catch (err) {
+            console.error('Save error:', err);
+            setSaveMessage('保存に失敗しました');
+            setTimeout(() => setSaveMessage(null), 3000);
+        } finally {
+            setIsSaving(false);
         }
     };
 
@@ -1483,16 +1531,43 @@ export default function QuestCreatorCanvas({
                                         )}
                                     </AnimatePresence>
 
-                                    {/* Preview FAB */}
+                                    {/* Save Quest FAB */}
                                     {hasContent && !isGenerating && (
                                         <motion.div
                                             initial={{ opacity: 0, scale: 0.9 }}
                                             animate={{ opacity: 1, scale: 1 }}
-                                            className="fixed bottom-6 right-6 z-50"
+                                            className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2"
                                         >
-                                            <button className="flex items-center gap-2 px-5 py-3 rounded-full bg-brand-dark text-white font-bold shadow-lg hover:bg-brand-gold transition-all hover:shadow-xl">
-                                                <Eye size={18} />
-                                                プレビュー試走
+                                            {saveMessage && (
+                                                <motion.div
+                                                    initial={{ opacity: 0, y: 10 }}
+                                                    animate={{ opacity: 1, y: 0 }}
+                                                    exit={{ opacity: 0 }}
+                                                    className={`px-4 py-2 rounded-lg text-sm font-bold shadow-lg ${saveMessage.includes('失敗') ? 'bg-rose-500 text-white' : 'bg-emerald-500 text-white'
+                                                        }`}
+                                                >
+                                                    {saveMessage}
+                                                </motion.div>
+                                            )}
+                                            <button
+                                                onClick={handleSaveQuest}
+                                                disabled={isSaving}
+                                                className={`flex items-center gap-2 px-5 py-3 rounded-full font-bold shadow-lg transition-all hover:shadow-xl ${isSaving
+                                                    ? 'bg-stone-400 text-white cursor-wait'
+                                                    : 'bg-brand-dark text-white hover:bg-brand-gold'
+                                                    }`}
+                                            >
+                                                {isSaving ? (
+                                                    <>
+                                                        <Loader2 size={18} className="animate-spin" />
+                                                        保存中...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Save size={18} />
+                                                        クエスト保存
+                                                    </>
+                                                )}
                                             </button>
                                         </motion.div>
                                     )}

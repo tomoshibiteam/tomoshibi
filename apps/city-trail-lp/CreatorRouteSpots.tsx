@@ -144,13 +144,13 @@ export default function CreatorRouteSpots() {
             if (spotIds.length > 0) {
                 const { data: detailsData } = await supabase
                     .from('spot_details')
-                    .select('spot_id, puzzle_text, answer')
+                    .select('spot_id, question_text, answer_text')
                     .in('spot_id', spotIds);
 
                 const detailsMap: Record<string, boolean> = {};
                 detailsData?.forEach(d => {
-                    // Consider has details if puzzle_text or answer is set
-                    detailsMap[d.spot_id] = !!(d.puzzle_text?.trim() || d.answer?.trim());
+                    // Consider has details if question_text or answer_text is set
+                    detailsMap[d.spot_id] = !!(d.question_text?.trim() || d.answer_text?.trim());
                 });
                 setSpotDetails(detailsMap);
             }

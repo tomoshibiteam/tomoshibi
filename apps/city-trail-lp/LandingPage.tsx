@@ -55,6 +55,12 @@ import PlayerQuestDetail from './PlayerQuestDetail';
 import CreatorMultilingual from './CreatorMultilingual';
 import QuestCreatorCanvas from './QuestCreatorCanvas';
 import { supabase } from './supabaseClient';
+import QualityChecklistModal from './QualityChecklistModal';
+import {
+  QuestMode,
+  QualityChecklist,
+  QUEST_MODE_CONFIG,
+} from './questCreatorTypes';
 
 declare global {
   // MapLibre is loaded from CDN
@@ -2171,6 +2177,11 @@ function CreatorWorkspacePage({
   deleteLoading,
   questId,
   onGoMultilingual,
+  questMode = 'PRIVATE',
+  onPlayNow,
+  onOpenShareModal,
+  onOpenPublishModal,
+  isPaidUser = false,
 }: {
   onBack: () => void;
   onPreview: () => void;
@@ -2225,6 +2236,11 @@ function CreatorWorkspacePage({
   deleteLoading: boolean;
   questId: string | null;
   onGoMultilingual: () => void;
+  questMode?: QuestMode;
+  onPlayNow?: () => void;
+  onOpenShareModal?: () => void;
+  onOpenPublishModal?: () => void;
+  isPaidUser?: boolean;
 }) {
   const [showAiDraftModal, setShowAiDraftModal] = useState(false);
   const [aiDraftMessage, setAiDraftMessage] = useState<string | null>(null);
@@ -2442,6 +2458,67 @@ function CreatorWorkspacePage({
               >
                 <Sparkles size={14} /> AIでたたき台を作成する
               </button>
+            </div>
+
+            {/* Quest Mode and Publishing Actions */}
+            <div className="flex flex-col gap-3 w-full md:w-auto mt-2">
+              {/* Mode Badge */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-stone-500">現在のモード:</span>
+                <span className={`px-3 py-1 rounded-full text-xs font-bold border ${questMode === 'PRIVATE' ? 'bg-stone-100 text-stone-700 border-stone-200' :
+                  questMode === 'SHARE' ? 'bg-sky-100 text-sky-700 border-sky-200' :
+                    'bg-emerald-100 text-emerald-700 border-emerald-200'
+                  }`}>
+                  {questMode === 'PRIVATE' ? '🔒 自分用 (Private)' :
+                    questMode === 'SHARE' ? '🔗 限定共有 (Share)' :
+                      '🌐 公開 (Publish)'}
+                </span>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-2">
+                {/* Play Now - Always available */}
+                <button
+                  onClick={onPlayNow}
+                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white text-sm font-bold hover:from-violet-600 hover:to-purple-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+                >
+                  <PlayCircle size={16} />
+                  今すぐ遊ぶ
+                </button>
+
+                {/* Share Button */}
+                <button
+                  onClick={onOpenShareModal}
+                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-cyan-500 text-white text-sm font-bold hover:from-sky-600 hover:to-cyan-600 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+                >
+                  <Globe2 size={16} />
+                  共有する
+                </button>
+
+                {/* Publish Button - Paid users only */}
+                {isPaidUser ? (
+                  <button
+                    onClick={onOpenPublishModal}
+                    className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-bold hover:from-emerald-600 hover:to-teal-600 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+                  >
+                    <Rocket size={16} />
+                    公開する
+                  </button>
+                ) : (
+                  <div className="relative group">
+                    <button
+                      disabled
+                      className="px-4 py-2.5 rounded-xl bg-stone-200 text-stone-400 text-sm font-bold cursor-not-allowed flex items-center gap-2"
+                    >
+                      <Rocket size={16} />
+                      公開する
+                    </button>
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-stone-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                      有料プランで公開機能が利用できます
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -6537,6 +6614,13 @@ export default function LandingPage() {
   const [questLatLng, setQuestLatLng] = useState<{ lat: number; lng: number } | null>(null);
   const [questId, setQuestId] = useState<string | null>(null);
 
+  // Quest Publishing System state
+  const [questMode, setQuestMode] = useState<QuestMode>('PRIVATE');
+  const [qualityChecklist, setQualityChecklist] = useState<QualityChecklist>({});
+  const [shareToken, setShareToken] = useState<string | null>(null);
+  const [showQualityModal, setShowQualityModal] = useState(false);
+  const [qualityModalMode, setQualityModalMode] = useState<'SHARE' | 'PUBLISH'>('SHARE');
+
   const [profileQuests, setProfileQuests] = useState<any[]>([]);
   const [ownedQuestIds, setOwnedQuestIds] = useState<string[]>([]);
   const [creatorAnalytics, setCreatorAnalytics] = useState<
@@ -7689,8 +7773,10 @@ export default function LandingPage() {
           category_tags: [],
           hashtag_tags: [],
           status: 'draft',
+          mode: 'PRIVATE',
+          quality_checklist: {},
         })
-        .select('id, title, area_name, description')
+        .select('id, title, area_name, description, mode, quality_checklist, share_token')
         .maybeSingle();
       if (error) throw error;
       if (data?.id) {
@@ -7699,6 +7785,10 @@ export default function LandingPage() {
         setQuestTitle(data.title || '');
         setQuestDescription(data.description || '');
         setQuestLocation(data.area_name || '');
+        // Reset publishing system state for new quest
+        setQuestMode((data.mode as QuestMode) || 'PRIVATE');
+        setQualityChecklist(data.quality_checklist || {});
+        setShareToken(data.share_token || null);
         return data.id as string;
       }
     } catch (e: any) {
@@ -7823,6 +7913,59 @@ export default function LandingPage() {
     } else {
       alert('申請を受け付けました。審査完了をお待ちください。');
       goToSubmitted();
+    }
+  };
+
+  // Quality Checklist Handlers
+  const openQualityModal = (mode: 'SHARE' | 'PUBLISH') => {
+    setQualityModalMode(mode);
+    setShowQualityModal(true);
+  };
+
+  const handleQualityChecklistChange = async (newChecklist: QualityChecklist) => {
+    setQualityChecklist(newChecklist);
+    // Persist to database
+    if (questId) {
+      await supabase
+        .from('quests')
+        .update({ quality_checklist: newChecklist })
+        .eq('id', questId);
+    }
+  };
+
+  const generateShareToken = async () => {
+    if (!questId) return;
+    // Generate a random token
+    const token = crypto.randomUUID();
+    const { error } = await supabase
+      .from('quests')
+      .update({
+        share_token: token,
+        mode: 'SHARE',
+        status: 'ready_for_share'
+      })
+      .eq('id', questId);
+
+    if (!error) {
+      setShareToken(token);
+      setQuestMode('SHARE');
+    }
+  };
+
+  const handleQualityConfirm = async () => {
+    if (!questId) return;
+
+    if (qualityModalMode === 'SHARE') {
+      // Generate share token if not exists
+      if (!shareToken) {
+        await generateShareToken();
+      }
+      setShowQualityModal(false);
+      alert('共有リンクが有効になりました！');
+    } else {
+      // PUBLISH - submit for review
+      await handlePublish();
+      setShowQualityModal(false);
     }
   };
 
@@ -8565,10 +8708,10 @@ ${(input.challengeTypes || []).length > 0 ? `- チャレンジタイプ: ${(inpu
       {activePage !== 'creator-mystery-setup' && activePage !== 'creator-workspace' && activePage !== 'creator-route-spots' && activePage !== 'creator-spot-detail' && activePage !== 'creator-storytelling' && activePage !== 'creator-test-run' && activePage !== 'creator-submitted' && activePage !== 'creator-analytics' && activePage !== 'player' && (
         <nav
           className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${activePage === 'creator-canvas'
-              ? 'bg-white py-4 shadow-sm border-b border-stone-200'
-              : isScrolled
-                ? 'bg-white/80 backdrop-blur-md py-4 shadow-lg border-b border-stone-200/50'
-                : 'bg-transparent py-6'
+            ? 'bg-white py-4 shadow-sm border-b border-stone-200'
+            : isScrolled
+              ? 'bg-white/80 backdrop-blur-md py-4 shadow-lg border-b border-stone-200/50'
+              : 'bg-transparent py-6'
             }`}
         >
           <div className="container mx-auto px-4 md:px-8 flex items-center justify-between">
@@ -8908,7 +9051,7 @@ ${(input.challengeTypes || []).length > 0 ? `- チャレンジタイプ: ${(inpu
           onOpenOnboarding={openCreatorOnboarding}
           onGoCreatorStart={goToCreatorStart}
           quests={profileQuests}
-          onOpenWorkspace={(quest) => {
+          onOpenWorkspace={async (quest) => {
             setQuestId(quest.id);
             localStorage.setItem('quest-id', quest.id);
             setQuestTitle(quest.title || '');
@@ -8918,6 +9061,28 @@ ${(input.challengeTypes || []).length > 0 ? `- チャレンジタイプ: ${(inpu
             setQuestCategoryTags(tagArray.filter((tg: string) => CATEGORY_TAGS.includes(tg)));
             setQuestHashtags(tagArray.filter((tg: string) => !CATEGORY_TAGS.includes(tg)));
             if (quest.location_lat && quest.location_lng) setQuestLatLng({ lat: quest.location_lat, lng: quest.location_lng });
+
+            // Load spots with details
+            await fetchRouteSpots(quest.id);
+
+            // Load story data
+            const { data: storyData } = await supabase
+              .from('story_timelines')
+              .select('*')
+              .eq('quest_id', quest.id)
+              .maybeSingle();
+            if (storyData) {
+              setStorySettings((prev) => ({
+                ...prev,
+                castName: storyData.cast_name || '',
+                castTone: storyData.cast_tone || '',
+                prologueBody: storyData.prologue || '',
+                epilogueBody: storyData.epilogue || '',
+                characters: Array.isArray(storyData.characters) ? storyData.characters : [],
+                scenario: Array.isArray(storyData.scenario) ? storyData.scenario : [],
+              }));
+            }
+
             loadWorkspaceStep(quest.id);
             goToWorkspace();
           }}
@@ -9194,8 +9359,26 @@ ${(input.challengeTypes || []).length > 0 ? `- チャレンジタイプ: ${(inpu
             setIsUserMenuOpen(false);
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
+          questMode={questMode}
+          onPlayNow={() => goToTestRun()}
+          onOpenShareModal={() => openQualityModal('SHARE')}
+          onOpenPublishModal={() => openQualityModal('PUBLISH')}
+          isPaidUser={profile?.role === 'creator' || profile?.role === 'admin'}
         />
       )}
+
+      {/* Quality Checklist Modal for Share/Publish */}
+      <QualityChecklistModal
+        isOpen={showQualityModal}
+        onClose={() => setShowQualityModal(false)}
+        targetMode={qualityModalMode}
+        currentChecklist={qualityChecklist}
+        onChecklistChange={handleQualityChecklistChange}
+        onConfirm={handleQualityConfirm}
+        userId={user?.id}
+        shareToken={shareToken}
+        onGenerateShareToken={generateShareToken}
+      />
 
       {activePage === 'creator-analytics' && (
         <CreatorAnalyticsPage

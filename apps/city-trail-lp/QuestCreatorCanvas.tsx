@@ -22,6 +22,7 @@ import {
     Users,
     X,
     Save,
+    Lightbulb,
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { useAuth } from './AuthProvider';
@@ -33,6 +34,15 @@ import {
     INSPIRATION_TAGS,
 } from './questCreatorTypes';
 import { TomoshibiLogo } from './TomoshibiLogo';
+import {
+    generateLaytonQuest,
+    QuestGenerationRequest,
+    QuestOutput,
+    SpotScene,
+    MainPlot,
+    PipelineState,
+} from './lib/puzzle-pipeline';
+import { DEMO_BASIC_INFO, DEMO_STORY, DEMO_SPOTS } from './lib/demo-data';
 
 interface QuestCreatorCanvasProps {
     questId: string | null;
@@ -62,6 +72,14 @@ interface SpotData {
     hints: string[];
     answer: string;
     successMessage: string;
+    // Layton Pipeline additions
+    playerHandout?: string;      // 資料（謎を解くための情報）
+    solutionSteps?: string[];    // 解法ステップ
+    loreReveal?: string;         // 背景解説
+    plotKey?: string;            // 物語の鍵
+    puzzleType?: string;         // 謎のタイプ（logic/pattern/cipher等）
+    sceneRole?: string;          // シーンの役割（導入/展開/転換等）
+    linkingRationale?: string;   // なぜこの謎がこのスポットか
 }
 
 interface StoryData {
@@ -228,6 +246,9 @@ export default function QuestCreatorCanvas({
     // Selected spot for detail view
     const [selectedSpotIndex, setSelectedSpotIndex] = useState<number | null>(null);
 
+    // 謎・テストタブの展開状態
+    const [expandedMysterySpots, setExpandedMysterySpots] = useState<Set<string>>(new Set());
+
     // Character edit slide-over state
     const [characterEditOpen, setCharacterEditOpen] = useState(false);
     const [focusedCharacterId, setFocusedCharacterId] = useState<string | null>(null);
@@ -246,6 +267,102 @@ export default function QuestCreatorCanvas({
     const [saveMessage, setSaveMessage] = useState<string | null>(null);
 
     const hasContent = basicInfo !== null || spots.length > 0 || story !== null;
+
+    // Loading state for initial data fetch
+    const [isLoading, setIsLoading] = useState(false);
+
+    // Load existing quest data when editing from profile
+    useEffect(() => {
+        if (!questId) return;
+
+        const loadQuestData = async () => {
+            setIsLoading(true);
+
+            try {
+                // Load basic info from quests table
+                const { data: questData } = await supabase
+                    .from('quests')
+                    .select('*')
+                    .eq('id', questId)
+                    .maybeSingle();
+
+                if (questData && questData.title) {
+                    setBasicInfo({
+                        title: questData.title || '',
+                        description: questData.description || '',
+                        area: questData.area_name || '',
+                        difficulty: '中級',
+                        tags: Array.isArray(questData.tags) ? questData.tags : [],
+                    });
+                    setSectionStates(prev => ({ ...prev, 'basic-info': 'ready' }));
+                }
+
+                // Load spots with details
+                const { data: spotsData } = await supabase
+                    .from('spots')
+                    .select('*, spot_details(*)')
+                    .eq('quest_id', questId)
+                    .order('order_index', { ascending: true });
+
+                if (spotsData && spotsData.length > 0) {
+                    const loadedSpots: SpotData[] = spotsData.map((s: any, idx: number) => {
+                        const detail = Array.isArray(s.spot_details) ? s.spot_details[0] : s.spot_details;
+                        return {
+                            id: s.id || `spot-${idx}`,
+                            name: s.name || '',
+                            address: s.address || '',
+                            lat: s.lat || 0,
+                            lng: s.lng || 0,
+                            directions: detail?.nav_text || '',
+                            storyText: detail?.story_text || '',
+                            challengeText: detail?.question_text || '',
+                            hints: detail?.hint_text ? detail.hint_text.split('\n').filter((h: string) => h.trim()) : [],
+                            answer: detail?.answer_text || '',
+                            successMessage: detail?.completion_message || '',
+                        };
+                    });
+                    setSpots(loadedSpots);
+                    // Mark each spot as ready
+                    const spotStates: Record<string, SectionStatus> = {};
+                    loadedSpots.forEach((_, idx) => {
+                        spotStates[`spot-${idx}`] = 'ready';
+                    });
+                    setSectionStates(prev => ({ ...prev, ...spotStates }));
+                }
+
+                // Load story from story_timelines table
+                const { data: storyData } = await supabase
+                    .from('story_timelines')
+                    .select('*')
+                    .eq('quest_id', questId)
+                    .maybeSingle();
+
+                if (storyData) {
+                    setStory({
+                        castName: storyData.cast_name || '',
+                        castTone: storyData.cast_tone || '',
+                        prologueTitle: '',
+                        prologueBody: storyData.prologue || '',
+                        epilogueBody: storyData.epilogue || '',
+                        characters: Array.isArray(storyData.characters) ? storyData.characters : [],
+                    });
+                    setSectionStates(prev => ({ ...prev, 'story': 'ready' }));
+                }
+
+                // Switch to canvas view if we loaded content
+                if (questData?.title || (spotsData && spotsData.length > 0)) {
+                    setActiveTab('canvas');
+                }
+
+            } catch (err) {
+                console.error('Error loading quest data:', err);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        loadQuestData();
+    }, [questId]);
 
     const toggleTag = (tag: string) => {
         setSelectedTags((prev) =>
@@ -349,6 +466,23 @@ export default function QuestCreatorCanvas({
         setEditStory(null);
     };
 
+    // デモデータをロード（API呼び出しなしでUIテスト）
+    const handleLoadDemoData = () => {
+        setBasicInfo(DEMO_BASIC_INFO);
+        setStory(DEMO_STORY);
+        setSpots(DEMO_SPOTS as SpotData[]);
+        setActiveTab('canvas');
+        setSectionStates({
+            'basic-info': 'ready',
+            'spot-0': 'ready',
+            'spot-1': 'ready',
+            'spot-2': 'ready',
+            'story': 'ready',
+        });
+        setError(null);
+    };
+
+
     const handleGenerate = async () => {
         if (!prompt.trim()) {
             setError('プロンプトを入力してください');
@@ -359,183 +493,120 @@ export default function QuestCreatorCanvas({
         setError(null);
         setActiveTab('canvas');
 
-        // Demo mock data based on user prompt
-        const demoData = {
-            title: `${prompt.slice(0, 20)}...の謎解きクエスト`,
-            description: `${prompt}をテーマにした、街歩きと謎解きを組み合わせたインタラクティブなクエストです。歴史的な場所を巡りながら、隠された秘密を解き明かしましょう。`,
-            area: '渋谷・原宿エリア',
-            difficulty: constraints.difficulty === 'easy' ? '初級' : constraints.difficulty === 'medium' ? '中級' : '上級',
-            // Add location keywords (prefecture, city, ward) + selected tags
-            tags: ['東京都', '渋谷区', '原宿', ...(selectedTags.length > 0 ? selectedTags : ['ミステリー', '街歩き'])],
-            routeSpots: [
-                {
-                    name: '明治神宮 大鳥居',
-                    address: '東京都渋谷区代々木神園町1-1',
-                    lat: 35.6764,
-                    lng: 139.6993,
-                    directions: '原宿駅から徒歩5分。大きな鳥居が目印です。',
-                    storyText: '物語はここから始まる。100年の歴史を持つこの場所に、失われた宝の最初の手がかりが隠されている...',
-                    challengeText: 'この鳥居の高さは何メートル？ヒント：日本最大の木造鳥居です。',
-                    hints: ['周囲の案内板を確認してみましょう', '12メートルを超えています'],
-                    answer: '12',
-                    successMessage: '正解！次の目的地へ進みましょう。'
-                },
-                {
-                    name: '竹下通り入口',
-                    address: '東京都渋谷区神宮前1丁目',
-                    lat: 35.6702,
-                    lng: 139.7026,
-                    directions: '原宿駅竹下口から直進。カラフルな看板が目印。',
-                    storyText: '若者文化の発信地。ここで2つ目の暗号が見つかるという...',
-                    challengeText: '竹下通りの長さは約何メートル？',
-                    hints: ['350mから400mの間です', 'ゆっくり歩いて5分程度'],
-                    answer: '350',
-                    successMessage: '素晴らしい！謎が解けてきました。'
-                },
-                {
-                    name: '表参道ヒルズ',
-                    address: '東京都渋谷区神宮前4-12-10',
-                    lat: 35.6677,
-                    lng: 139.7089,
-                    directions: '表参道駅A2出口から徒歩2分。',
-                    storyText: '安藤忠雄が設計したこの建物には、秘密の通路があるという噂が...',
-                    challengeText: 'この建物を設計した建築家の名前は？',
-                    hints: ['日本を代表する建築家', '名前は「忠雄」'],
-                    answer: '安藤忠雄',
-                    successMessage: '完璧！次の手がかりへ。'
-                },
-                {
-                    name: '東郷神社',
-                    address: '東京都渋谷区神宮前1-5-3',
-                    lat: 35.6716,
-                    lng: 139.7048,
-                    directions: '竹下通りから徒歩3分。静かな神社です。',
-                    storyText: '日露戦争の英雄を祀るこの神社には、知られざる歴史が眠っている...',
-                    challengeText: 'この神社に祀られている人物の苗字は？',
-                    hints: ['日露戦争で活躍した海軍大将', '平'],
-                    answer: '東郷',
-                    successMessage: '歴史を紐解いていきます。'
-                },
-                {
-                    name: 'キャットストリート',
-                    address: '東京都渋谷区神宮前5丁目',
-                    lat: 35.6665,
-                    lng: 139.7065,
-                    directions: '表参道から渋谷方面へ。おしゃれなショップが並ぶ通り。',
-                    storyText: 'かつて渋谷川だったこの場所。川の記憶が次のヒントを教えてくれる...',
-                    challengeText: 'この通りの正式名称は「旧○○川遊歩道」？',
-                    hints: ['かつては川でした', '「しぶや」と読みます'],
-                    answer: '渋谷',
-                    successMessage: '川の記憶をたどって進みましょう。'
-                },
-                {
-                    name: '渋谷ヒカリエ',
-                    address: '東京都渋谷区渋谷2-21-1',
-                    lat: 35.6590,
-                    lng: 139.7038,
-                    directions: '渋谷駅直結。高層ビルが目印。',
-                    storyText: '未来と過去が交差する場所。展望台から見える景色に最後のヒントが...',
-                    challengeText: 'ヒカリエの11階にある展望スペースの名前は？',
-                    hints: ['「スカイ」がつきます', '無料で入れます'],
-                    answer: 'スカイロビー',
-                    successMessage: 'あと一歩で宝に辿り着きます！'
-                },
-                {
-                    name: 'ハチ公像',
-                    address: '東京都渋谷区道玄坂1丁目',
-                    lat: 35.6590,
-                    lng: 139.7006,
-                    directions: '渋谷駅ハチ公口すぐ。待ち合わせの定番スポット。',
-                    storyText: '忠犬ハチ公の物語が、この冒険の結末を見届ける...',
-                    challengeText: 'ハチ公が亡くなった年は西暦何年？',
-                    hints: ['1930年代です', '昭和10年'],
-                    answer: '1935',
-                    successMessage: 'おめでとうございます！すべての謎を解き明かしました！'
-                }
-            ],
-            story: {
-                castName: '謎の案内人・灯火',
-                castTone: '知的で少しミステリアスな口調',
-                prologueTitle: '失われた宝の伝説',
-                prologueBody: 'この街には、100年前に隠された宝があるという伝説があります。あなたは偶然手に入れた古い地図を頼りに、その謎を解き明かす冒険に出ることになりました...',
-                epilogueBody: 'おめでとうございます！すべての謎を解き明かしました。宝は物質的なものではなく、この旅で得た経験と知識でした。',
-                characters: [
-                    { id: 'c1', name: '灯火', role: '案内人', color: 'bg-brand-gold', tone: 'ミステリアス・知的', motivation: '真実を求める者を導く', sampleDialogue: '真実は、見える場所にはない...探求せよ' },
-                    { id: 'c2', name: '歴史博士', role: 'ヒント提供者', color: 'bg-emerald-500', tone: '丁寧・博識', motivation: '歴史の知識を伝承する', sampleDialogue: 'お答えしましょう。この地には...' }
-                ]
-            }
-        };
+        // Reset state
+        setBasicInfo(null);
+        setSpots([]);
+        setStory(null);
 
         try {
-            // Reset state
-            setBasicInfo(null);
-            setSpots([]);
-            setStory(null);
-
-            // Phase 1: Basic Info generating
-            setSectionStates({ 'basic-info': 'generating' });
-            setGenerationPhase('基本情報を生成中...');
-            await new Promise((r) => setTimeout(r, 1200));
-
-            // Show basic info as ready
-            setBasicInfo({
-                title: demoData.title,
-                description: demoData.description,
-                area: demoData.area,
-                difficulty: demoData.difficulty,
-                tags: demoData.tags,
-            });
-            setSectionStates({ 'basic-info': 'ready' });
-
-            // Phase 2: Spots generating one by one
-            setGenerationPhase('スポットを生成中...');
-            const mappedSpots: SpotData[] = [];
-
-            for (let i = 0; i < demoData.routeSpots.length; i++) {
-                // Show this spot as generating
-                setSectionStates((prev) => ({ ...prev, [`spot-${i}`]: 'generating' }));
-                await new Promise((r) => setTimeout(r, 800));
-
-                // Add spot and mark as ready
-                const s = demoData.routeSpots[i];
-                const newSpot: SpotData = {
-                    id: `spot-${i}`,
-                    name: s.name,
-                    address: s.address,
-                    lat: s.lat,
-                    lng: s.lng,
-                    directions: s.directions,
-                    storyText: s.storyText,
-                    challengeText: s.challengeText,
-                    hints: s.hints,
-                    answer: s.answer,
-                    successMessage: s.successMessage,
-                };
-                mappedSpots.push(newSpot);
-                setSpots([...mappedSpots]);
-                setSectionStates((prev) => ({ ...prev, [`spot-${i}`]: 'ready' }));
+            // Get Gemini API key
+            const apiKey = (import.meta as any).env?.VITE_GEMINI_API_KEY;
+            if (!apiKey) {
+                throw new Error('VITE_GEMINI_API_KEY が設定されていません。');
             }
 
-            // Phase 3: Story generating
-            setGenerationPhase('ストーリーを構築中...');
-            setSectionStates((prev) => ({ ...prev, 'story': 'generating' }));
-            await new Promise((r) => setTimeout(r, 1000));
+            // Layton Pipeline Request
+            const request: QuestGenerationRequest = {
+                prompt,
+                difficulty: constraints.difficulty,
+                spot_count: constraints.spotCount,
+                theme_tags: selectedTags.length > 0 ? selectedTags : undefined,
+            };
 
-            setStory({
-                castName: demoData.story.castName,
-                castTone: demoData.story.castTone,
-                prologueTitle: demoData.story.prologueTitle,
-                prologueBody: demoData.story.prologueBody,
-                epilogueBody: demoData.story.epilogueBody,
-                characters: demoData.story.characters,
+            // Generate using Layton Pipeline
+            const quest: QuestOutput = await generateLaytonQuest(request, apiKey, {
+                onProgress: (state: PipelineState) => {
+                    const stepNames: Record<string, string> = {
+                        motif_selection: 'モチーフを選定中...',
+                        plot_creation: '物語を構築中...',
+                        puzzle_design: `謎を設計中... (${state.current_spot_index ?? 0 + 1}/${state.total_spots ?? 0})`,
+                        validation: '品質を検証中...',
+                    };
+                    setGenerationPhase(stepNames[state.step_name] || 'AIがクエストを設計中...');
+
+                    // Update section states based on progress
+                    if (state.step_name === 'plot_creation') {
+                        setSectionStates({ 'basic-info': 'generating' });
+                    } else if (state.step_name === 'puzzle_design' && state.current_spot_index !== undefined) {
+                        setSectionStates((prev) => ({ ...prev, [`spot-${state.current_spot_index}`]: 'generating' }));
+                    }
+                },
+                onPlotComplete: (mainPlot: MainPlot) => {
+                    // Set basic info from main plot
+                    setBasicInfo({
+                        title: '',  // Will be set after quest completes
+                        description: mainPlot.premise,
+                        area: '',
+                        difficulty: constraints.difficulty === 'easy' ? '初級' : constraints.difficulty === 'medium' ? '中級' : '上級',
+                        tags: selectedTags,
+                    });
+                    setSectionStates({ 'basic-info': 'ready' });
+                },
+                onSpotComplete: (spot: SpotScene, index: number) => {
+                    // Convert SpotScene to SpotData with Layton Pipeline fields
+                    const newSpot: SpotData = {
+                        id: spot.spot_id,
+                        name: spot.spot_name,
+                        address: '',
+                        lat: spot.lat,
+                        lng: spot.lng,
+                        directions: spot.lore_card.player_handout,
+                        storyText: spot.lore_card.short_story_text,
+                        challengeText: spot.puzzle.prompt,
+                        hints: spot.puzzle.hints,
+                        answer: spot.puzzle.answer,
+                        successMessage: spot.reward.next_hook,
+                        // Layton Pipeline additions
+                        playerHandout: spot.lore_card.player_handout,
+                        solutionSteps: spot.puzzle.solution_steps,
+                        loreReveal: spot.reward.lore_reveal,
+                        plotKey: spot.reward.plot_key,
+                        puzzleType: spot.puzzle.type,
+                        sceneRole: spot.scene_role,
+                        linkingRationale: spot.linking_rationale,
+                    };
+                    setSpots((prev) => {
+                        const next = [...prev];
+                        next[index] = newSpot;
+                        return next;
+                    });
+                    setSectionStates((prev) => ({ ...prev, [`spot-${index}`]: 'ready' }));
+                },
             });
-            setSectionStates((prev) => ({ ...prev, 'story': 'ready' }));
 
+            // Update basic info with final title
+            setBasicInfo({
+                title: quest.quest_title,
+                description: quest.main_plot.premise,
+                area: '',
+                difficulty: constraints.difficulty === 'easy' ? '初級' : constraints.difficulty === 'medium' ? '中級' : '上級',
+                tags: selectedTags,
+            });
+
+            // Set story data
+            setStory({
+                castName: '謎の案内人',
+                castTone: '知的でミステリアス',
+                prologueTitle: '冒険の始まり',
+                prologueBody: quest.main_plot.premise + '\n\n' + quest.main_plot.goal,
+                epilogueBody: quest.main_plot.final_reveal_outline + '\n\n' + quest.meta_puzzle.explanation,
+                characters: [
+                    { id: 'c1', name: '案内人', role: 'ナビゲーター', color: 'bg-brand-gold', tone: 'ミステリアス' }
+                ],
+            });
+
+            // Final state updates
+            setSectionStates((prev) => ({ ...prev, 'story': 'ready' }));
             setGenerationPhase('');
+
+            // Log validation results
+            if (quest.generation_metadata.validation_warnings?.length) {
+                console.log('Validation warnings:', quest.generation_metadata.validation_warnings);
+            }
 
         } catch (err: any) {
             console.error('Generation error:', err);
-            setError(err.message || '生成に失敗しました');
+            setError(err.message || '生成に失敗しました。時間をおいて再試行してください。');
             setSectionStates({});
         } finally {
             setIsGenerating(false);
@@ -817,7 +888,7 @@ export default function QuestCreatorCanvas({
                         </div>
 
                         {/* Create Button (like Suno) */}
-                        <div className="sticky bottom-0 p-4 bg-gradient-to-t from-white via-white to-transparent">
+                        <div className="sticky bottom-0 p-4 bg-gradient-to-t from-white via-white to-transparent space-y-2">
                             <button
                                 onClick={handleGenerate}
                                 disabled={isGenerating || !prompt.trim()}
@@ -837,6 +908,15 @@ export default function QuestCreatorCanvas({
                                         Create
                                     </>
                                 )}
+                            </button>
+                            {/* Demo Data Button - for UI/UX testing without API */}
+                            <button
+                                onClick={handleLoadDemoData}
+                                disabled={isGenerating}
+                                className="w-full py-2.5 rounded-xl font-bold text-xs transition-all flex items-center justify-center gap-2 bg-purple-50 text-purple-600 border border-purple-200 hover:bg-purple-100"
+                            >
+                                <Eye size={14} />
+                                デモデータで確認（API不使用）
                             </button>
                         </div>
                     </div>
@@ -1325,48 +1405,205 @@ export default function QuestCreatorCanvas({
                                                     )}
 
                                                     {/* Mystery Tab */}
-                                                    {contentTab === 'mystery' && spots.length > 0 && (
-                                                        <motion.div
-                                                            key="mystery"
-                                                            initial={{ opacity: 0 }}
-                                                            animate={{ opacity: 1 }}
-                                                            exit={{ opacity: 0 }}
-                                                            className="p-5 max-h-[calc(100vh-320px)] min-h-[450px] overflow-y-auto"
-                                                        >
-                                                            <div className="space-y-3">
-                                                                {spots.map((spot, idx) => (
-                                                                    <div key={spot.id} className="p-4 rounded-xl bg-stone-50 border border-stone-100">
-                                                                        <div className="flex items-start gap-3 mb-3">
-                                                                            <div className="w-6 h-6 rounded-full bg-brand-gold text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
-                                                                                {idx + 1}
-                                                                            </div>
-                                                                            <div>
-                                                                                <h5 className="font-bold text-sm text-brand-dark">{spot.name}</h5>
-                                                                                <p className="text-[10px] text-stone-500">{spot.address}</p>
-                                                                            </div>
-                                                                        </div>
-                                                                        <div className="ml-9 space-y-2">
-                                                                            <div className="p-3 bg-white rounded-lg border border-stone-200">
-                                                                                <p className="text-xs text-stone-400 font-bold mb-1">謎の問題</p>
-                                                                                <p className="text-sm text-brand-dark">{spot.challengeText}</p>
-                                                                            </div>
-                                                                            <div className="p-3 bg-emerald-50 rounded-lg border border-emerald-100">
-                                                                                <div className="flex items-center gap-1 text-xs text-emerald-700">
-                                                                                    <CheckCircle size={12} />
-                                                                                    <span className="font-bold">正解: {spot.answer}</span>
-                                                                                </div>
-                                                                            </div>
-                                                                            <div className="flex gap-2 pt-1">
-                                                                                <button className="px-3 py-1.5 rounded-lg bg-white border border-stone-200 text-xs font-bold text-stone-600 hover:bg-stone-50">編集</button>
-                                                                                <button className="px-3 py-1.5 rounded-lg bg-white border border-stone-200 text-xs font-bold text-stone-600 hover:bg-stone-50">再生成</button>
-                                                                                <button className="px-3 py-1.5 rounded-lg bg-brand-gold/10 border border-brand-gold/30 text-xs font-bold text-brand-gold hover:bg-brand-gold/20">この謎をテスト</button>
-                                                                            </div>
-                                                                        </div>
+                                                    {contentTab === 'mystery' && spots.length > 0 && (() => {
+                                                        const toggleExpanded = (spotId: string) => {
+                                                            setExpandedMysterySpots(prev => {
+                                                                const next = new Set(prev);
+                                                                if (next.has(spotId)) {
+                                                                    next.delete(spotId);
+                                                                } else {
+                                                                    next.add(spotId);
+                                                                }
+                                                                return next;
+                                                            });
+                                                        };
+                                                        return (
+                                                            <motion.div
+                                                                key="mystery"
+                                                                initial={{ opacity: 0 }}
+                                                                animate={{ opacity: 1 }}
+                                                                exit={{ opacity: 0 }}
+                                                                className="p-4 max-h-[calc(100vh-320px)] min-h-[450px] overflow-y-auto"
+                                                            >
+                                                                {/* Summary Header */}
+                                                                <div className="flex items-center justify-between mb-3 pb-2 border-b border-stone-200">
+                                                                    <div className="flex items-center gap-2">
+                                                                        <Dices size={16} className="text-brand-gold" />
+                                                                        <span className="text-sm font-bold text-brand-dark">{spots.length}個の謎</span>
                                                                     </div>
-                                                                ))}
-                                                            </div>
-                                                        </motion.div>
-                                                    )}
+                                                                    <div className="flex gap-1">
+                                                                        <button
+                                                                            onClick={() => setExpandedMysterySpots(new Set(spots.map(s => s.id)))}
+                                                                            className="px-2 py-1 text-[10px] text-stone-500 hover:text-brand-gold"
+                                                                        >
+                                                                            すべて展開
+                                                                        </button>
+                                                                        <button
+                                                                            onClick={() => setExpandedMysterySpots(new Set())}
+                                                                            className="px-2 py-1 text-[10px] text-stone-500 hover:text-brand-gold"
+                                                                        >
+                                                                            すべて閉じる
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
+
+                                                                {/* Compact Accordion List */}
+                                                                <div className="space-y-2">
+                                                                    {spots.map((spot, idx) => {
+                                                                        const isExpanded = expandedMysterySpots.has(spot.id);
+                                                                        return (
+                                                                            <div
+                                                                                key={spot.id}
+                                                                                className={`rounded-lg border transition-all ${isExpanded
+                                                                                        ? 'border-brand-gold/30 bg-white shadow-sm'
+                                                                                        : 'border-stone-200 bg-stone-50 hover:border-stone-300'
+                                                                                    }`}
+                                                                            >
+                                                                                {/* Compact Header - Always Visible */}
+                                                                                <button
+                                                                                    onClick={() => toggleExpanded(spot.id)}
+                                                                                    className="w-full p-3 flex items-center gap-3 text-left"
+                                                                                >
+                                                                                    {/* Number Badge */}
+                                                                                    <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${isExpanded ? 'bg-brand-gold text-white' : 'bg-stone-300 text-white'
+                                                                                        }`}>
+                                                                                        {idx + 1}
+                                                                                    </div>
+
+                                                                                    {/* Main Content */}
+                                                                                    <div className="flex-1 min-w-0">
+                                                                                        <div className="flex items-center gap-2">
+                                                                                            <span className="font-bold text-sm text-brand-dark truncate">{spot.name}</span>
+                                                                                            {spot.puzzleType && (
+                                                                                                <span className="px-1.5 py-0.5 bg-purple-100 text-purple-600 rounded text-[9px] font-bold flex-shrink-0">
+                                                                                                    {spot.puzzleType}
+                                                                                                </span>
+                                                                                            )}
+                                                                                        </div>
+                                                                                        {!isExpanded && (
+                                                                                            <p className="text-xs text-stone-500 truncate mt-0.5">
+                                                                                                {spot.challengeText.slice(0, 50)}...
+                                                                                            </p>
+                                                                                        )}
+                                                                                    </div>
+
+                                                                                    {/* Answer Preview & Expand Icon */}
+                                                                                    <div className="flex items-center gap-2 flex-shrink-0">
+                                                                                        {!isExpanded && (
+                                                                                            <span className="px-2 py-0.5 bg-emerald-100 text-emerald-700 rounded text-[10px] font-bold">
+                                                                                                A: {spot.answer}
+                                                                                            </span>
+                                                                                        )}
+                                                                                        <ChevronDown
+                                                                                            size={16}
+                                                                                            className={`text-stone-400 transition-transform ${isExpanded ? 'rotate-180' : ''}`}
+                                                                                        />
+                                                                                    </div>
+                                                                                </button>
+
+                                                                                {/* Expanded Content */}
+                                                                                <AnimatePresence>
+                                                                                    {isExpanded && (
+                                                                                        <motion.div
+                                                                                            initial={{ height: 0, opacity: 0 }}
+                                                                                            animate={{ height: 'auto', opacity: 1 }}
+                                                                                            exit={{ height: 0, opacity: 0 }}
+                                                                                            className="overflow-hidden"
+                                                                                        >
+                                                                                            <div className="px-3 pb-3 space-y-2">
+                                                                                                {/* 1. 謎の問題 */}
+                                                                                                <div className="p-2.5 bg-stone-100 rounded-lg">
+                                                                                                    <p className="text-[10px] text-stone-500 font-bold mb-1 flex items-center gap-1">
+                                                                                                        <Sparkles size={10} /> 謎の問題
+                                                                                                    </p>
+                                                                                                    <p className="text-xs text-brand-dark whitespace-pre-wrap">{spot.challengeText}</p>
+                                                                                                </div>
+
+                                                                                                {/* 2. 資料 */}
+                                                                                                {spot.playerHandout && (
+                                                                                                    <div className="p-2.5 bg-blue-50 rounded-lg">
+                                                                                                        <p className="text-[10px] text-blue-600 font-bold mb-1 flex items-center gap-1">
+                                                                                                            <BookOpen size={10} /> 資料
+                                                                                                        </p>
+                                                                                                        <p className="text-xs text-blue-900 whitespace-pre-wrap">{spot.playerHandout}</p>
+                                                                                                    </div>
+                                                                                                )}
+
+                                                                                                {/* 3. ヒント */}
+                                                                                                {spot.hints && spot.hints.length > 0 && (
+                                                                                                    <div className="p-2.5 bg-amber-50 rounded-lg">
+                                                                                                        <p className="text-[10px] text-amber-600 font-bold mb-1 flex items-center gap-1">
+                                                                                                            <Lightbulb size={10} /> ヒント
+                                                                                                        </p>
+                                                                                                        <div className="space-y-0.5">
+                                                                                                            {spot.hints.map((hint, hIdx) => (
+                                                                                                                <p key={hIdx} className="text-[11px] text-amber-900">
+                                                                                                                    <span className="font-bold text-amber-500">{hIdx + 1}.</span> {hint}
+                                                                                                                </p>
+                                                                                                            ))}
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                )}
+
+                                                                                                {/* 4. 正解 */}
+                                                                                                <div className="p-2.5 bg-emerald-50 rounded-lg flex items-center gap-2">
+                                                                                                    <CheckCircle size={14} className="text-emerald-600" />
+                                                                                                    <span className="text-xs font-bold text-emerald-700">正解: {spot.answer}</span>
+                                                                                                </div>
+
+                                                                                                {/* 5. 解法ステップ */}
+                                                                                                {spot.solutionSteps && spot.solutionSteps.length > 0 && (
+                                                                                                    <div className="p-2.5 bg-violet-50 rounded-lg">
+                                                                                                        <p className="text-[10px] text-violet-600 font-bold mb-1">解法ステップ</p>
+                                                                                                        <div className="space-y-0.5">
+                                                                                                            {spot.solutionSteps.map((step, sIdx) => (
+                                                                                                                <p key={sIdx} className="text-[11px] text-violet-900">
+                                                                                                                    <span className="font-bold text-violet-500">{sIdx + 1}.</span> {step}
+                                                                                                                </p>
+                                                                                                            ))}
+                                                                                                        </div>
+                                                                                                    </div>
+                                                                                                )}
+
+                                                                                                {/* 6. 背景解説 */}
+                                                                                                {spot.loreReveal && (
+                                                                                                    <div className="p-2.5 bg-rose-50 rounded-lg">
+                                                                                                        <p className="text-[10px] text-rose-600 font-bold mb-1">🎓 背景解説</p>
+                                                                                                        <p className="text-[11px] text-rose-900">{spot.loreReveal}</p>
+                                                                                                    </div>
+                                                                                                )}
+
+                                                                                                {/* Tags */}
+                                                                                                <div className="flex gap-1 flex-wrap pt-1">
+                                                                                                    {spot.sceneRole && (
+                                                                                                        <span className="px-1.5 py-0.5 bg-amber-100 text-amber-700 rounded text-[9px] font-bold">
+                                                                                                            {spot.sceneRole}
+                                                                                                        </span>
+                                                                                                    )}
+                                                                                                    {spot.plotKey && (
+                                                                                                        <span className="px-1.5 py-0.5 bg-indigo-100 text-indigo-700 rounded text-[9px] font-bold">
+                                                                                                            🔑 {spot.plotKey}
+                                                                                                        </span>
+                                                                                                    )}
+                                                                                                </div>
+
+                                                                                                {/* Actions */}
+                                                                                                <div className="flex gap-1.5 pt-2 border-t border-stone-200">
+                                                                                                    <button className="px-2.5 py-1 rounded bg-stone-100 text-[10px] font-bold text-stone-600 hover:bg-stone-200">編集</button>
+                                                                                                    <button className="px-2.5 py-1 rounded bg-stone-100 text-[10px] font-bold text-stone-600 hover:bg-stone-200">再生成</button>
+                                                                                                    <button className="px-2.5 py-1 rounded bg-brand-gold/10 text-[10px] font-bold text-brand-gold hover:bg-brand-gold/20">テスト</button>
+                                                                                                </div>
+                                                                                            </div>
+                                                                                        </motion.div>
+                                                                                    )}
+                                                                                </AnimatePresence>
+                                                                            </div>
+                                                                        );
+                                                                    })}
+                                                                </div>
+                                                            </motion.div>
+                                                        );
+                                                    })()}
                                                 </AnimatePresence>
                                             </div>
                                         </motion.div>

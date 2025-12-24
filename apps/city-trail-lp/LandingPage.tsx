@@ -7317,7 +7317,18 @@ export default function LandingPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // URLからのクエストIDを優先するため、現在のquestIdがnullの場合のみlocalStorageから復元
+  // 注: 7302-7307行のuseEffectが先にURLからクエストIDをセットするため、
+  // ここではフォールバックとしてのみ機能する
   useEffect(() => {
+    // URLからすでにクエストIDがセットされている場合はスキップ
+    const route = parsePathToRoute(window.location.pathname);
+    const urlQuestId = (route as any).questId;
+    if (urlQuestId) {
+      // URLにクエストIDがある場合は、それを使用（applyRouteで既に処理済み）
+      return;
+    }
+    // URLにクエストIDがない場合のみ、localStorageからフォールバック
     const storedQuestId = localStorage.getItem('quest-id');
     if (storedQuestId) setQuestId(storedQuestId);
   }, []);
@@ -7856,11 +7867,12 @@ export default function LandingPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const goToWorkspace = () => {
-    if (questId) {
-      loadWorkspaceStep(questId);
+  const goToWorkspace = (overrideQuestId?: string) => {
+    const targetQuestId = overrideQuestId || questId;
+    if (targetQuestId) {
+      loadWorkspaceStep(targetQuestId);
     }
-    applyRoute('creator-workspace', { questId });
+    applyRoute('creator-workspace', { questId: targetQuestId });
     setShowCreatorOnboarding(false);
     setIsMenuOpen(false);
     setIsUserMenuOpen(false);
@@ -9084,7 +9096,7 @@ ${(input.challengeTypes || []).length > 0 ? `- チャレンジタイプ: ${(inpu
             }
 
             loadWorkspaceStep(quest.id);
-            goToWorkspace();
+            goToWorkspace(quest.id);
           }}
           onOpenAnalytics={(quest) => {
             goToCreatorAnalytics(quest.id, quest.title);

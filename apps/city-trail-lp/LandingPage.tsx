@@ -666,6 +666,7 @@ type AuthMode = 'login' | 'signup' | 'forgot';
 // --- Constants & Data ---
 
 const NAV_ITEMS: NavItem[] = [
+  { label: 'TOMOSHIBIについて', href: '/about' },
   { label: '特徴', href: '#features' },
   { label: '遊び方', href: '#how-it-works' },
   { label: 'シーン', href: '#scenes' },
@@ -8392,7 +8393,14 @@ export default function LandingPage() {
 
             {/* Desktop Nav */}
             <div className="hidden md:flex items-center gap-8">
-              {/* Primary nav links - reduced to essential 3 */}
+              {/* Primary nav links - About link first */}
+              <button
+                onClick={() => navigate('/about')}
+                className="text-sm font-medium text-stone-600 hover:text-brand-gold transition-colors relative group"
+              >
+                TOMOSHIBIについて
+                <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-brand-gold transition-all group-hover:w-full" />
+              </button>
               <button
                 onClick={() => handleNavClick('#features')}
                 className="text-sm font-medium text-stone-600 hover:text-brand-gold transition-colors relative group"
@@ -9906,7 +9914,8 @@ export default function LandingPage() {
                 <TomoshibiLogo className="h-8 w-auto" color="#78716c" />
               </div>
 
-              <div className="flex gap-6 text-sm text-stone-500">
+              <div className="flex gap-6 text-sm text-stone-500 flex-wrap justify-center md:justify-start">
+                <a href="/about" className="hover:text-white transition-colors">TOMOSHIBIについて</a>
                 <a href="#" className="hover:text-white transition-colors">{t.footer.company}</a>
                 <a href="#" className="hover:text-white transition-colors">{t.footer.privacyPolicy}</a>
                 <a href="#" className="hover:text-white transition-colors">{t.footer.terms}</a>

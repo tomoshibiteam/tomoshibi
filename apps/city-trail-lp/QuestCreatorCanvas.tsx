@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { APIProvider, Map, AdvancedMarker, useMap, useMapsLibrary } from '@vis.gl/react-google-maps';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -32,6 +32,12 @@ import {
     SectionStatus,
     GenerationInput,
     INSPIRATION_TAGS,
+    GENRE_SUPPORT_TAGS,
+    TONE_SUPPORT_TAGS,
+    PromptSupport,
+    GenreSupportId,
+    ToneSupportId,
+    PROMPT_SUPPORT_PLACEHOLDERS,
 } from './questCreatorTypes';
 import { TomoshibiLogo } from './TomoshibiLogo';
 import {
@@ -207,12 +213,23 @@ export default function QuestCreatorCanvas({
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [activeContentOptions, setActiveContentOptions] = useState<string[]>(['spots', 'story', 'mystery']);
 
+    // Prompt-first design: support questions and genre/tone
+    const [promptSupport, setPromptSupport] = useState<PromptSupport>({});
+    const [genreSupport, setGenreSupport] = useState<GenreSupportId | undefined>();
+    const [toneSupport, setToneSupport] = useState<ToneSupportId | undefined>();
+    const [showSupportQuestions, setShowSupportQuestions] = useState(false);
+
     // Custom constraints
     const [constraints, setConstraints] = useState({
         duration: 60,
         difficulty: 'medium' as 'easy' | 'medium' | 'hard',
         spotCount: 10,
+        radiusKm: 1, // 半径（km）デフォルト1km = 現在地から1km圏内
     });
+
+    // 現在地
+    const [currentLocation, setCurrentLocation] = useState<{ lat: number; lng: number; address?: string } | null>(null);
+    const [isLoadingLocation, setIsLoadingLocation] = useState(false);
 
     // Generation state
     const [isGenerating, setIsGenerating] = useState(false);
@@ -261,6 +278,26 @@ export default function QuestCreatorCanvas({
         story: false,
         preview: false,
     });
+
+    // URL パラメータから prompt を読み取る
+    const [searchParams] = useSearchParams();
+    const urlPromptRef = useRef(false); // 一度だけ実行するためのフラグ
+
+    useEffect(() => {
+        const urlPrompt = searchParams.get('prompt');
+        if (urlPrompt && !urlPromptRef.current && !prompt) {
+            urlPromptRef.current = true;
+            setPrompt(urlPrompt);
+            // 少し遅延してから自動生成開始
+            setTimeout(() => {
+                // handleGenerate をトリガー
+                const generateButton = document.querySelector('[data-generate-trigger]') as HTMLButtonElement;
+                if (generateButton) {
+                    generateButton.click();
+                }
+            }, 500);
+        }
+    }, [searchParams, prompt]);
 
     // Saving state
     const [isSaving, setIsSaving] = useState(false);
@@ -482,6 +519,46 @@ export default function QuestCreatorCanvas({
         setError(null);
     };
 
+    // 現在地を取得
+    const getCurrentLocation = () => {
+        if (!navigator.geolocation) {
+            setError('お使いのブラウザは位置情報に対応していません');
+            return;
+        }
+
+        setIsLoadingLocation(true);
+        setError(null);
+
+        navigator.geolocation.getCurrentPosition(
+            async (position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+
+                // Google Geocoding APIで住所を取得
+                try {
+                    const apiKey = (import.meta as any).env?.VITE_GOOGLE_MAPS_API_KEY;
+                    if (apiKey) {
+                        const res = await fetch(
+                            `https://maps.googleapis.com/maps/api/geocode/json?latlng=${lat},${lng}&language=ja&key=${apiKey}`
+                        );
+                        const data = await res.json();
+                        const address = data.results?.[0]?.formatted_address?.replace(/日本、〒[\d-]+\s*/, '') || '';
+                        setCurrentLocation({ lat, lng, address });
+                    } else {
+                        setCurrentLocation({ lat, lng });
+                    }
+                } catch {
+                    setCurrentLocation({ lat, lng });
+                }
+                setIsLoadingLocation(false);
+            },
+            (err) => {
+                setError('位置情報の取得に失敗しました: ' + err.message);
+                setIsLoadingLocation(false);
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
+    };
 
     const handleGenerate = async () => {
         if (!prompt.trim()) {
@@ -505,12 +582,17 @@ export default function QuestCreatorCanvas({
                 throw new Error('VITE_GEMINI_API_KEY が設定されていません。');
             }
 
-            // Layton Pipeline Request
+            // Layton Pipeline Request - main prompt first, support info as constraints
             const request: QuestGenerationRequest = {
                 prompt,
                 difficulty: constraints.difficulty,
                 spot_count: constraints.spotCount,
                 theme_tags: selectedTags.length > 0 ? selectedTags : undefined,
+                genre_support: genreSupport ? GENRE_SUPPORT_TAGS.find(g => g.id === genreSupport)?.label : undefined,
+                tone_support: toneSupport ? TONE_SUPPORT_TAGS.find(t => t.id === toneSupport)?.label : undefined,
+                prompt_support: (promptSupport.protagonist || promptSupport.objective || promptSupport.ending) ? promptSupport : undefined,
+                center_location: currentLocation ? { lat: currentLocation.lat, lng: currentLocation.lng } : undefined,
+                radius_km: constraints.radiusKm,
             };
 
             // Generate using Layton Pipeline
@@ -743,22 +825,27 @@ export default function QuestCreatorCanvas({
                                 </button>
                             </div>
 
-                            {/* Quest Description (like Song Description) */}
+                            {/* ========== 1) MAIN PROMPT (Hero) ========== */}
                             <div className="relative">
-                                <label className="block text-xs font-medium text-stone-500 mb-2">
-                                    Quest Description
+                                <label className="flex items-center gap-2 text-sm font-bold text-brand-dark mb-2">
+                                    <Sparkles size={16} className="text-brand-gold" />
+                                    どんなクエストを作りたいですか？
                                 </label>
                                 <div className="relative">
                                     <textarea
                                         value={prompt}
                                         onChange={(e) => setPrompt(e.target.value)}
-                                        placeholder="例: 浅草で歴史を巡るミステリー。江戸時代の商人が残した謎を解き明かす..."
-                                        className="w-full h-28 p-3 pr-10 rounded-xl border border-stone-200 text-sm text-brand-dark placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-brand-gold/30 focus:border-brand-gold resize-none"
+                                        placeholder={`誰が・何を目的に・最後にどんな驚きが欲しいか
+
+例：
+• 浅草で江戸時代の商人が残した暗号を解き明かす探偵ミステリー
+• 鎌倉の古刹を巡りながら鎌倉時代の秘宝を探す宝探しクエスト
+• 下北沢のカフェを巡る中で隠れ家マスターの謎を解く`}
+                                        className="w-full h-40 p-4 pr-10 rounded-xl border-2 border-stone-200 text-sm text-brand-dark placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-brand-gold/30 focus:border-brand-gold resize-none"
                                     />
-                                    {/* Random/Dice button (like Suno) */}
                                     <button
                                         onClick={generateRandomPrompt}
-                                        className="absolute top-2 right-2 p-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-500 hover:text-brand-dark transition-colors"
+                                        className="absolute top-3 right-3 p-1.5 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-500 hover:text-brand-dark transition-colors"
                                         title="ランダム生成"
                                     >
                                         <Dices size={16} />
@@ -766,29 +853,178 @@ export default function QuestCreatorCanvas({
                                 </div>
                             </div>
 
-                            {/* Content options (like Suno's + Audio, + Lyrics, Instrumental) */}
-                            <div className="flex flex-wrap gap-2">
-                                {CONTENT_OPTIONS.map((option) => {
-                                    const Icon = option.icon;
-                                    const isActive = activeContentOptions.includes(option.id);
-                                    return (
-                                        <button
-                                            key={option.id}
-                                            onClick={() => toggleContentOption(option.id)}
-                                            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-bold transition-all ${isActive
-                                                ? 'bg-brand-dark text-white'
-                                                : 'bg-stone-100 text-stone-500 hover:bg-stone-200'
-                                                }`}
+                            {/* ========== 2) SUPPORT QUESTIONS (Optional) ========== */}
+                            <div>
+                                <button
+                                    onClick={() => setShowSupportQuestions(!showSupportQuestions)}
+                                    className="flex items-center gap-2 text-xs text-stone-500 hover:text-brand-dark transition-colors mb-2"
+                                >
+                                    <Lightbulb size={14} />
+                                    補助質問で精度アップ（任意）
+                                    <ChevronDown size={14} className={`transition-transform ${showSupportQuestions ? 'rotate-180' : ''}`} />
+                                </button>
+                                <AnimatePresence>
+                                    {showSupportQuestions && (
+                                        <motion.div
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: 'auto', opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            className="overflow-hidden"
                                         >
-                                            {!isActive && <Plus size={12} />}
-                                            <Icon size={12} />
-                                            {option.label}
-                                        </button>
-                                    );
-                                })}
+                                            <div className="grid grid-cols-3 gap-2 p-3 bg-stone-50 rounded-xl border border-stone-100">
+                                                <div>
+                                                    <label className="block text-[10px] text-stone-400 mb-1">主人公は？</label>
+                                                    <input
+                                                        type="text"
+                                                        value={promptSupport.protagonist || ''}
+                                                        onChange={(e) => setPromptSupport(p => ({ ...p, protagonist: e.target.value }))}
+                                                        placeholder={PROMPT_SUPPORT_PLACEHOLDERS.protagonist}
+                                                        className="w-full px-2 py-1.5 rounded-lg border border-stone-200 text-xs placeholder:text-stone-300"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] text-stone-400 mb-1">目的は？</label>
+                                                    <input
+                                                        type="text"
+                                                        value={promptSupport.objective || ''}
+                                                        onChange={(e) => setPromptSupport(p => ({ ...p, objective: e.target.value }))}
+                                                        placeholder={PROMPT_SUPPORT_PLACEHOLDERS.objective}
+                                                        className="w-full px-2 py-1.5 rounded-lg border border-stone-200 text-xs placeholder:text-stone-300"
+                                                    />
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] text-stone-400 mb-1">結末は？</label>
+                                                    <input
+                                                        type="text"
+                                                        value={promptSupport.ending || ''}
+                                                        onChange={(e) => setPromptSupport(p => ({ ...p, ending: e.target.value }))}
+                                                        placeholder={PROMPT_SUPPORT_PLACEHOLDERS.ending}
+                                                        className="w-full px-2 py-1.5 rounded-lg border border-stone-200 text-xs placeholder:text-stone-300"
+                                                    />
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
                             </div>
 
-                            {/* Custom Constraints */}
+                            {/* ========== 3) GENRE SUPPORT (Skeleton) ========== */}
+                            <div>
+                                <label className="block text-xs font-medium text-stone-500 mb-2">
+                                    🏷️ ジャンル補助（任意）
+                                </label>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {GENRE_SUPPORT_TAGS.map((genre) => (
+                                        <button
+                                            key={genre.id}
+                                            onClick={() => setGenreSupport(genreSupport === genre.id ? undefined : genre.id)}
+                                            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-medium transition-all ${genreSupport === genre.id
+                                                ? 'bg-brand-gold text-white'
+                                                : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                                                }`}
+                                            title={genre.description}
+                                        >
+                                            {genreSupport !== genre.id && <Plus size={10} />}
+                                            {genre.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* ========== 4) TONE SUPPORT (Atmosphere) ========== */}
+                            <div>
+                                <label className="block text-xs font-medium text-stone-500 mb-2">
+                                    🎨 トーン補助（任意）
+                                </label>
+                                <div className="flex flex-wrap gap-1.5">
+                                    {TONE_SUPPORT_TAGS.map((tone) => (
+                                        <button
+                                            key={tone.id}
+                                            onClick={() => setToneSupport(toneSupport === tone.id ? undefined : tone.id)}
+                                            className={`flex items-center gap-1 px-2.5 py-1.5 rounded-full text-[11px] font-medium transition-all ${toneSupport === tone.id
+                                                ? 'bg-violet-500 text-white'
+                                                : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+                                                }`}
+                                            title={tone.description}
+                                        >
+                                            {toneSupport !== tone.id && <Plus size={10} />}
+                                            {tone.label}
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* ========== 5) LOCATION & RADIUS ========== */}
+                            <div className="space-y-3 p-4 bg-stone-50 rounded-xl border border-stone-100">
+                                <div>
+                                    <label className="flex items-center gap-2 text-xs font-medium text-stone-500 mb-2">
+                                        📍 現在地から探す
+                                    </label>
+                                    <div className="flex items-center gap-2">
+                                        <button
+                                            onClick={getCurrentLocation}
+                                            disabled={isLoadingLocation}
+                                            className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 rounded-lg text-xs font-bold transition-all ${currentLocation
+                                                ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+                                                : 'bg-white text-stone-600 border border-stone-200 hover:bg-stone-100'
+                                                }`}
+                                        >
+                                            {isLoadingLocation ? (
+                                                <>
+                                                    <Loader2 size={14} className="animate-spin" />
+                                                    取得中...
+                                                </>
+                                            ) : currentLocation ? (
+                                                <>
+                                                    <MapPin size={14} />
+                                                    {currentLocation.address?.slice(0, 20) || '現在地取得済み'}
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <MapPin size={14} />
+                                                    現在地を取得
+                                                </>
+                                            )}
+                                        </button>
+                                        {currentLocation && (
+                                            <button
+                                                onClick={() => setCurrentLocation(null)}
+                                                className="p-2 rounded-lg text-stone-400 hover:text-stone-600 hover:bg-stone-100"
+                                                title="クリア"
+                                            >
+                                                ×
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label className="flex items-center justify-between text-xs text-stone-500 mb-2">
+                                        <span>🎯 ここから半径</span>
+                                        <span className="font-bold text-brand-dark">{constraints.radiusKm}km圏内</span>
+                                    </label>
+                                    <input
+                                        type="range"
+                                        min="0.5"
+                                        max="5"
+                                        step="0.5"
+                                        value={constraints.radiusKm}
+                                        onChange={(e) => setConstraints(c => ({ ...c, radiusKm: parseFloat(e.target.value) }))}
+                                        className="w-full h-2 bg-stone-200 rounded-lg appearance-none cursor-pointer accent-brand-gold"
+                                    />
+                                    <div className="flex justify-between text-[10px] text-stone-400 mt-1">
+                                        <span>500m</span>
+                                        <span>2km</span>
+                                        <span>3.5km</span>
+                                        <span>5km</span>
+                                    </div>
+                                    <p className="text-[10px] text-stone-400 mt-2">
+                                        現在地から{constraints.radiusKm}km以内のエリアでクエストを生成
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* ========== Custom Constraints (Custom mode only) ========== */}
                             <AnimatePresence>
                                 {mode === 'custom' && (
                                     <motion.div
@@ -857,27 +1093,30 @@ export default function QuestCreatorCanvas({
                                 )}
                             </AnimatePresence>
 
-                            {/* Inspiration (like Suno) */}
-                            <div>
-                                <label className="block text-xs font-medium text-stone-500 mb-2">
-                                    Inspiration
-                                </label>
-                                <div className="flex flex-wrap gap-1.5">
-                                    {INSPIRATION_TAGS.map((tag) => (
-                                        <button
-                                            key={tag}
-                                            onClick={() => toggleTag(tag)}
-                                            className={`flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-medium transition-all ${selectedTags.includes(tag)
-                                                ? 'bg-brand-gold text-white'
-                                                : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-                                                }`}
-                                        >
-                                            {!selectedTags.includes(tag) && <Plus size={10} />}
-                                            {tag}
-                                        </button>
-                                    ))}
+                            {/* ========== AI SUMMARY PREVIEW ========== */}
+                            {prompt.trim() && (
+                                <div className="p-3 bg-gradient-to-r from-stone-50 to-amber-50 rounded-xl border border-amber-100">
+                                    <div className="flex items-center gap-2 mb-2">
+                                        <Sparkles size={14} className="text-brand-gold" />
+                                        <span className="text-xs font-bold text-stone-600">AIへの入力サマリー</span>
+                                    </div>
+                                    <div className="text-xs text-stone-600 space-y-1">
+                                        <div><span className="font-medium text-stone-700">メイン：</span>{prompt.slice(0, 50)}{prompt.length > 50 && '...'}</div>
+                                        {genreSupport && (
+                                            <div><span className="font-medium text-stone-700">ジャンル補助：</span>{GENRE_SUPPORT_TAGS.find(g => g.id === genreSupport)?.label}</div>
+                                        )}
+                                        {toneSupport && (
+                                            <div><span className="font-medium text-stone-700">トーン補助：</span>{TONE_SUPPORT_TAGS.find(t => t.id === toneSupport)?.label}</div>
+                                        )}
+                                        {(promptSupport.protagonist || promptSupport.objective || promptSupport.ending) && (
+                                            <div><span className="font-medium text-stone-700">補助：</span>
+                                                {[promptSupport.protagonist && `主人公=${promptSupport.protagonist}`, promptSupport.objective && `目的=${promptSupport.objective}`, promptSupport.ending && `結末=${promptSupport.ending}`].filter(Boolean).join(' / ')}
+                                            </div>
+                                        )}
+                                        <div><span className="font-medium text-stone-700">設定：</span>難易度={constraints.difficulty === 'easy' ? '初級' : constraints.difficulty === 'medium' ? '中級' : '上級'} / スポット数={constraints.spotCount}</div>
+                                    </div>
                                 </div>
-                            </div>
+                            )}
 
                             {/* Error */}
                             {error && (
@@ -891,6 +1130,7 @@ export default function QuestCreatorCanvas({
                         <div className="sticky bottom-0 p-4 bg-gradient-to-t from-white via-white to-transparent space-y-2">
                             <button
                                 onClick={handleGenerate}
+                                data-generate-trigger
                                 disabled={isGenerating || !prompt.trim()}
                                 className={`w-full py-3.5 rounded-xl font-bold text-sm transition-all flex items-center justify-center gap-2 ${isGenerating || !prompt.trim()
                                     ? 'bg-stone-100 text-stone-400 cursor-not-allowed'
@@ -1455,8 +1695,8 @@ export default function QuestCreatorCanvas({
                                                                             <div
                                                                                 key={spot.id}
                                                                                 className={`rounded-lg border transition-all ${isExpanded
-                                                                                        ? 'border-brand-gold/30 bg-white shadow-sm'
-                                                                                        : 'border-stone-200 bg-stone-50 hover:border-stone-300'
+                                                                                    ? 'border-brand-gold/30 bg-white shadow-sm'
+                                                                                    : 'border-stone-200 bg-stone-50 hover:border-stone-300'
                                                                                     }`}
                                                                             >
                                                                                 {/* Compact Header - Always Visible */}

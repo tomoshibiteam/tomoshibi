@@ -40,12 +40,18 @@ const Auth = () => {
       if (isSignUp) {
         const validated = authSchema.parse({ email, password, name });
         const { error } = await signUp(validated.email, validated.password, validated.name);
-        
+
         if (error) {
           if (error.message.includes("already registered")) {
             toast({
               title: "エラー",
               description: "このメールアドレスは既に登録されています",
+              variant: "destructive",
+            });
+          } else if (error.message.includes("Invalid email")) {
+            toast({
+              title: "エラー",
+              description: "有効なメールアドレスを入力してください",
               variant: "destructive",
             });
           } else {
@@ -56,16 +62,18 @@ const Auth = () => {
             });
           }
         } else {
+          // Registration succeeded - check if email confirmation is needed
           toast({
             title: "登録完了",
-            description: "アカウントが作成されました",
+            description: "アカウントが作成されました。確認メールをご確認ください。",
           });
-          navigate(returnTo);
+          // Don't navigate immediately - user needs to confirm email first
+          // navigate(returnTo);
         }
       } else {
         const validated = authSchema.omit({ name: true }).parse({ email, password });
         const { error } = await signIn(validated.email, validated.password);
-        
+
         if (error) {
           toast({
             title: "エラー",

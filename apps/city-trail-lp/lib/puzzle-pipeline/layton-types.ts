@@ -35,14 +35,28 @@ export interface SpotInput {
  * クエスト生成リクエスト
  */
 export interface QuestGenerationRequest {
-    /** ユーザーのプロンプト */
+    /** ユーザーのプロンプト（最優先） */
     prompt: string;
     /** 難易度 */
     difficulty: 'easy' | 'medium' | 'hard';
     /** スポット数 */
     spot_count: number;
-    /** テーマタグ */
+    /** テーマタグ (legacy) */
     theme_tags?: string[];
+    /** ジャンル補助（物語骨格） */
+    genre_support?: string;
+    /** トーン補助（雰囲気） */
+    tone_support?: string;
+    /** 補助質問による補足情報 */
+    prompt_support?: {
+        protagonist?: string;  // 主人公
+        objective?: string;    // 目的
+        ending?: string;       // 結末
+    };
+    /** 中心地点（現在地など） */
+    center_location?: { lat: number; lng: number };
+    /** スポット間の最大距離（km） */
+    radius_km?: number;
 }
 
 // =============================================================================
@@ -88,7 +102,7 @@ export type PlotKeyType =
     | 'symbol';      // 記号/紋章
 
 /**
- * 謎のタイプ（レイトン系）
+ * 謎のタイプ（ひらめき系）
  */
 export type PuzzleType =
     | 'logic'        // 論理（証言から嘘つき特定など）
@@ -134,7 +148,7 @@ export interface LoreCard {
 export interface LaytonPuzzle {
     /** 謎のタイプ */
     type: PuzzleType;
-    /** 出題文（レイトン風） */
+    /** 出題文（ひらめき型） */
     prompt: string;
     /** ルール説明（必要な場合） */
     rules?: string;

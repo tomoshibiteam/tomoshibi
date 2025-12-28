@@ -148,6 +148,51 @@ function extractEvidencesFromText(
 }
 
 // =============================================================================
+// Google Geocoding API - スポット名から正確な座標を取得
+// =============================================================================
+
+/**
+ * スポット名から正確な座標を取得（Google Geocoding API）
+ */
+export async function geocodeSpotName(spotName: string): Promise<{ lat: number; lng: number } | null> {
+    const apiKey = (import.meta as any).env?.VITE_GOOGLE_MAPS_API_KEY;
+    if (!apiKey) {
+        console.warn('Google Maps API key not found for geocoding');
+        return null;
+    }
+
+    try {
+        // 日本のスポットとして検索
+        const query = encodeURIComponent(`${spotName} 日本`);
+        const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${query}&language=ja&region=jp&key=${apiKey}`;
+
+        const res = await fetch(url);
+        if (!res.ok) {
+            console.warn('Geocoding API error:', res.status);
+            return null;
+        }
+
+        const data = await res.json();
+
+        if (data.status === 'OK' && data.results?.length > 0) {
+            const location = data.results[0].geometry?.location;
+            if (location) {
+                return {
+                    lat: location.lat,
+                    lng: location.lng,
+                };
+            }
+        }
+
+        console.warn(`Geocoding failed for: ${spotName}`, data.status);
+        return null;
+    } catch (error) {
+        console.error('Geocoding error:', error);
+        return null;
+    }
+}
+
+// =============================================================================
 // Google Places API (省略可能 - API キーが必要)
 // =============================================================================
 

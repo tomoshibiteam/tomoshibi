@@ -62,7 +62,7 @@ export const COMPLETION_CHECKLIST: Omit<ChecklistItem, 'isCompleted'>[] = [
   { id: 'preview', label: 'プレビュー確認', description: 'プレイヤー視点で試走', linkedSection: 'preview' },
 ];
 
-// Inspiration tags for quick selection
+// Inspiration tags for quick selection (legacy - for backward compatibility)
 export const INSPIRATION_TAGS = [
   '歴史ロマン',
   'ミステリー',
@@ -75,6 +75,84 @@ export const INSPIRATION_TAGS = [
   '地元の隠れ家',
   '季節限定',
 ];
+
+// ========== New Prompt-First Design ==========
+
+/**
+ * ジャンル補助タグ（物語骨格系）
+ * プロンプトの不足を埋め、生成の骨格を固定する
+ */
+export const GENRE_SUPPORT_TAGS = [
+  { id: 'detective', label: '探偵・推理', description: '事件を調査し、真相を解き明かす' },
+  { id: 'treasure', label: '宝探し', description: '隠された宝や秘密を発見する' },
+  { id: 'history', label: '歴史解明', description: '過去の謎や伝説を解き明かす' },
+  { id: 'horror', label: 'ホラー・怪談', description: '背筋が凍るような恐怖体験' },
+] as const;
+
+/**
+ * トーン補助タグ（雰囲気系）
+ * 生成のトーン・雰囲気を固定する
+ */
+export const TONE_SUPPORT_TAGS = [
+  { id: 'mysterious', label: 'ミステリアス', description: '謎めいた雰囲気' },
+  { id: 'thrilling', label: 'スリリング', description: '緊張感のある展開' },
+  { id: 'heartwarming', label: 'ほのぼの', description: '温かみのある物語' },
+  { id: 'romantic', label: 'ロマンチック', description: '恋愛要素のある雰囲気' },
+  { id: 'educational', label: '学び・教養', description: '知的好奇心を刺激' },
+] as const;
+
+export type GenreSupportId = typeof GENRE_SUPPORT_TAGS[number]['id'];
+export type ToneSupportId = typeof TONE_SUPPORT_TAGS[number]['id'];
+
+/**
+ * 補助質問（プロンプトの解像度を上げるための任意入力）
+ */
+export interface PromptSupport {
+  protagonist?: string;  // 主人公は？（例：探偵、旅人、学生）
+  objective?: string;    // 目的は？（例：宝探し、真実解明）
+  ending?: string;       // どんな結末？（例：ハッピーエンド、どんでん返し）
+}
+
+/**
+ * プロンプト主役の入力状態
+ */
+export interface PromptFirstInput {
+  mainPrompt: string;
+  promptSupport: PromptSupport;
+  genreSupport?: GenreSupportId;
+  toneSupport?: ToneSupportId;
+  constraints: {
+    duration?: number;      // 所要時間（分）
+    spotCount?: number;     // スポット数
+    difficulty?: 'easy' | 'medium' | 'hard';
+    radiusKm?: number;      // 半径（km）
+    prefecture?: string;    // 都道府県
+  };
+}
+
+/**
+ * AIに渡す要約プレビュー用の構造化データ
+ */
+export interface AISummaryPreview {
+  main: string;
+  genre?: string;
+  tone?: string;
+  protagonist?: string;
+  objective?: string;
+  ending?: string;
+  difficulty: string;
+  spotCount: number;
+}
+
+/**
+ * 補助質問のプレースホルダー
+ */
+export const PROMPT_SUPPORT_PLACEHOLDERS = {
+  protagonist: '例：探偵、旅人、学生',
+  objective: '例：宝探し、真実解明',
+  ending: '例：どんでん返し、ハッピーエンド',
+};
+
 
 // Status badge configurations
 export const STATUS_CONFIG: Record<SectionStatus, { label: string; className: string }> = {

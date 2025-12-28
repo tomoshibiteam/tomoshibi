@@ -46,8 +46,33 @@ const MapHandler = ({
 
                 geocodeTimeoutRef.current = setTimeout(() => {
                     geocoder.geocode({ location: { lat, lng } }, (results, status) => {
-                        if (status === 'OK' && results && results[0]) {
-                            onReverseGeocode(results[0].formatted_address);
+                        if (status === 'OK' && results && results.length > 0) {
+                            // より短い地名を優先的に取得
+                            let shortName = '';
+
+                            // 最初の結果から地域コンポーネントを探す
+                            for (const result of results) {
+                                for (const component of result.address_components) {
+                                    // locality（市区町村）を優先
+                                    if (component.types.includes('locality')) {
+                                        shortName = component.long_name;
+                                        break;
+                                    }
+                                    // sublocality_level_1（区など）
+                                    if (component.types.includes('sublocality_level_1') && !shortName) {
+                                        shortName = component.long_name;
+                                    }
+                                    // administrative_area_level_2（郡・市など）
+                                    if (component.types.includes('administrative_area_level_2') && !shortName) {
+                                        shortName = component.long_name;
+                                    }
+                                }
+                                if (shortName) break;
+                            }
+
+                            // 見つからなければ最初の結果のフォーマット済み住所を使用
+                            const finalAddress = shortName || results[0].formatted_address;
+                            onReverseGeocode(finalAddress);
                         }
                     });
                 }, 100);
@@ -276,9 +301,9 @@ export default function CreatorMysterySetup() {
                                     <label className="text-sm font-bold text-brand-dark flex items-center gap-2">
                                         開催エリア <span className="text-[10px] text-rose-500 font-bold bg-rose-50 px-2 py-0.5 rounded-full">必須</span>
                                     </label>
-                                    <div key={location} className="relative transition-all group-focus-within:ring-4 ring-brand-gold/10 rounded-xl">
+                                    <div className="relative transition-all group-focus-within:ring-4 ring-brand-gold/10 rounded-xl">
                                         <PlaceAutocompleteInput
-                                            defaultValue={location}
+                                            value={location}
                                             onPlaceSelect={(place) => {
                                                 if (place.formatted_address) setLocation(place.formatted_address);
                                                 if (place.geometry?.location) {

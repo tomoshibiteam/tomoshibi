@@ -306,7 +306,7 @@ ${JSON.stringify(contentToTranslate, null, 2)}
 \`\`\``;
 
                 const res = await fetch(
-                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite-preview-09-2025:generateContent?key=${apiKey}`,
+                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
                     {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
@@ -850,8 +850,8 @@ ${JSON.stringify(contentToTranslate, null, 2)}
                         disabled={selectedLanguages.length === 0}
                         title={selectedLanguages.length === 0 ? '言語を選択してください' : ''}
                         className={`px-8 py-3 rounded-xl font-bold text-sm transition-all ${selectedLanguages.length > 0
-                                ? 'bg-brand-dark text-white hover:bg-brand-gold hover:shadow-lg hover:-translate-y-0.5'
-                                : 'bg-stone-200 text-stone-400 cursor-not-allowed'
+                            ? 'bg-brand-dark text-white hover:bg-brand-gold hover:shadow-lg hover:-translate-y-0.5'
+                            : 'bg-stone-200 text-stone-400 cursor-not-allowed'
                             }`}
                     >
                         完了する

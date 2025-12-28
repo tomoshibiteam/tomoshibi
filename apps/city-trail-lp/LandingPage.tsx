@@ -53,7 +53,15 @@ import PlayerGameView from './PlayerGameView';
 import PlayerQuestList from './PlayerQuestList';
 import PlayerQuestDetail from './PlayerQuestDetail';
 import CreatorMultilingual from './CreatorMultilingual';
+import QuestCreatorCanvas from './QuestCreatorCanvas';
+import HeroGenerateSection from './HeroGenerateSection';
 import { supabase } from './supabaseClient';
+import QualityChecklistModal from './QualityChecklistModal';
+import {
+  QuestMode,
+  QualityChecklist,
+  QUEST_MODE_CONFIG,
+} from './questCreatorTypes';
 
 declare global {
   // MapLibre is loaded from CDN
@@ -602,6 +610,15 @@ interface AiDraftInput {
   target: string;
   targetLanguages: string[];
   notes: string;
+  // Advanced settings
+  spotCount?: string;
+  estimatedPlayTime?: string;
+  artStyle?: string;
+  storyTone?: string;
+  characterCount?: string;
+  specialRequirements?: string;
+  includeSpots?: string; // 特定のスポットを含める
+  challengeTypes?: string[]; // 謎、クイズ、ミッション
 }
 
 interface AiDialogueLine {
@@ -2162,6 +2179,11 @@ function CreatorWorkspacePage({
   deleteLoading,
   questId,
   onGoMultilingual,
+  questMode = 'PRIVATE',
+  onPlayNow,
+  onOpenShareModal,
+  onOpenPublishModal,
+  isPaidUser = false,
 }: {
   onBack: () => void;
   onPreview: () => void;
@@ -2216,9 +2238,15 @@ function CreatorWorkspacePage({
   deleteLoading: boolean;
   questId: string | null;
   onGoMultilingual: () => void;
+  questMode?: QuestMode;
+  onPlayNow?: () => void;
+  onOpenShareModal?: () => void;
+  onOpenPublishModal?: () => void;
+  isPaidUser?: boolean;
 }) {
   const [showAiDraftModal, setShowAiDraftModal] = useState(false);
   const [aiDraftMessage, setAiDraftMessage] = useState<string | null>(null);
+  const [showAdvancedSettings, setShowAdvancedSettings] = useState(false);
   const [aiDraftInput, setAiDraftInput] = useState<AiDraftInput>({
     area: '',
     theme: '',
@@ -2226,6 +2254,15 @@ function CreatorWorkspacePage({
     target: '',
     targetLanguages: ['日本語'],
     notes: '',
+    // Advanced settings defaults
+    spotCount: '7',
+    estimatedPlayTime: '',
+    artStyle: '',
+    storyTone: '',
+    characterCount: '',
+    specialRequirements: '',
+    includeSpots: '',
+    challengeTypes: ['謎', 'クイズ', 'ミッション'],
   });
 
   const handleAiDraftSubmit = async () => {
@@ -2423,6 +2460,67 @@ function CreatorWorkspacePage({
               >
                 <Sparkles size={14} /> AIでたたき台を作成する
               </button>
+            </div>
+
+            {/* Quest Mode and Publishing Actions */}
+            <div className="flex flex-col gap-3 w-full md:w-auto mt-2">
+              {/* Mode Badge */}
+              <div className="flex items-center gap-2">
+                <span className="text-xs text-stone-500">現在のモード:</span>
+                <span className={`px-3 py-1 rounded-full text-xs font-bold border ${questMode === 'PRIVATE' ? 'bg-stone-100 text-stone-700 border-stone-200' :
+                  questMode === 'SHARE' ? 'bg-sky-100 text-sky-700 border-sky-200' :
+                    'bg-emerald-100 text-emerald-700 border-emerald-200'
+                  }`}>
+                  {questMode === 'PRIVATE' ? '🔒 自分用 (Private)' :
+                    questMode === 'SHARE' ? '🔗 限定共有 (Share)' :
+                      '🌐 公開 (Publish)'}
+                </span>
+              </div>
+
+              {/* Action Buttons */}
+              <div className="flex flex-wrap gap-2">
+                {/* Play Now - Always available */}
+                <button
+                  onClick={onPlayNow}
+                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-violet-500 to-purple-600 text-white text-sm font-bold hover:from-violet-600 hover:to-purple-700 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+                >
+                  <PlayCircle size={16} />
+                  今すぐ遊ぶ
+                </button>
+
+                {/* Share Button */}
+                <button
+                  onClick={onOpenShareModal}
+                  className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-sky-500 to-cyan-500 text-white text-sm font-bold hover:from-sky-600 hover:to-cyan-600 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+                >
+                  <Globe2 size={16} />
+                  共有する
+                </button>
+
+                {/* Publish Button - Paid users only */}
+                {isPaidUser ? (
+                  <button
+                    onClick={onOpenPublishModal}
+                    className="px-4 py-2.5 rounded-xl bg-gradient-to-r from-emerald-500 to-teal-500 text-white text-sm font-bold hover:from-emerald-600 hover:to-teal-600 transition-all shadow-md hover:shadow-lg flex items-center gap-2"
+                  >
+                    <Rocket size={16} />
+                    公開する
+                  </button>
+                ) : (
+                  <div className="relative group">
+                    <button
+                      disabled
+                      className="px-4 py-2.5 rounded-xl bg-stone-200 text-stone-400 text-sm font-bold cursor-not-allowed flex items-center gap-2"
+                    >
+                      <Rocket size={16} />
+                      公開する
+                    </button>
+                    <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-2 px-3 py-2 bg-stone-800 text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap pointer-events-none">
+                      有料プランで公開機能が利用できます
+                    </div>
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         </div>
@@ -2714,8 +2812,8 @@ function CreatorWorkspacePage({
 
       {
         showAiDraftModal && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 md:p-8">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4 py-8">
+            <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto p-6 md:p-8">
               <div className="flex items-start justify-between gap-4 mb-4">
                 <div>
                   <p className="text-xs text-amber-700 font-bold uppercase">AI Assist</p>
@@ -2820,16 +2918,161 @@ function CreatorWorkspacePage({
                   </div>
                 </div>
               </div>
+
+              {/* 詳細設定の開閉ボタン */}
               <div className="mb-4">
-                <label className="block text-xs font-bold text-stone-600 mb-1">追加要望（任意）</label>
-                <textarea
-                  className="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-gold/40"
-                  rows={3}
-                  placeholder="例: 3スポット構成で最後は神社、ロジック系の謎を入れたい"
-                  value={aiDraftInput.notes}
-                  onChange={(e) => setAiDraftInput((prev) => ({ ...prev, notes: e.target.value }))}
-                />
+                <button
+                  type="button"
+                  onClick={() => setShowAdvancedSettings(!showAdvancedSettings)}
+                  className="flex items-center gap-2 text-sm font-bold text-indigo-600 hover:text-indigo-800 transition-colors"
+                >
+                  <ChevronDown
+                    size={16}
+                    className={`transition-transform duration-200 ${showAdvancedSettings ? 'rotate-180' : ''}`}
+                  />
+                  {showAdvancedSettings ? '詳細設定を閉じる' : '詳細設定を開く'}
+                </button>
+
+                {/* 詳細設定パネル */}
+                {showAdvancedSettings && (
+                  <div className="mt-4 p-4 bg-stone-50 rounded-xl border border-stone-200 space-y-4">
+                    <p className="text-xs text-stone-500 mb-3">
+                      より詳細な情報を提供することで、AIがより精度の高いクエストを生成できます。
+                    </p>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div>
+                        <label className="block text-xs font-bold text-stone-600 mb-1">スポット数</label>
+                        <select
+                          className="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-gold/40 bg-white"
+                          value={aiDraftInput.spotCount || '7'}
+                          onChange={(e) => setAiDraftInput((prev) => ({ ...prev, spotCount: e.target.value }))}
+                        >
+                          <option value="5">5スポット（短め）</option>
+                          <option value="6">6スポット</option>
+                          <option value="7">7スポット（推奨）</option>
+                          <option value="8">8スポット</option>
+                          <option value="10">10スポット（長め）</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-stone-600 mb-1">想定プレイ時間</label>
+                        <select
+                          className="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-gold/40 bg-white"
+                          value={aiDraftInput.estimatedPlayTime || ''}
+                          onChange={(e) => setAiDraftInput((prev) => ({ ...prev, estimatedPlayTime: e.target.value }))}
+                        >
+                          <option value="">自動（AIにおまかせ）</option>
+                          <option value="30分">30分程度</option>
+                          <option value="1時間">1時間程度</option>
+                          <option value="1.5時間">1.5時間程度</option>
+                          <option value="2時間">2時間程度</option>
+                          <option value="2時間以上">2時間以上</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-stone-600 mb-1">アートスタイル・世界観</label>
+                        <input
+                          className="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-gold/40"
+                          placeholder="例: レトロ、ファンタジー、サイバーパンク、和風など"
+                          value={aiDraftInput.artStyle || ''}
+                          onChange={(e) => setAiDraftInput((prev) => ({ ...prev, artStyle: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-stone-600 mb-1">物語のトーン</label>
+                        <input
+                          className="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-gold/40"
+                          placeholder="例: シリアス、コメディ、ほのぼの、ホラーなど"
+                          value={aiDraftInput.storyTone || ''}
+                          onChange={(e) => setAiDraftInput((prev) => ({ ...prev, storyTone: e.target.value }))}
+                        />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-bold text-stone-600 mb-1">登場人物の人数</label>
+                        <select
+                          className="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-gold/40 bg-white"
+                          value={aiDraftInput.characterCount || ''}
+                          onChange={(e) => setAiDraftInput((prev) => ({ ...prev, characterCount: e.target.value }))}
+                        >
+                          <option value="">自動（AIにおまかせ）</option>
+                          <option value="2">2人（最小）</option>
+                          <option value="3">3人</option>
+                          <option value="4">4人（標準）</option>
+                          <option value="5">5人以上</option>
+                        </select>
+                      </div>
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-bold text-stone-600 mb-1">特別な指定・要件</label>
+                        <textarea
+                          className="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-gold/40"
+                          rows={2}
+                          placeholder="例: 特定の歴史人物を登場させたい、謎解きに暗号を使いたい、ラストは感動的に、など"
+                          value={aiDraftInput.specialRequirements || ''}
+                          onChange={(e) => setAiDraftInput((prev) => ({ ...prev, specialRequirements: e.target.value }))}
+                        />
+                      </div>
+
+                      {/* 特定スポット */}
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-bold text-stone-600 mb-1">含めたいスポット（任意）</label>
+                        <textarea
+                          className="w-full rounded-xl border border-stone-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-brand-gold/40"
+                          rows={2}
+                          placeholder="例: 東京タワー、増上寺、芝公園など（改行またはカンマで区切り）"
+                          value={aiDraftInput.includeSpots || ''}
+                          onChange={(e) => setAiDraftInput((prev) => ({ ...prev, includeSpots: e.target.value }))}
+                        />
+                        <p className="text-[10px] text-stone-400 mt-1">指定したスポットは必ずルートに含められます</p>
+                      </div>
+
+                      {/* チャレンジタイプ */}
+                      <div className="md:col-span-2">
+                        <label className="block text-xs font-bold text-stone-600 mb-2">スポットで出題するチャレンジタイプ</label>
+                        <div className="flex flex-wrap gap-4">
+                          {[
+                            { value: '謎', label: '謎解き', desc: '論理パズルや暗号など' },
+                            { value: 'クイズ', label: 'クイズ', desc: '知識を問う質問' },
+                            { value: 'ミッション', label: 'ミッション', desc: '写真撮影や行動タスク' }
+                          ].map((type) => (
+                            <label
+                              key={type.value}
+                              className={`flex items-center gap-3 px-4 py-3 rounded-xl border cursor-pointer transition-all ${(aiDraftInput.challengeTypes || []).includes(type.value)
+                                ? 'border-brand-gold bg-brand-gold/10'
+                                : 'border-stone-200 bg-white hover:border-stone-300'
+                                }`}
+                            >
+                              <input
+                                type="checkbox"
+                                checked={(aiDraftInput.challengeTypes || []).includes(type.value)}
+                                onChange={(e) => {
+                                  if (e.target.checked) {
+                                    setAiDraftInput((prev) => ({
+                                      ...prev,
+                                      challengeTypes: [...(prev.challengeTypes || []), type.value]
+                                    }));
+                                  } else {
+                                    setAiDraftInput((prev) => ({
+                                      ...prev,
+                                      challengeTypes: (prev.challengeTypes || []).filter(t => t !== type.value)
+                                    }));
+                                  }
+                                }}
+                                className="w-4 h-4 rounded border-stone-300 text-brand-gold focus:ring-brand-gold"
+                              />
+                              <div>
+                                <span className="text-sm font-bold text-stone-700">{type.label}</span>
+                                <p className="text-[10px] text-stone-400">{type.desc}</p>
+                              </div>
+                            </label>
+                          ))}
+                        </div>
+                        <p className="text-[10px] text-stone-400 mt-2">選択したタイプからAIがバランス良くチャレンジを生成します</p>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
+
 
               {aiDraftError && <p className="text-sm text-red-600 mb-2">エラー: {aiDraftError}</p>}
               {aiDraftMessage && <p className="text-sm text-emerald-700 mb-2">{aiDraftMessage}</p>}
@@ -6311,7 +6554,7 @@ function AdminReviewPage({
 
 export default function LandingPage() {
   const initialPath = typeof window !== 'undefined' ? window.location.pathname : '/';
-  const initialActivePage: 'home' | 'quests' | 'quest-detail' | 'creators' | 'auth' | 'profile' | 'creator-start' | 'creator-workspace' | 'creator-spot-detail' | 'creator-storytelling' | 'creator-test-run' | 'creator-submitted' | 'creator-analytics' | 'admin-dashboard' | 'admin-review' | 'player' =
+  const initialActivePage: 'home' | 'quests' | 'quest-detail' | 'creators' | 'auth' | 'profile' | 'creator-start' | 'creator-canvas' | 'creator-workspace' | 'creator-spot-detail' | 'creator-storytelling' | 'creator-test-run' | 'creator-submitted' | 'creator-analytics' | 'admin-dashboard' | 'admin-review' | 'player' =
     initialPath === '/play'
       ? 'player'
       : initialPath === '/creator' || initialPath === '/creator/workspace'
@@ -6341,7 +6584,7 @@ export default function LandingPage() {
   const [currentLang, setCurrentLang] = useState<Language>('ja');
   const t = LC[currentLang];
 
-  const [activePage, setActivePage] = useState<'home' | 'quests' | 'quest-detail' | 'creators' | 'auth' | 'profile' | 'creator-start' | 'creator-workspace' | 'creator-spot-detail' | 'creator-storytelling' | 'creator-test-run' | 'creator-submitted' | 'creator-analytics' | 'admin-dashboard' | 'admin-review' | 'player'>(initialActivePage);
+  const [activePage, setActivePage] = useState<'home' | 'quests' | 'quest-detail' | 'creators' | 'auth' | 'profile' | 'creator-start' | 'creator-canvas' | 'creator-workspace' | 'creator-spot-detail' | 'creator-storytelling' | 'creator-test-run' | 'creator-submitted' | 'creator-analytics' | 'admin-dashboard' | 'admin-review' | 'player'>(initialActivePage);
   const [selectedQuest, setSelectedQuest] = useState<Quest | null>(null);
   const [activeFilter, setActiveFilter] = useState<string>('all');
   const [sortKey, setSortKey] = useState<'popular' | 'short' | 'distance'>('popular');
@@ -6372,6 +6615,13 @@ export default function LandingPage() {
   const [activeSpotId, setActiveSpotId] = useState<string | null>(null);
   const [questLatLng, setQuestLatLng] = useState<{ lat: number; lng: number } | null>(null);
   const [questId, setQuestId] = useState<string | null>(null);
+
+  // Quest Publishing System state
+  const [questMode, setQuestMode] = useState<QuestMode>('PRIVATE');
+  const [qualityChecklist, setQualityChecklist] = useState<QualityChecklist>({});
+  const [shareToken, setShareToken] = useState<string | null>(null);
+  const [showQualityModal, setShowQualityModal] = useState(false);
+  const [qualityModalMode, setQualityModalMode] = useState<'SHARE' | 'PUBLISH'>('SHARE');
 
   const [profileQuests, setProfileQuests] = useState<any[]>([]);
   const [ownedQuestIds, setOwnedQuestIds] = useState<string[]>([]);
@@ -6922,6 +7172,8 @@ export default function LandingPage() {
         return '/profile';
       case 'creator-start':
         return '/creator/start';
+      case 'creator-canvas':
+        return questId ? `/creator/canvas/${questId}` : '/creator/canvas';
       case 'creator-mystery-setup':
         return '/creator/mystery-setup';
       case 'creator-route-spots':
@@ -7002,6 +7254,10 @@ export default function LandingPage() {
     if (pathname === '/auth/forgot') return { page: 'auth' as AppPage, authMode: 'forgot' as AuthMode };
     if (pathname === '/profile') return { page: 'profile' as AppPage };
     if (pathname === '/creator/start') return { page: 'creator-start' as AppPage };
+    if (pathname === '/creator/canvas' || pathname.startsWith('/creator/canvas/')) {
+      const qId = pathname.split('/')[3] || null;
+      return { page: 'creator-canvas' as AppPage, questId: qId };
+    }
     if (pathname === '/creator/mystery-setup') return { page: 'creator-mystery-setup' as AppPage };
     if (pathname === '/creator/route-spots') return { page: 'creator-route-spots' as AppPage };
     if (pathname.startsWith('/creator/route-spots/')) {
@@ -7063,7 +7319,18 @@ export default function LandingPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // URLからのクエストIDを優先するため、現在のquestIdがnullの場合のみlocalStorageから復元
+  // 注: 7302-7307行のuseEffectが先にURLからクエストIDをセットするため、
+  // ここではフォールバックとしてのみ機能する
   useEffect(() => {
+    // URLからすでにクエストIDがセットされている場合はスキップ
+    const route = parsePathToRoute(window.location.pathname);
+    const urlQuestId = (route as any).questId;
+    if (urlQuestId) {
+      // URLにクエストIDがある場合は、それを使用（applyRouteで既に処理済み）
+      return;
+    }
+    // URLにクエストIDがない場合のみ、localStorageからフォールバック
     const storedQuestId = localStorage.getItem('quest-id');
     if (storedQuestId) setQuestId(storedQuestId);
   }, []);
@@ -7387,15 +7654,18 @@ export default function LandingPage() {
     }
   };
 
-  const openCreatorOnboarding = () => {
+  const openCreatorOnboarding = async () => {
     // Require login to create a quest
     if (!user) {
       goToAuth('login');
       return;
     }
-    setShowCreatorOnboarding(true);
-    setCreatorOnboardingStep(0);
-    setIsUserMenuOpen(false);
+    // Skip modal and go directly to creator canvas
+    const newQuestId = questId || await createDraftQuest();
+    if (newQuestId) {
+      applyRoute('creator-canvas', { questId: newQuestId });
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
   };
 
   const closeCreatorOnboarding = () => {
@@ -7516,8 +7786,10 @@ export default function LandingPage() {
           category_tags: [],
           hashtag_tags: [],
           status: 'draft',
+          mode: 'PRIVATE',
+          quality_checklist: {},
         })
-        .select('id, title, area_name, description')
+        .select('id, title, area_name, description, mode, quality_checklist, share_token')
         .maybeSingle();
       if (error) throw error;
       if (data?.id) {
@@ -7526,6 +7798,10 @@ export default function LandingPage() {
         setQuestTitle(data.title || '');
         setQuestDescription(data.description || '');
         setQuestLocation(data.area_name || '');
+        // Reset publishing system state for new quest
+        setQuestMode((data.mode as QuestMode) || 'PRIVATE');
+        setQualityChecklist(data.quality_checklist || {});
+        setShareToken(data.share_token || null);
         return data.id as string;
       }
     } catch (e: any) {
@@ -7593,11 +7869,12 @@ export default function LandingPage() {
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
-  const goToWorkspace = () => {
-    if (questId) {
-      loadWorkspaceStep(questId);
+  const goToWorkspace = (overrideQuestId?: string) => {
+    const targetQuestId = overrideQuestId || questId;
+    if (targetQuestId) {
+      loadWorkspaceStep(targetQuestId);
     }
-    applyRoute('creator-workspace', { questId });
+    applyRoute('creator-workspace', { questId: targetQuestId });
     setShowCreatorOnboarding(false);
     setIsMenuOpen(false);
     setIsUserMenuOpen(false);
@@ -7650,6 +7927,59 @@ export default function LandingPage() {
     } else {
       alert('申請を受け付けました。審査完了をお待ちください。');
       goToSubmitted();
+    }
+  };
+
+  // Quality Checklist Handlers
+  const openQualityModal = (mode: 'SHARE' | 'PUBLISH') => {
+    setQualityModalMode(mode);
+    setShowQualityModal(true);
+  };
+
+  const handleQualityChecklistChange = async (newChecklist: QualityChecklist) => {
+    setQualityChecklist(newChecklist);
+    // Persist to database
+    if (questId) {
+      await supabase
+        .from('quests')
+        .update({ quality_checklist: newChecklist })
+        .eq('id', questId);
+    }
+  };
+
+  const generateShareToken = async () => {
+    if (!questId) return;
+    // Generate a random token
+    const token = crypto.randomUUID();
+    const { error } = await supabase
+      .from('quests')
+      .update({
+        share_token: token,
+        mode: 'SHARE',
+        status: 'ready_for_share'
+      })
+      .eq('id', questId);
+
+    if (!error) {
+      setShareToken(token);
+      setQuestMode('SHARE');
+    }
+  };
+
+  const handleQualityConfirm = async () => {
+    if (!questId) return;
+
+    if (qualityModalMode === 'SHARE') {
+      // Generate share token if not exists
+      if (!shareToken) {
+        await generateShareToken();
+      }
+      setShowQualityModal(false);
+      alert('共有リンクが有効になりました！');
+    } else {
+      // PUBLISH - submit for review
+      await handlePublish();
+      setShowQualityModal(false);
     }
   };
 
@@ -7882,10 +8212,18 @@ export default function LandingPage() {
 - ターゲット: ${input.target || '未指定'}
 - 対応言語: ${input.targetLanguages.join(', ')}
 - 追加要望: ${input.notes || '特になし'}
+${input.spotCount ? `- スポット数: ${input.spotCount}スポット` : '- スポット数: 7スポット（デフォルト）'}
+${input.estimatedPlayTime ? `- 想定プレイ時間: ${input.estimatedPlayTime}` : ''}
+${input.artStyle ? `- アートスタイル・世界観: ${input.artStyle}` : ''}
+${input.storyTone ? `- 物語のトーン: ${input.storyTone}` : ''}
+${input.characterCount ? `- 登場人物の人数: ${input.characterCount}人` : ''}
+${input.specialRequirements ? `- 特別な指定・要件: ${input.specialRequirements}` : ''}
+${input.includeSpots ? `- 必ず含めるスポット: ${input.includeSpots}` : ''}
+${(input.challengeTypes || []).length > 0 ? `- チャレンジタイプ: ${(input.challengeTypes || []).join('、')}（これらのタイプからバランスよく出題）` : ''}
 `.trim();
 
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-lite-preview-09-2025:generateContent?key=${apiKey}`,
+        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -8383,7 +8721,11 @@ export default function LandingPage() {
       {/* --- Navigation (LP/other pages only) --- */}
       {activePage !== 'creator-mystery-setup' && activePage !== 'creator-workspace' && activePage !== 'creator-route-spots' && activePage !== 'creator-spot-detail' && activePage !== 'creator-storytelling' && activePage !== 'creator-test-run' && activePage !== 'creator-submitted' && activePage !== 'creator-analytics' && activePage !== 'player' && (
         <nav
-          className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white/80 backdrop-blur-md py-4 shadow-lg border-b border-stone-200/50' : 'bg-transparent py-6'
+          className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${activePage === 'creator-canvas'
+            ? 'bg-white py-4 shadow-sm border-b border-stone-200'
+            : isScrolled
+              ? 'bg-white/80 backdrop-blur-md py-4 shadow-lg border-b border-stone-200/50'
+              : 'bg-transparent py-6'
             }`}
         >
           <div className="container mx-auto px-4 md:px-8 flex items-center justify-between">
@@ -8730,7 +9072,7 @@ export default function LandingPage() {
           onOpenOnboarding={openCreatorOnboarding}
           onGoCreatorStart={goToCreatorStart}
           quests={profileQuests}
-          onOpenWorkspace={(quest) => {
+          onOpenWorkspace={async (quest) => {
             setQuestId(quest.id);
             localStorage.setItem('quest-id', quest.id);
             setQuestTitle(quest.title || '');
@@ -8740,8 +9082,30 @@ export default function LandingPage() {
             setQuestCategoryTags(tagArray.filter((tg: string) => CATEGORY_TAGS.includes(tg)));
             setQuestHashtags(tagArray.filter((tg: string) => !CATEGORY_TAGS.includes(tg)));
             if (quest.location_lat && quest.location_lng) setQuestLatLng({ lat: quest.location_lat, lng: quest.location_lng });
+
+            // Load spots with details
+            await fetchRouteSpots(quest.id);
+
+            // Load story data
+            const { data: storyData } = await supabase
+              .from('story_timelines')
+              .select('*')
+              .eq('quest_id', quest.id)
+              .maybeSingle();
+            if (storyData) {
+              setStorySettings((prev) => ({
+                ...prev,
+                castName: storyData.cast_name || '',
+                castTone: storyData.cast_tone || '',
+                prologueBody: storyData.prologue || '',
+                epilogueBody: storyData.epilogue || '',
+                characters: Array.isArray(storyData.characters) ? storyData.characters : [],
+                scenario: Array.isArray(storyData.scenario) ? storyData.scenario : [],
+              }));
+            }
+
             loadWorkspaceStep(quest.id);
-            goToWorkspace();
+            goToWorkspace(quest.id);
           }}
           onOpenAnalytics={(quest) => {
             goToCreatorAnalytics(quest.id, quest.title);
@@ -8816,6 +9180,16 @@ export default function LandingPage() {
             }
           }}
           onOpenOnboarding={openCreatorOnboarding}
+        />
+      )}
+
+      {activePage === 'creator-canvas' && (
+        <QuestCreatorCanvas
+          questId={questId}
+          onBack={() => goToProfile()}
+          onLogoHome={() => goHome()}
+          onPublish={handlePublish}
+          onTestRun={() => goToTestRun()}
         />
       )}
 
@@ -9006,8 +9380,26 @@ export default function LandingPage() {
             setIsUserMenuOpen(false);
             window.scrollTo({ top: 0, behavior: 'smooth' });
           }}
+          questMode={questMode}
+          onPlayNow={() => goToTestRun()}
+          onOpenShareModal={() => openQualityModal('SHARE')}
+          onOpenPublishModal={() => openQualityModal('PUBLISH')}
+          isPaidUser={profile?.role === 'creator' || profile?.role === 'admin'}
         />
       )}
+
+      {/* Quality Checklist Modal for Share/Publish */}
+      <QualityChecklistModal
+        isOpen={showQualityModal}
+        onClose={() => setShowQualityModal(false)}
+        targetMode={qualityModalMode}
+        currentChecklist={qualityChecklist}
+        onChecklistChange={handleQualityChecklistChange}
+        onConfirm={handleQualityConfirm}
+        userId={user?.id}
+        shareToken={shareToken}
+        onGenerateShareToken={generateShareToken}
+      />
 
       {activePage === 'creator-analytics' && (
         <CreatorAnalyticsPage
@@ -9031,206 +9423,13 @@ export default function LandingPage() {
       {isHome && (
         <>
           {/* --- Hero Section --- */}
-          {/* --- Hero Section --- */}
-          <section className="relative min-h-screen pt-32 pb-20 flex items-center overflow-hidden">
-            {/* Background & Atmosphere - Enhanced gradient */}
-            <div className="absolute inset-0 bg-gradient-to-br from-stone-50 via-white to-amber-50/30" />
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,#d4a574_1px,transparent_1px),linear-gradient(to_bottom,#d4a574_1px,transparent_1px)] bg-[size:4rem_4rem] [mask-image:radial-gradient(ellipse_70%_60%_at_50%_40%,#000_60%,transparent_100%)] opacity-[0.08] pointer-events-none" />
-
-            {/* Enhanced Ambient Blobs with animation */}
-            <motion.div
-              animate={{ scale: [1, 1.1, 1], opacity: [0.15, 0.25, 0.15] }}
-              transition={{ repeat: Infinity, duration: 8, ease: "easeInOut" }}
-              className="absolute top-[-15%] right-[-10%] w-[700px] h-[700px] bg-gradient-to-br from-brand-gold/20 to-orange-400/10 rounded-full blur-[120px] pointer-events-none"
-            />
-            <motion.div
-              animate={{ scale: [1, 1.15, 1], opacity: [0.08, 0.15, 0.08] }}
-              transition={{ repeat: Infinity, duration: 10, ease: "easeInOut", delay: 2 }}
-              className="absolute bottom-[-15%] left-[-15%] w-[600px] h-[600px] bg-gradient-to-tr from-brand-dark/10 to-stone-400/10 rounded-full blur-[120px] pointer-events-none"
-            />
-            {/* Floating sparkle particles */}
-            <div className="absolute inset-0 overflow-hidden pointer-events-none">
-              {[...Array(6)].map((_, i) => (
-                <motion.div
-                  key={i}
-                  className="absolute w-1 h-1 bg-brand-gold/60 rounded-full"
-                  style={{ left: `${15 + i * 15}%`, top: `${20 + (i % 3) * 25}%` }}
-                  animate={{
-                    y: [0, -30, 0],
-                    opacity: [0.3, 0.8, 0.3],
-                    scale: [1, 1.5, 1]
-                  }}
-                  transition={{ repeat: Infinity, duration: 3 + i * 0.5, ease: "easeInOut", delay: i * 0.4 }}
-                />
-              ))}
-            </div>
-
-            <div className="container mx-auto px-4 md:px-8 grid md:grid-cols-2 gap-12 items-center relative z-10">
-
-              {/* Hero Content */}
-              <motion.div
-                initial={{ opacity: 0, x: -30 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.8 }}
-                className="text-center md:text-left"
-              >
-                <div className="inline-flex items-center gap-2 px-4 py-1.5 bg-white/90 backdrop-blur-sm border border-brand-gold/40 rounded-full text-brand-dark text-xs font-bold tracking-wider mb-8 shadow-lg shadow-brand-gold/10">
-                  <span className="relative w-2 h-2 rounded-full bg-brand-gold">
-                    <span className="absolute inset-0 rounded-full bg-brand-gold animate-ping opacity-75" />
-                  </span>
-                  NEW WAY TO EXPLORE
-                </div>
-
-                <h1 className="text-5xl md:text-7xl font-serif font-bold leading-tight mb-8 text-brand-dark tracking-tight">
-                  <span className="block mb-2 whitespace-pre-wrap">{t.hero.title}</span>
-                </h1>
-
-                <p className="text-stone-600 text-lg md:text-xl leading-relaxed mb-10 max-w-lg mx-auto md:mx-0 font-medium">
-                  {t.hero.description}
-                </p>
-
-                <div className="space-y-6">
-                  <AppCtaButtons
-                    onPrimary={openAppCTA}
-                    onSecondary={goToQuestList}
-                    onScrollNotify={handleScrollNotify}
-                    hasStoreLink={hasStoreLink}
-                    comingSoon={!hasStoreLink}
-                    install={t.install}
-                  />
-
-                  <div className="flex flex-wrap gap-4 justify-center md:justify-start items-center">
-                    <button
-                      onClick={() => handleNavClick('#how-it-works')}
-                      className="group flex items-center gap-2 text-stone-500 hover:text-brand-dark font-bold text-sm transition-colors"
-                    >
-                      <div className="w-8 h-8 rounded-full border border-stone-300 flex items-center justify-center group-hover:border-brand-dark transition-colors">
-                        <PlayCircle size={14} />
-                      </div>
-                      {t.hero.seeHowToPlay}
-                    </button>
-
-                    <div className="h-4 w-px bg-stone-300 hidden md:block" />
-
-                    <div className="flex items-center gap-2 text-xs font-bold text-stone-500">
-                      <div className="flex -space-x-2">
-                        {[1, 2, 3].map(i => (
-                          <div key={i} className={`w-6 h-6 rounded-full border-2 border-white bg-stone-200 flex items-center justify-center overflow-hidden`}>
-                            <img src={`https://i.pravatar.cc/100?img=${10 + i}`} alt="" className="w-full h-full object-cover grayscale" />
-                          </div>
-                        ))}
-                      </div>
-                      <span>10,000+ Players</span>
-                    </div>
-                  </div>
-
-                  <div className="pt-4">
-                    <AppFeaturePills pills={t.features.pills} />
-                  </div>
-                </div>
-              </motion.div>
-
-              {/* Hero Visual */}
-              <motion.div
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ duration: 1, delay: 0.2 }}
-                className="relative hidden md:flex justify-center items-center"
-              >
-                {/* Main Phone Mockup */}
-                <div className="relative z-20 transform rotate-[-6deg] hover:rotate-0 transition-transform duration-700 ease-out">
-                  <div className="absolute inset-0 bg-black/20 blur-2xl transform translate-y-10" />
-                  <PhoneMockup />
-                </div>
-
-                {/* Floating Context Cards */}
-                <motion.div
-                  animate={{ y: [0, -20, 0], rotate: [0, 1, 0] }}
-                  transition={{ repeat: Infinity, duration: 6, ease: "easeInOut" }}
-                  className="absolute right-0 top-1/4 z-30"
-                >
-                  <div className="relative bg-white/90 backdrop-blur-xl p-4 rounded-2xl shadow-2xl border border-white/60 w-48 overflow-hidden">
-                    {/* Glassmorphism shine effect */}
-                    <div className="absolute inset-0 bg-gradient-to-br from-white/40 via-transparent to-transparent pointer-events-none" />
-                    <div className="relative">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 bg-gradient-to-br from-brand-gold/20 to-amber-100 rounded-xl text-brand-gold shadow-inner">
-                          <MapPin size={18} />
-                        </div>
-                        <div className="text-xs font-bold text-brand-dark">
-                          <div>Checkpoint</div>
-                          <div className="text-[10px] text-stone-400 font-normal">Target reached</div>
-                        </div>
-                      </div>
-                      <div className="h-2 w-full bg-stone-100 rounded-full overflow-hidden shadow-inner">
-                        <motion.div
-                          className="h-full bg-gradient-to-r from-brand-gold to-amber-400 rounded-full"
-                          initial={{ width: '0%' }}
-                          animate={{ width: '75%' }}
-                          transition={{ duration: 1.5, delay: 0.5 }}
-                        />
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-
-                <motion.div
-                  animate={{ y: [0, 20, 0], rotate: [0, -1, 0] }}
-                  transition={{ repeat: Infinity, duration: 7, ease: "easeInOut", delay: 1 }}
-                  className="absolute left-0 bottom-1/4 z-30"
-                >
-                  <div className="relative bg-gradient-to-br from-brand-dark/95 to-stone-900/95 backdrop-blur-xl p-4 rounded-2xl shadow-2xl border border-brand-gold/20 w-48 overflow-hidden">
-                    {/* Subtle glow effect */}
-                    <div className="absolute -top-10 -right-10 w-20 h-20 bg-brand-gold/20 rounded-full blur-2xl pointer-events-none" />
-                    <div className="relative">
-                      <div className="flex items-center gap-3 mb-2">
-                        <div className="p-2 bg-gradient-to-br from-brand-gold/30 to-amber-500/20 rounded-xl text-brand-gold shadow-inner">
-                          <Lightbulb size={18} />
-                        </div>
-                        <div className="text-xs font-bold text-white">
-                          <div className="flex items-center gap-1">
-                            Puzzle Solved!
-                            <motion.span
-                              animate={{ scale: [1, 1.2, 1] }}
-                              transition={{ repeat: Infinity, duration: 1.5 }}
-                            >
-                              ✨
-                            </motion.span>
-                          </div>
-                          <div className="text-[10px] text-stone-400 font-normal">Next clue unlocked</div>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-1 text-[10px] text-stone-300">
-                        <Coins size={12} className="text-brand-gold" />
-                        <motion.span
-                          initial={{ opacity: 0, x: -5 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: 1 }}
-                        >
-                          +500 pts
-                        </motion.span>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
-              </motion.div>
-            </div>
-
-            {/* Scroll Indicator */}
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1, y: [0, 10, 0] }}
-              transition={{ delay: 1, duration: 2, repeat: Infinity }}
-              className="absolute bottom-8 left-1/2 -translate-x-1/2 flex flex-col items-center gap-2 cursor-pointer z-20"
-              onClick={() => handleNavClick('#features')}
-            >
-              <span className="text-[10px] font-bold tracking-[0.2em] text-stone-400 uppercase">Scroll to Explore</span>
-              <div className="w-5 h-8 rounded-full border-2 border-stone-300 flex justify-center pt-1">
-                <div className="w-1 h-2 bg-stone-400 rounded-full animate-bounce" />
-              </div>
-            </motion.div>
-          </section>
-
+          <HeroGenerateSection
+            onNavigateToQuests={goToQuestList}
+            translations={{
+              title: t.hero.title,
+              description: t.hero.description,
+            }}
+          />
 
           {/* --- Key Metrics --- */}
           <section className="py-10 border-y border-stone-200/50 bg-white/40 backdrop-blur-sm">
@@ -9855,7 +10054,7 @@ export default function LandingPage() {
       </AnimatePresence>
 
       {/* --- Footer & Final CTA (shared, hide on creator pages) --- */}
-      {activePage !== 'creator-mystery-setup' && activePage !== 'creator-workspace' && activePage !== 'creator-route-spots' && activePage !== 'creator-spot-detail' && activePage !== 'creator-storytelling' && (
+      {activePage !== 'creator-canvas' && activePage !== 'creator-mystery-setup' && activePage !== 'creator-workspace' && activePage !== 'creator-route-spots' && activePage !== 'creator-spot-detail' && activePage !== 'creator-storytelling' && (
         <footer id="contact" className="bg-brand-dark pt-20 pb-10 border-t border-brand-dark/50 mt-10">
           <div className="container mx-auto px-4 md:px-8">
 

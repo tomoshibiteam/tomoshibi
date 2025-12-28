@@ -717,33 +717,33 @@ export default function CreatorStorytelling() {
                                     </span>
                                 </div>
 
-                                {/* Epilogue - Optional */}
+                                {/* Epilogue - Required */}
                                 <div className="flex items-center gap-1.5">
-                                    <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${epilogue.trim() ? 'bg-emerald-500 text-white' : 'border border-stone-300'}`}>
-                                        {epilogue.trim() ? '✓' : ''}
+                                    <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${epilogue.trim() ? 'bg-emerald-500 text-white' : 'border border-rose-400 text-rose-400'}`}>
+                                        {epilogue.trim() ? '✓' : '!'}
                                     </div>
-                                    <span className={`text-xs ${epilogue.trim() ? 'text-emerald-700' : 'text-stone-500'}`}>
-                                        エピローグ<span className="text-[10px] ml-0.5 text-stone-400">(任意)</span>
+                                    <span className={`text-xs ${epilogue.trim() ? 'text-emerald-700' : 'text-rose-600'}`}>
+                                        エピローグ<span className="text-[10px] ml-0.5">(必須)</span>
                                     </span>
                                 </div>
 
-                                {/* Character Icons - Optional */}
+                                {/* Characters - Required (at least 1) */}
                                 <div className="flex items-center gap-1.5">
-                                    <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${characters.every(c => c.icon) ? 'bg-emerald-500 text-white' : 'border border-stone-300'}`}>
-                                        {characters.every(c => c.icon) ? '✓' : ''}
+                                    <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${characters.length >= 1 ? 'bg-emerald-500 text-white' : 'border border-rose-400 text-rose-400'}`}>
+                                        {characters.length >= 1 ? '✓' : '!'}
                                     </div>
-                                    <span className={`text-xs ${characters.every(c => c.icon) ? 'text-emerald-700' : 'text-stone-500'}`}>
-                                        アイコン<span className="text-[10px] ml-0.5 text-stone-400">({characters.filter(c => c.icon).length}/{characters.length})</span>
+                                    <span className={`text-xs ${characters.length >= 1 ? 'text-emerald-700' : 'text-rose-600'}`}>
+                                        登場人物<span className="text-[10px] ml-0.5">(1人以上必須)</span>
                                     </span>
                                 </div>
 
-                                {/* Spot Conversations - Optional */}
+                                {/* Spot Conversations - Required */}
                                 <div className="flex items-center gap-1.5">
-                                    <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${spots.length > 0 && spots.every(s => (spotConversations[s.id]?.pre?.length || 0) > 0) ? 'bg-emerald-500 text-white' : 'border border-stone-300'}`}>
-                                        {spots.length > 0 && spots.every(s => (spotConversations[s.id]?.pre?.length || 0) > 0) ? '✓' : ''}
+                                    <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${spots.length > 0 && spots.every(s => (spotConversations[s.id]?.pre?.length || 0) > 0) ? 'bg-emerald-500 text-white' : 'border border-rose-400 text-rose-400'}`}>
+                                        {spots.length > 0 && spots.every(s => (spotConversations[s.id]?.pre?.length || 0) > 0) ? '✓' : '!'}
                                     </div>
-                                    <span className={`text-xs ${spots.length > 0 && spots.every(s => (spotConversations[s.id]?.pre?.length || 0) > 0) ? 'text-emerald-700' : 'text-stone-500'}`}>
-                                        会話<span className="text-[10px] ml-0.5 text-stone-400">({spots.filter(s => (spotConversations[s.id]?.pre?.length || 0) > 0).length}/{spots.length})</span>
+                                    <span className={`text-xs ${spots.length > 0 && spots.every(s => (spotConversations[s.id]?.pre?.length || 0) > 0) ? 'text-emerald-700' : 'text-rose-600'}`}>
+                                        スポット会話<span className="text-[10px] ml-0.5">(必須)</span>
                                     </span>
                                 </div>
                             </div>
@@ -759,9 +759,9 @@ export default function CreatorStorytelling() {
                                 </button>
                                 <button
                                     onClick={() => handleSave('completed', true)}
-                                    disabled={saving || !prologue.trim()}
-                                    title={!prologue.trim() ? 'プロローグを入力してください' : ''}
-                                    className={`flex-1 py-2.5 rounded-lg font-bold text-sm transition-all disabled:opacity-50 ${prologue.trim()
+                                    disabled={saving || !prologue.trim() || !epilogue.trim() || characters.length < 1 || spots.length === 0 || !spots.every(s => (spotConversations[s.id]?.pre?.length || 0) > 0)}
+                                    title={!prologue.trim() ? 'プロローグを入力してください' : !epilogue.trim() ? 'エピローグを入力してください' : characters.length < 1 ? '登場人物を1人以上追加してください' : (spots.length === 0 || !spots.every(s => (spotConversations[s.id]?.pre?.length || 0) > 0)) ? '全スポットのスポット前会話を入力してください' : ''}
+                                    className={`flex-1 py-2.5 rounded-lg font-bold text-sm transition-all disabled:opacity-50 ${prologue.trim() && epilogue.trim() && characters.length >= 1 && spots.length > 0 && spots.every(s => (spotConversations[s.id]?.pre?.length || 0) > 0)
                                         ? 'bg-brand-dark text-white hover:bg-brand-gold hover:shadow-lg'
                                         : 'bg-stone-200 text-stone-400 cursor-not-allowed'
                                         }`}

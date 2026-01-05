@@ -23,10 +23,12 @@ import {
     X,
     Save,
     Lightbulb,
+    Crown,
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { useAuth } from './AuthProvider';
 import SectionCard from './SectionCard';
+import ProSubscriptionModal from './ProSubscriptionModal';
 import {
     Section,
     SectionStatus,
@@ -204,11 +206,11 @@ export default function QuestCreatorCanvas({
     onPublish,
     onTestRun,
 }: QuestCreatorCanvasProps) {
-    const { user } = useAuth();
+    const { user, isPro } = useAuth();
     const navigate = useNavigate();
 
     // Input state
-    const [mode, setMode] = useState<'simple' | 'custom'>('simple');
+    const [mode, setMode] = useState<'simple' | 'pro'>('simple');
     const [prompt, setPrompt] = useState('');
     const [selectedTags, setSelectedTags] = useState<string[]>([]);
     const [activeContentOptions, setActiveContentOptions] = useState<string[]>(['spots', 'story', 'mystery']);
@@ -278,6 +280,9 @@ export default function QuestCreatorCanvas({
         story: false,
         preview: false,
     });
+
+    // Pro subscription modal state
+    const [showProModal, setShowProModal] = useState(false);
 
     // URL パラメータから prompt を読み取る
     const [searchParams] = useSearchParams();
@@ -815,13 +820,20 @@ export default function QuestCreatorCanvas({
                                     Simple
                                 </button>
                                 <button
-                                    onClick={() => setMode('custom')}
-                                    className={`flex-1 py-2 rounded-full text-xs font-bold transition-all ${mode === 'custom'
-                                        ? 'bg-white text-brand-dark shadow-sm'
-                                        : 'text-stone-500'
+                                    onClick={() => {
+                                        if (!isPro) {
+                                            setShowProModal(true);
+                                        } else {
+                                            setMode('pro');
+                                        }
+                                    }}
+                                    className={`flex-1 py-2 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-1 ${mode === 'pro'
+                                        ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-sm'
+                                        : 'text-stone-500 hover:text-amber-600'
                                         }`}
                                 >
-                                    Custom
+                                    {!isPro && <Crown size={12} className="text-amber-500" />}
+                                    Pro
                                 </button>
                             </div>
 
@@ -1024,9 +1036,9 @@ export default function QuestCreatorCanvas({
                                 </div>
                             </div>
 
-                            {/* ========== Custom Constraints (Custom mode only) ========== */}
+                            {/* ========== Pro Constraints (Pro mode only) ========== */}
                             <AnimatePresence>
-                                {mode === 'custom' && (
+                                {mode === 'pro' && (
                                     <motion.div
                                         initial={{ height: 0, opacity: 0 }}
                                         animate={{ height: 'auto', opacity: 1 }}
@@ -2054,6 +2066,12 @@ export default function QuestCreatorCanvas({
                     </div>
                 </div>
             </div>
+
+            {/* Pro Subscription Modal */}
+            <ProSubscriptionModal
+                isOpen={showProModal}
+                onClose={() => setShowProModal(false)}
+            />
         </div>
     );
 }

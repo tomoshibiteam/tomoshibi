@@ -7,16 +7,19 @@ type Profile = {
   username: string | null;
   avatar_url: string | null;
   role: string;
+  subscription_status: 'free' | 'pro' | 'cancelled' | null;
 };
 
 type AuthContextType = {
   user: User | null;
   profile: Profile | null;
   loading: boolean;
+  isPro: boolean;
   signIn: (email: string, password: string) => Promise<void>;
   signUp: (email: string, password: string) => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -74,8 +77,14 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (error) throw error;
   };
 
+  const refreshProfile = async () => {
+    if (user) await fetchProfile(user.id);
+  };
+
+  const isPro = profile?.subscription_status === 'pro';
+
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signIn, signUp, resetPassword, signOut }}>
+    <AuthContext.Provider value={{ user, profile, loading, isPro, signIn, signUp, resetPassword, signOut, refreshProfile }}>
       {children}
     </AuthContext.Provider>
   );

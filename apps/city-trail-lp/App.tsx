@@ -9,6 +9,7 @@ const CreatorSpotDetail = lazy(() => import('./CreatorSpotDetail'));
 const CreatorStorytelling = lazy(() => import('./CreatorStorytelling'));
 const CreatorTestRun = lazy(() => import('./CreatorTestRun'));
 const CreatorMultilingual = lazy(() => import('./CreatorMultilingual'));
+const SubscriptionPage = lazy(() => import('./SubscriptionPage'));
 
 // Loading skeleton component
 const LoadingSkeleton = () => (
@@ -42,6 +43,7 @@ export default function App() {
                     <Route path="/creator/storytelling" element={<CreatorStorytelling />} />
                     <Route path="/creator/test-run" element={<CreatorTestRun />} />
                     <Route path="/creator/workspace/languages" element={<CreatorMultilingual />} />
+                    <Route path="/subscription" element={<SubscriptionPage />} />
                     <Route path="*" element={<LandingPage />} />
                 </Routes>
             </Suspense>

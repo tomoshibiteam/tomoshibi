@@ -1,0 +1,6 @@
+{
+    "buildCommand": "cd apps/city-trail-lp && npm install && npm run build",
+    "outputDirectory": "apps/city-trail-lp/dist",
+    "installCommand": "npm install",
+    "framework": "vite"
+}

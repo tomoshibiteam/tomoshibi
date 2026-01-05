@@ -2,9 +2,10 @@
   "name": "tomoshibi",
   "private": true,
   "scripts": {
-    "build": "npm run build:lp && npm run build:mobile",
-    "build:lp": "cd apps/city-trail-lp && npm run build",
-    "build:mobile": "cd apps/mobile && npm run build",
+    "install:all": "cd apps/city-trail-lp && npm install && cd ../mobile && npm install",
+    "build": "npm run install:all && npm run build:lp && npm run build:mobile",
+    "build:lp": "cd apps/city-trail-lp && npm install && npm run build",
+    "build:mobile": "cd apps/mobile && npm install && npm run build",
     "start": "node server.js",
     "dev:lp": "cd apps/city-trail-lp && npm run dev -- --host --port 4173",
     "dev:mobile": "cd apps/mobile && npm run dev -- --host --port 4174",

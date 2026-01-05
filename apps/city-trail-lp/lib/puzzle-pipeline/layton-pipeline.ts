@@ -14,6 +14,8 @@ import {
     MetaPuzzle,
     PipelineState,
     PipelineCallbacks,
+    PlayerPreviewOutput,
+    QuestDualOutput,
 } from './layton-types';
 import { selectMotifs } from './step1-motif';
 import { createMainPlot } from './step2-plot';
@@ -23,12 +25,13 @@ import { retrieveEvidence, geocodeSpotName } from './retriever';
 
 /**
  * 完全なクエスト生成パイプライン
+ * 戻り値は二層構造: player_preview (ネタバレなし) + creator_payload (フルデータ)
  */
 export async function generateLaytonQuest(
     request: QuestGenerationRequest,
     apiKey: string,
     callbacks?: Partial<PipelineCallbacks>
-): Promise<QuestOutput> {
+): Promise<QuestDualOutput> {
     const onProgress = callbacks?.onProgress || (() => { });
     const onSpotComplete = callbacks?.onSpotComplete || (() => { });
     const onPlotComplete = callbacks?.onPlotComplete || (() => { });
@@ -166,7 +169,23 @@ export async function generateLaytonQuest(
             },
         };
 
-        return questOutput;
+        // プレイヤープレビュー生成（ネタバレなし）
+        onProgress({
+            current_step: 4,
+            step_name: 'validation',
+            progress: 95,
+        });
+
+        const playerPreview = await generatePlayerPreview(
+            questOutput,
+            request,
+            apiKey
+        );
+
+        return {
+            player_preview: playerPreview,
+            creator_payload: questOutput,
+        };
     } catch (error: any) {
         onError(error, {
             current_step: 1,
@@ -480,5 +499,173 @@ ${originalPrompt}
         return title.replace(/^["「『]|["」』]$/g, '').trim() || `${originalPrompt.slice(0, 20)}の謎`;
     } catch {
         return `${originalPrompt.slice(0, 20)}の謎`;
+    }
+}
+
+/**
+ * プレイヤープレビュー生成（ネタバレなし）
+ * クリエイターが"プレイヤーとして"楽しめる情報だけを生成
+ */
+async function generatePlayerPreview(
+    quest: QuestOutput,
+    request: QuestGenerationRequest,
+    apiKey: string
+): Promise<PlayerPreviewOutput> {
+    // ルート距離の概算（スポット間平均300m × スポット数）
+    const estimatedDistanceKm = (quest.spots.length * 0.3).toFixed(1);
+
+    // 所要時間（リクエストから or スポット数×15分）
+    const estimatedTimeMin = String(quest.spots.length * 15);
+
+    // 難易度ラベル
+    const difficultyLabel = request.difficulty === 'easy' ? '初級' : request.difficulty === 'hard' ? '上級' : '中級';
+
+    const prompt = `
+あなたは「プレイヤーが"やってみたい！"と思える」クエスト紹介文を作る専門家です。
+
+【重要ルール：ネタバレ禁止】
+- 謎の問題文・答え・ヒントの具体は絶対に書かない
+- 「どう解くか」ではなく「何が起きるか」だけを書く
+- 抽象語（ワクワク、ドキドキ、謎が待っている）は禁止
+- 「固有名詞＋動詞＋現象」で具体的に書く
+
+【クエスト情報（制作用データ：プレビューには直接出さない）】
+タイトル：${quest.quest_title}
+物語：${quest.main_plot.premise}
+目的：${quest.main_plot.goal}
+スポット数：${quest.spots.length}箇所
+スポット名：${quest.spots.map(s => s.spot_name).join('、')}
+難易度：${difficultyLabel}
+
+【出力するJSON（日本語）】
+{
+  "one_liner": "30〜45文字のキャッチコピー",
+  "trailer": "80〜140文字の予告文（2〜3行）",
+  "mission": "あなたは◯◯して最後に◯◯を突き止める（1行）",
+  "teasers": [
+    "スポット名で◯◯すると、△△が見えてくる（25〜40文字）",
+    "別のスポットで◯◯すると、△△が起きる",
+    "最後に◯◯すると、△△が現れる"
+  ],
+  "summary_actions": ["歩く", "集める", "照合する"],
+  "difficulty_reason": "ひらめき型：考える時間が必要な謎が◯回ある（1〜2行）",
+  "weather_note": "雨天OK/雨天注意/屋外多め など",
+  "highlight_spots": [
+    { "name": "${quest.spots[0]?.spot_name || 'スポット1'}", "teaser_experience": "ここで◯◯すると△△が見える（答えは出さない）" },
+    { "name": "${quest.spots[1]?.spot_name || 'スポット2'}", "teaser_experience": "ここで◯◯すると△△が起きる" },
+    { "name": "${quest.spots[Math.min(2, quest.spots.length - 1)]?.spot_name || 'スポット3'}", "teaser_experience": "ここで◯◯すると△△が現れる" }
+  ],
+  "tags": ["ミステリー好き", "デート向け", "初心者OK", "歩き多め", "雨でもOK"]
+}
+
+【重要】
+- teasersは3つとも別の種類の仕掛け感を出す（反射/音/置換/並べ替え/看板/模様/視点など）
+- highlight_spotsは同じ言い回しにしない
+- tagsは5〜7個
+
+JSONのみ出力してください。
+`.trim();
+
+    try {
+        const res = await fetch(
+            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
+            {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    contents: [{ parts: [{ text: prompt }] }],
+                }),
+            }
+        );
+
+        if (!res.ok) {
+            throw new Error(`Gemini API error: ${res.status}`);
+        }
+
+        const data = await res.json();
+        const responseText = data?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+        const jsonMatch = responseText.match(/```json([\s\S]*?)```/);
+        const jsonText = jsonMatch ? jsonMatch[1] : responseText;
+        const parsed = JSON.parse(jsonText.trim());
+
+        return {
+            title: quest.quest_title,
+            one_liner: parsed.one_liner || '街を歩いて謎を解き明かす',
+            trailer: parsed.trailer || quest.main_plot.premise.slice(0, 140),
+            mission: parsed.mission || quest.main_plot.goal,
+            teasers: parsed.teasers || [],
+            summary_actions: parsed.summary_actions || ['歩く', '探す', '解く'],
+            route_meta: {
+                area_start: quest.spots[0]?.spot_name || '',
+                area_end: quest.spots[quest.spots.length - 1]?.spot_name || '',
+                distance_km: estimatedDistanceKm,
+                estimated_time_min: estimatedTimeMin,
+                spots_count: quest.spots.length,
+                outdoor_ratio_percent: '70',
+                recommended_people: '1〜4人',
+                difficulty_label: difficultyLabel,
+                difficulty_reason: parsed.difficulty_reason || 'ひらめき型：考える時間が必要な謎があります',
+                weather_note: parsed.weather_note || '雨天注意',
+            },
+            highlight_spots: parsed.highlight_spots || quest.spots.slice(0, 3).map(s => ({
+                name: s.spot_name,
+                teaser_experience: 'この場所で特別な体験が待っています',
+            })),
+            tags: parsed.tags || ['ミステリー好き', '友達と一緒に', '週末散歩'],
+            prep_and_safety: [
+                'スマートフォン（充電済み）',
+                '歩きやすい靴',
+                '飲み物（推奨）',
+            ],
+            cta_copy: {
+                primary: 'プレイヤーとして挑戦する',
+                secondary: 'クリエイターとして編集する（ネタバレ）',
+                note: 'まずは非公開のままテストプレイできます。編集すると謎と答えが表示されます（ネタバレ注意）。',
+            },
+        };
+    } catch (error) {
+        console.error('Player preview generation error:', error);
+
+        // フォールバック：最低限のプレビューを生成
+        return {
+            title: quest.quest_title,
+            one_liner: '街を歩いて謎を解き明かす冒険',
+            trailer: quest.main_plot.premise.slice(0, 140),
+            mission: quest.main_plot.goal,
+            teasers: [
+                `${quest.spots[0]?.spot_name || '最初のスポット'}で手がかりを見つける`,
+                '隠されたメッセージを読み解く',
+                '最後に全ての謎がつながる',
+            ],
+            summary_actions: ['歩く', '探す', '解く'],
+            route_meta: {
+                area_start: quest.spots[0]?.spot_name || '',
+                area_end: quest.spots[quest.spots.length - 1]?.spot_name || '',
+                distance_km: estimatedDistanceKm,
+                estimated_time_min: estimatedTimeMin,
+                spots_count: quest.spots.length,
+                outdoor_ratio_percent: '70',
+                recommended_people: '1〜4人',
+                difficulty_label: difficultyLabel,
+                difficulty_reason: 'ほど良い難易度で楽しめます',
+                weather_note: '雨天注意',
+            },
+            highlight_spots: quest.spots.slice(0, 3).map(s => ({
+                name: s.spot_name,
+                teaser_experience: 'この場所で特別な発見が待っています',
+            })),
+            tags: ['ミステリー好き', '友達と一緒に', '週末散歩', '初心者OK', 'デート向け'],
+            prep_and_safety: [
+                'スマートフォン（充電済み）',
+                '歩きやすい靴',
+                '飲み物（推奨）',
+            ],
+            cta_copy: {
+                primary: 'プレイヤーとして挑戦する',
+                secondary: 'クリエイターとして編集する（ネタバレ）',
+                note: 'まずは非公開のままテストプレイできます。編集すると謎と答えが表示されます（ネタバレ注意）。',
+            },
+        };
     }
 }

@@ -24,6 +24,9 @@ import {
     Save,
     Lightbulb,
     Crown,
+    Zap,
+    Lock,
+    Globe,
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { useAuth } from './AuthProvider';
@@ -49,8 +52,11 @@ import {
     SpotScene,
     MainPlot,
     PipelineState,
+    PlayerPreviewOutput,
+    QuestDualOutput,
 } from './lib/puzzle-pipeline';
 import { DEMO_BASIC_INFO, DEMO_STORY, DEMO_SPOTS } from './lib/demo-data';
+import PlayerPreview from './PlayerPreview';
 
 interface QuestCreatorCanvasProps {
     questId: string | null;
@@ -242,6 +248,7 @@ export default function QuestCreatorCanvas({
     const [basicInfo, setBasicInfo] = useState<BasicInfoData | null>(null);
     const [spots, setSpots] = useState<SpotData[]>([]);
     const [story, setStory] = useState<StoryData | null>(null);
+    const [playerPreviewData, setPlayerPreviewData] = useState<PlayerPreviewOutput | null>(null);
 
     // Section states
     const [sectionStates, setSectionStates] = useState<Record<string, SectionStatus>>({});
@@ -251,13 +258,18 @@ export default function QuestCreatorCanvas({
     // Mobile tab state
     const [activeTab, setActiveTab] = useState<'input' | 'canvas'>('input');
 
+    // View mode: input -> preview (after generation) -> canvas (after edit click)
+    const [viewMode, setViewMode] = useState<'input' | 'preview' | 'canvas'>('input');
+
     // Edit form states
     const [editBasicInfo, setEditBasicInfo] = useState<BasicInfoData | null>(null);
     const [editSpots, setEditSpots] = useState<Record<string, SpotData>>({});
     const [editStory, setEditStory] = useState<StoryData | null>(null);
 
-    // Credits (mock for now)
-    const [credits] = useState(50);
+    // AI Credits - Free: 50/month, Pro: 500/month
+    const maxCredits = isPro ? 500 : 50;
+    const [creditsUsed, setCreditsUsed] = useState(0);
+    const creditsRemaining = maxCredits - creditsUsed;
 
     // Content tab state (route / story / mystery)
     const [contentTab, setContentTab] = useState<'route' | 'story' | 'mystery'>('route');
@@ -573,7 +585,10 @@ export default function QuestCreatorCanvas({
 
         setIsGenerating(true);
         setError(null);
-        setActiveTab('canvas');
+
+        // Switch to player preview mode immediately (UI shows preview while generation happens in background)
+        setViewMode('preview');
+        setActiveTab('canvas'); // Ensure right panel is visible on mobile
 
         // Reset state
         setBasicInfo(null);
@@ -601,7 +616,7 @@ export default function QuestCreatorCanvas({
             };
 
             // Generate using Layton Pipeline
-            const quest: QuestOutput = await generateLaytonQuest(request, apiKey, {
+            const dualOutput: QuestDualOutput = await generateLaytonQuest(request, apiKey, {
                 onProgress: (state: PipelineState) => {
                     const stepNames: Record<string, string> = {
                         motif_selection: 'モチーフを選定中...',
@@ -661,25 +676,59 @@ export default function QuestCreatorCanvas({
                 },
             });
 
-            // Update basic info with final title
+            // Generate highlights from quest data
+            const highlights = [
+                `${spots.length}箇所の魅力的なスポットを巡る`,
+                'ミステリアスな物語',
+                constraints.difficulty === 'easy' ? '初心者でも楽しめる' : constraints.difficulty === 'hard' ? '謎解き上級者向け' : '謎解き好きにぴったり',
+                currentLocation ? `${currentLocation.address || '現在地'}周辺を探索` : '街を探索する体験',
+            ].filter(Boolean);
+
+            // Generate recommended for
+            const recommendedFor = [];
+            if (constraints.difficulty === 'easy') {
+                recommendedFor.push('初めての謎解き体験');
+            }
+            if (constraints.duration <= 60) {
+                recommendedFor.push('週末のショート散歩');
+            }
+            recommendedFor.push('友達と一緒に');
+            if (selectedTags.includes('歴史')) {
+                recommendedFor.push('歴史好きな方');
+            }
+
+            // Update basic info with final title and player_preview data
+            const preview = dualOutput.player_preview;
+            const quest = dualOutput.creator_payload;
+
+            // Store player preview for PlayerPreview component
+            setPlayerPreviewData(preview);
+
             setBasicInfo({
                 title: quest.quest_title,
                 description: quest.main_plot.premise,
-                area: '',
+                area: currentLocation?.address || '',
                 difficulty: constraints.difficulty === 'easy' ? '初級' : constraints.difficulty === 'medium' ? '中級' : '上級',
-                tags: selectedTags,
+                tags: preview.tags || selectedTags,
+                highlights: preview.teasers?.slice(0, 4) || highlights,
+                recommendedFor: preview.tags?.slice(0, 7) || recommendedFor,
             });
 
-            // Set story data
+            // Set story data from preview and quest
             setStory({
                 castName: '謎の案内人',
                 castTone: '知的でミステリアス',
                 prologueTitle: '冒険の始まり',
-                prologueBody: quest.main_plot.premise + '\n\n' + quest.main_plot.goal,
+                prologueBody: preview.trailer || quest.main_plot.premise + '\n\n' + quest.main_plot.goal,
                 epilogueBody: quest.main_plot.final_reveal_outline + '\n\n' + quest.meta_puzzle.explanation,
                 characters: [
                     { id: 'c1', name: '案内人', role: 'ナビゲーター', color: 'bg-brand-gold', tone: 'ミステリアス' }
                 ],
+                atmosphere: preview.route_meta.weather_note || 'ミステリアスな雰囲気',
+                whatToExpect: preview.summary_actions?.join(' → ') || '歩く → 探す → 解く',
+                mission: preview.mission,
+                clearCondition: '最終スポットですべての暗号を解き、エンディングに到達する',
+                teaser: preview.teasers?.[0] || 'このクエストには秘密が待っています',
             });
 
             // Final state updates
@@ -799,7 +848,7 @@ export default function QuestCreatorCanvas({
 
     return (
         <div className="min-h-screen bg-white pt-16">
-            {/* Main Content - uses shared header from LandingPage */}
+            {/* Main Canvas Content - always show two-column layout */}
             <div className="min-h-screen">
                 <div className="flex flex-col md:flex-row">
                     {/* Left Panel - Input */}
@@ -808,33 +857,54 @@ export default function QuestCreatorCanvas({
                             }`}
                     >
                         <div className="p-5 pt-12 space-y-5">
-                            {/* Mode toggle - visible on all screen sizes */}
-                            <div className="flex items-center bg-stone-100 rounded-full p-0.5">
-                                <button
-                                    onClick={() => setMode('simple')}
-                                    className={`flex-1 py-2 rounded-full text-xs font-bold transition-all ${mode === 'simple'
-                                        ? 'bg-white text-brand-dark shadow-sm'
-                                        : 'text-stone-500'
-                                        }`}
-                                >
-                                    Simple
-                                </button>
-                                <button
-                                    onClick={() => {
-                                        if (!isPro) {
-                                            setShowProModal(true);
-                                        } else {
-                                            setMode('pro');
-                                        }
-                                    }}
-                                    className={`flex-1 py-2 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-1 ${mode === 'pro'
-                                        ? 'bg-gradient-to-r from-amber-500 to-amber-600 text-white shadow-sm'
-                                        : 'text-stone-500 hover:text-amber-600'
-                                        }`}
-                                >
-                                    {!isPro && <Crown size={12} className="text-amber-500" />}
-                                    Pro
-                                </button>
+                            {/* Mode toggle - hidden for Pro users (always Pro mode) */}
+                            {!isPro && (
+                                <div className="flex items-center bg-stone-100 rounded-full p-0.5">
+                                    <button
+                                        onClick={() => setMode('simple')}
+                                        className={`flex-1 py-2 rounded-full text-xs font-bold transition-all ${mode === 'simple'
+                                            ? 'bg-white text-brand-dark shadow-sm'
+                                            : 'text-stone-500'
+                                            }`}
+                                    >
+                                        Free
+                                    </button>
+                                    <button
+                                        onClick={() => setShowProModal(true)}
+                                        className="flex-1 py-2 rounded-full text-xs font-bold transition-all flex items-center justify-center gap-1 text-stone-500 hover:text-amber-600"
+                                    >
+                                        <Crown size={12} className="text-amber-500" />
+                                        Pro
+                                    </button>
+                                </div>
+                            )}
+
+                            {/* ========== AI CREDITS DISPLAY ========== */}
+                            <div className="p-3 rounded-xl bg-gradient-to-r from-stone-50 to-amber-50/50 border border-stone-200">
+                                <div className="flex items-center justify-between mb-2">
+                                    <div className="flex items-center gap-2">
+                                        <Zap size={14} className="text-brand-gold" />
+                                        <span className="text-xs font-bold text-stone-600">AIクレジット</span>
+                                    </div>
+                                    <span className={`text-xs font-bold ${creditsRemaining < 10 ? 'text-rose-500' : 'text-stone-500'}`}>
+                                        {creditsRemaining}/{maxCredits} 残り
+                                    </span>
+                                </div>
+                                <div className="w-full h-2 bg-stone-200 rounded-full overflow-hidden">
+                                    <div
+                                        className={`h-full transition-all ${creditsRemaining < 10 ? 'bg-rose-400' : 'bg-brand-gold'}`}
+                                        style={{ width: `${(creditsRemaining / maxCredits) * 100}%` }}
+                                    />
+                                </div>
+                                {!isPro && (
+                                    <button
+                                        onClick={() => setShowProModal(true)}
+                                        className="mt-2 w-full flex items-center justify-center gap-1 text-[10px] font-bold text-amber-600 hover:text-amber-700"
+                                    >
+                                        <Crown size={10} />
+                                        Proなら月500クレジット →
+                                    </button>
+                                )}
                             </div>
 
                             {/* ========== 1) MAIN PROMPT (Hero) ========== */}
@@ -966,7 +1036,79 @@ export default function QuestCreatorCanvas({
                                 </div>
                             </div>
 
-                            {/* ========== 5) LOCATION & RADIUS ========== */}
+                            {/* ========== 5) TEMPLATE SELECTION ========== */}
+                            <div>
+                                <label className="flex items-center gap-2 text-xs font-medium text-stone-500 mb-2">
+                                    📋 テンプレート
+                                    {!isPro && <span className="text-amber-500 text-[10px]">(Pro: 目的別テンプレ解放)</span>}
+                                </label>
+                                <div className="grid grid-cols-2 gap-2">
+                                    {/* Basic Template - Free */}
+                                    <button
+                                        className="p-3 rounded-xl bg-white border-2 border-brand-gold text-left transition-all"
+                                    >
+                                        <span className="text-xs font-bold text-brand-dark">基本テンプレ</span>
+                                        <p className="text-[10px] text-stone-500 mt-0.5">シンプルな謎解き</p>
+                                    </button>
+                                    {/* Pro Templates - Locked for Free users */}
+                                    {[
+                                        { id: 'family', label: '👨‍👩‍👧 家族向け', desc: '子連れ対応' },
+                                        { id: 'gourmet', label: '🍜 グルメツアー', desc: '食べ歩き謎' },
+                                        { id: 'history', label: '🏯 歴史探訪', desc: '史跡巡り' },
+                                    ].map((tmpl) => (
+                                        <button
+                                            key={tmpl.id}
+                                            onClick={() => !isPro && setShowProModal(true)}
+                                            className={`p-3 rounded-xl border text-left transition-all relative ${isPro
+                                                ? 'bg-white border-stone-200 hover:border-brand-gold/50'
+                                                : 'bg-stone-50 border-stone-200 opacity-70'
+                                                }`}
+                                        >
+                                            {!isPro && (
+                                                <Lock size={12} className="absolute top-2 right-2 text-stone-400" />
+                                            )}
+                                            <span className="text-xs font-bold text-brand-dark">{tmpl.label}</span>
+                                            <p className="text-[10px] text-stone-500 mt-0.5">{tmpl.desc}</p>
+                                        </button>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* ========== 6) MULTI-LANGUAGE (Pro Only) ========== */}
+                            <div className={`p-3 rounded-xl border ${isPro ? 'bg-gradient-to-r from-emerald-50 to-teal-50 border-emerald-200' : 'bg-stone-50 border-stone-200'}`}>
+                                <div className="flex items-center justify-between">
+                                    <div className="flex items-center gap-2">
+                                        <Globe size={14} className={isPro ? 'text-emerald-600' : 'text-stone-400'} />
+                                        <span className={`text-xs font-bold ${isPro ? 'text-emerald-700' : 'text-stone-500'}`}>多言語対応</span>
+                                        {!isPro && <Lock size={10} className="text-stone-400" />}
+                                    </div>
+                                    {isPro ? (
+                                        <div className="flex gap-1">
+                                            {['EN', 'ZH', 'KO'].map((lang) => (
+                                                <button
+                                                    key={lang}
+                                                    className="px-2 py-1 rounded text-[10px] font-bold bg-white border border-emerald-200 text-emerald-700 hover:bg-emerald-100"
+                                                >
+                                                    {lang}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    ) : (
+                                        <button
+                                            onClick={() => setShowProModal(true)}
+                                            className="flex items-center gap-1 px-2 py-1 rounded text-[10px] font-bold text-amber-600 hover:text-amber-700"
+                                        >
+                                            <Crown size={10} />
+                                            Proで解放
+                                        </button>
+                                    )}
+                                </div>
+                                {isPro && (
+                                    <p className="text-[10px] text-emerald-600 mt-1">英語・中国語・韓国語に自動翻訳</p>
+                                )}
+                            </div>
+
+                            {/* ========== 7) LOCATION & RADIUS ========== */}
                             <div className="space-y-3 p-4 bg-stone-50 rounded-xl border border-stone-100">
                                 <div>
                                     <label className="flex items-center gap-2 text-xs font-medium text-stone-500 mb-2">
@@ -1180,7 +1322,72 @@ export default function QuestCreatorCanvas({
                     >
                         {/* Content area */}
                         <div className="p-4 md:p-6 min-h-[calc(100vh-4rem)] overflow-y-auto">
-                            {!hasContent && !isGenerating ? (
+                            {/* Player Preview Mode - shown after generation, no spoilers */}
+                            {viewMode === 'preview' && basicInfo ? (
+                                <PlayerPreview
+                                    basicInfo={basicInfo}
+                                    spots={spots.map((s, idx) => ({
+                                        id: s.id,
+                                        name: s.name,
+                                        lat: s.lat,
+                                        lng: s.lng,
+                                        isHighlight: idx < 3, // Mark first 3 spots as highlights
+                                        highlightDescription: idx < 3 ? `${s.name}では、${s.sceneRole || 'この場所ならではの'}謎解きが待っています。` : undefined
+                                    }))}
+                                    story={story || null}
+                                    estimatedDuration={constraints.duration}
+                                    isGenerating={isGenerating}
+                                    generationPhase={generationPhase}
+                                    playerPreviewData={playerPreviewData}
+                                    routeMetadata={playerPreviewData?.route_meta ? {
+                                        distanceKm: parseFloat(playerPreviewData.route_meta.distance_km) || spots.length * 0.3,
+                                        walkingMinutes: parseInt(playerPreviewData.route_meta.estimated_time_min) || constraints.duration,
+                                        outdoorRatio: parseFloat(playerPreviewData.route_meta.outdoor_ratio_percent) / 100 || 0.7,
+                                        startPoint: playerPreviewData.route_meta.area_start,
+                                        endPoint: playerPreviewData.route_meta.area_end,
+                                    } : {
+                                        distanceKm: spots.length > 0 ? spots.length * 0.3 : undefined,
+                                        walkingMinutes: constraints.duration,
+                                        outdoorRatio: 0.7,
+                                        startPoint: spots[0]?.name,
+                                        endPoint: spots[spots.length - 1]?.name,
+                                    }}
+                                    difficultyExplanation={
+                                        playerPreviewData?.route_meta?.difficulty_reason ||
+                                        (constraints.difficulty === 'easy'
+                                            ? 'ひらめき型：ヒントあり、初心者でも楽しめます'
+                                            : constraints.difficulty === 'hard'
+                                                ? '推理型：3〜4回の詰まりポイントあり（上級者向け）'
+                                                : '探索＋推理：現地の情報を読み解くタイプ（ほど良い難易度）')
+                                    }
+                                    onPlay={() => {
+                                        // Start play session - navigate to test run with quest data
+                                        if (questId) {
+                                            // Save the quest first, then navigate to play
+                                            handleSaveQuest().then(() => {
+                                                onTestRun();
+                                            });
+                                        } else {
+                                            onTestRun();
+                                        }
+                                    }}
+                                    onEdit={() => {
+                                        // Switch to canvas (edit) mode - shows spoilers
+                                        setViewMode('canvas');
+                                        setActiveTab('canvas');
+                                    }}
+                                    onSaveDraft={() => {
+                                        // Save and go back to home
+                                        if (questId) {
+                                            handleSaveQuest().then(() => {
+                                                onBack();
+                                            });
+                                        } else {
+                                            onBack();
+                                        }
+                                    }}
+                                />
+                            ) : !hasContent && !isGenerating ? (
                                 /* Empty State */
                                 <motion.div
                                     initial={{ opacity: 0, y: 20 }}
@@ -1198,7 +1405,7 @@ export default function QuestCreatorCanvas({
                                     </p>
                                 </motion.div>
                             ) : (
-                                /* Dashboard Content */
+                                /* Dashboard Content (Canvas Mode or Generating) */
                                 <div className="space-y-4">
                                     {/* Generation Progress (when generating) */}
                                     {isGenerating && generationPhase && (

@@ -81,7 +81,8 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
     if (user) await fetchProfile(user.id);
   };
 
-  const isPro = profile?.subscription_status === 'pro';
+  // Pro access: subscription_status === 'pro' OR admin role
+  const isPro = profile?.subscription_status === 'pro' || profile?.role === 'admin';
 
   return (
     <AuthContext.Provider value={{ user, profile, loading, isPro, signIn, signUp, resetPassword, signOut, refreshProfile }}>

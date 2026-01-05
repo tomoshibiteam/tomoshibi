@@ -10,8 +10,10 @@ interface ProSubscriptionModalProps {
 }
 
 const QUICK_FEATURES = [
-    { icon: Zap, text: 'カスタム設定（スポット数・難易度・制限時間）' },
-    { icon: Sparkles, text: '無制限のクエスト生成' },
+    { icon: Zap, text: 'AIクレジット10倍増量（月50→500）' },
+    { icon: Sparkles, text: '目的別テンプレート（家族/グルメ/歴史など）' },
+    { icon: Crown, text: '多言語対応（英語・中国語・韓国語）' },
+    { icon: Zap, text: '手数料優遇（30%→20%）' },
 ];
 
 export default function ProSubscriptionModal({ isOpen, onClose }: ProSubscriptionModalProps) {
@@ -93,7 +95,7 @@ export default function ProSubscriptionModal({ isOpen, onClose }: ProSubscriptio
                                 {/* Price */}
                                 <div className="text-center">
                                     <div className="flex items-end justify-center gap-1">
-                                        <span className="text-3xl font-bold text-brand-dark">¥980</span>
+                                        <span className="text-3xl font-bold text-brand-dark">¥1,980</span>
                                         <span className="text-stone-400 pb-0.5">/月</span>
                                     </div>
                                 </div>

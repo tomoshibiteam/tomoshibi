@@ -291,3 +291,65 @@ export interface PipelineCallbacks {
     onComplete: (quest: QuestOutput) => void;
     onError: (error: Error, state: PipelineState) => void;
 }
+
+// =============================================================================
+// 二層出力: プレイヤープレビュー（ネタバレ禁止）
+// =============================================================================
+
+/**
+ * プレイヤープレビュー出力
+ * クリエイターが"プレイヤーとして"楽しめる情報のみを含む
+ * 謎の問題文、答え、ヒントの具体は絶対に含めない
+ */
+export interface PlayerPreviewOutput {
+    /** クエストタイトル */
+    title: string;
+    /** 1行キャッチコピー（30〜45文字） */
+    one_liner: string;
+    /** 予告文（80〜140文字/2〜3行） */
+    trailer: string;
+    /** ミッション（あなたは◯◯して最後に◯◯を突き止める） */
+    mission: string;
+    /** 体験の瞬間ティザー（固有名詞+動詞+現象）×3、ネタバレなし */
+    teasers: string[];
+    /** 行動サマリー（例：歩く→集める→照合する） */
+    summary_actions: string[];
+    /** ルートメタ情報 */
+    route_meta: {
+        area_start: string;
+        area_end: string;
+        distance_km: string;        // 1桁小数
+        estimated_time_min: string; // 分
+        spots_count: number;
+        outdoor_ratio_percent: string; // 0-100
+        recommended_people: string;
+        difficulty_label: string;
+        difficulty_reason: string;  // 1〜2行
+        weather_note: string;       // 雨天OK/雨天注意/夜間注意
+    };
+    /** 注目スポット（3つ、体験の瞬間だけ） */
+    highlight_spots: {
+        name: string;
+        teaser_experience: string;  // 現象だけ、答えは出さない
+    }[];
+    /** タグ（5〜7個） */
+    tags: string[];
+    /** 準備と注意事項 */
+    prep_and_safety: string[];
+    /** CTAコピー */
+    cta_copy: {
+        primary: string;
+        secondary: string;
+        note: string;
+    };
+}
+
+/**
+ * 二層出力の統合型
+ * player_preview: ネタバレなしでワクワクさせる情報
+ * creator_payload: 制作・編集用フルデータ（既存QuestOutput）
+ */
+export interface QuestDualOutput {
+    player_preview: PlayerPreviewOutput;
+    creator_payload: QuestOutput;
+}

@@ -7325,7 +7325,8 @@ export default function LandingPage() {
     if (pathname === '/profile') return { page: 'profile' as AppPage };
     if (pathname === '/creator/start') return { page: 'creator-start' as AppPage };
     if (pathname === '/creator/canvas' || pathname.startsWith('/creator/canvas/')) {
-      const qId = pathname.split('/')[3] || null;
+      let qId = pathname.split('/')[3] || null;
+      if (qId === 'new') qId = null;
       return { page: 'creator-canvas' as AppPage, questId: qId };
     }
     if (pathname === '/creator/mystery-setup') return { page: 'creator-mystery-setup' as AppPage };
@@ -7731,12 +7732,8 @@ export default function LandingPage() {
       goToAuth('login');
       return;
     }
-    // Skip modal and go directly to creator canvas
-    const newQuestId = questId || await createDraftQuest();
-    if (newQuestId) {
-      applyRoute('creator-canvas', { questId: newQuestId });
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
+    // Always create a new quest when clicking the create button - redirect to AI canvas
+    navigate('/creator/canvas/new');
   };
 
   const closeCreatorOnboarding = () => {
@@ -9208,44 +9205,8 @@ ${(input.challengeTypes || []).length > 0 ? `- チャレンジタイプ: ${(inpu
           onBack={() => goToProfile()}
           onStart={async () => {
             if (selectedQuestType === 'mystery') {
-              // 古いクエストのworkspace-stepを削除
-              const oldQuestId = localStorage.getItem('quest-id');
-              if (oldQuestId) {
-                localStorage.removeItem(`workspace-step:${oldQuestId}`);
-              }
-              // 先にすべてのステートをリセット
-              setQuestTitle('');
-              setQuestDescription('');
-              setQuestLocation('');
-              setQuestLatLng(null);
-              setRouteSpots([]);
-              setActiveWorkspaceStep(1);
-              setActiveSpotId(null);
-              setQuestCategoryTags([]);
-              setQuestHashtags([]);
-              setStorySettings({
-                castName: '',
-                castTone: '',
-                castIcon: '',
-                prologueTitle: '',
-                prologueBody: '',
-                prologueImage: '',
-                epilogueBody: '',
-                socialMessage: '',
-                epilogueImage: '',
-                characters: [],
-                scenario: [],
-              });
-              // 新規クエストを作成
-              const newId = await createDraftQuest();
-              if (newId) {
-                // 新しいクエストIDをセット（createDraftQuest内でも設定されるが明示的に）
-                localStorage.setItem('quest-id', newId);
-                localStorage.setItem(`workspace-step:${newId}`, '1');
-                // 新規作成フラグを設定（ID紐付けで確実にする）
-                localStorage.setItem(`quest-init-status:${newId}`, 'pending');
-              }
-              goToWorkspace();
+              // Navigate to AI Quest Creator Canvas directly
+              navigate('/creator/canvas/new');
             } else {
               goToCreatorPage();
             }

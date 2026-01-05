@@ -585,92 +585,7 @@ const BusinessLandingPage = () => {
     };
 
     return (
-        <div className="min-h-screen bg-brand-base font-sans selection:bg-brand-gold/30 text-brand-dark">
-            {/* --- Header (Same as Main LP) --- */}
-            <nav
-                className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${isScrolled ? 'bg-white/80 backdrop-blur-md py-4 shadow-lg border-b border-stone-200/50' : 'bg-transparent py-6'
-                    }`}
-            >
-                <div className="container mx-auto px-4 md:px-8 flex items-center justify-between">
-                    <button onClick={() => navigate('/')} className="flex items-center gap-2 group hover:opacity-80 transition-opacity">
-                        <TomoshibiLogo className="h-8 md:h-10 w-auto" />
-                    </button>
-
-                    {/* Desktop Nav */}
-                    <div className="hidden md:flex items-center gap-8">
-                        <button
-                            onClick={() => handleNavClick('#features')}
-                            className="text-sm font-medium text-stone-600 hover:text-brand-gold transition-colors relative group"
-                        >
-                            特徴
-                            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-brand-gold transition-all group-hover:w-full" />
-                        </button>
-                        <button
-                            onClick={() => handleNavClick('#how-it-works')}
-                            className="text-sm font-medium text-stone-600 hover:text-brand-gold transition-colors relative group"
-                        >
-                            遊び方
-                            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-brand-gold transition-all group-hover:w-full" />
-                        </button>
-                        <button
-                            onClick={() => navigate('/creators')}
-                            className="text-sm font-medium text-stone-600 hover:text-brand-gold transition-colors relative group"
-                        >
-                            クリエイターの方へ
-                            <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-brand-gold transition-all group-hover:w-full" />
-                        </button>
-
-                        {/* Divider */}
-                        <div className="w-px h-5 bg-stone-300" />
-
-                        {/* B2B link - currently active */}
-                        <span className="text-sm font-medium text-brand-gold">
-                            自治体・企業の方へ
-                        </span>
-
-                        {/* Primary CTA */}
-                        <button
-                            onClick={() => navigate('/quests')}
-                            className="bg-brand-gold text-white px-6 py-2.5 rounded-full text-sm font-bold hover:bg-amber-600 transition-all shadow-md hover:shadow-lg"
-                        >
-                            クエストを探す
-                        </button>
-
-                        {/* Login */}
-                        <button
-                            onClick={() => navigate('/auth')}
-                            className="px-4 py-2 rounded-full border border-stone-300 bg-white/80 backdrop-blur text-sm font-bold text-brand-dark hover:border-brand-gold hover:text-brand-gold transition-all shadow-sm"
-                        >
-                            ログイン
-                        </button>
-                    </div>
-
-                    {/* Mobile Menu */}
-                    <button onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)} className="md:hidden w-10 h-10 flex items-center justify-center">
-                        {isMobileMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-                    </button>
-                </div>
-
-                {/* Mobile Nav Dropdown */}
-                <AnimatePresence>
-                    {isMobileMenuOpen && (
-                        <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            className="md:hidden bg-white border-t border-stone-100 overflow-hidden"
-                        >
-                            <div className="p-4 space-y-2">
-                                <button onClick={() => { navigate('/'); setIsMobileMenuOpen(false); }} className="block w-full text-left py-3 px-4 rounded-lg hover:bg-stone-50 font-medium">ホーム</button>
-                                <button onClick={() => { navigate('/creators'); setIsMobileMenuOpen(false); }} className="block w-full text-left py-3 px-4 rounded-lg hover:bg-stone-50 font-medium">クリエイターの方へ</button>
-                                <div className="py-3 px-4 text-brand-gold font-bold">自治体・企業の方へ（現在のページ）</div>
-                                <button onClick={() => { navigate('/quests'); setIsMobileMenuOpen(false); }} className="block w-full text-left py-3 px-4 rounded-lg bg-brand-gold text-white font-bold">クエストを探す</button>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </nav>
-
+        <>
             {/* --- Hero Section --- */}
             <section className="relative pt-32 pb-20 md:pt-48 md:pb-32 px-4 overflow-hidden">
                 <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-amber-100/40 via-white to-white" />
@@ -895,7 +810,7 @@ const BusinessLandingPage = () => {
 
             {/* Contact Modal */}
             <ContactModal isOpen={isContactOpen} onClose={() => setIsContactOpen(false)} />
-        </div>
+        </>
     );
 };
 

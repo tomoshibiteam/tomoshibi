@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import {
   MapPin,
   Smartphone,
@@ -56,6 +56,8 @@ import CreatorMultilingual from './CreatorMultilingual';
 import QuestCreatorCanvas from './QuestCreatorCanvas';
 import HeroGenerateSection from './HeroGenerateSection';
 import { supabase } from './supabaseClient';
+import AboutPage from './AboutPage';
+import BusinessLandingPage from './BusinessLandingPage';
 import QualityChecklistModal from './QualityChecklistModal';
 import {
   QuestMode,
@@ -6554,28 +6556,34 @@ function AdminReviewPage({
 
 export default function LandingPage() {
   const initialPath = typeof window !== 'undefined' ? window.location.pathname : '/';
-  const initialActivePage: 'home' | 'quests' | 'quest-detail' | 'creators' | 'auth' | 'profile' | 'creator-start' | 'creator-canvas' | 'creator-workspace' | 'creator-spot-detail' | 'creator-storytelling' | 'creator-test-run' | 'creator-submitted' | 'creator-analytics' | 'admin-dashboard' | 'admin-review' | 'player' =
+  console.log('[DEBUG] LandingPage initialPath:', initialPath);
+  const initialActivePage: 'home' | 'quests' | 'quest-detail' | 'creators' | 'auth' | 'profile' | 'creator-start' | 'creator-canvas' | 'creator-workspace' | 'creator-spot-detail' | 'creator-storytelling' | 'creator-test-run' | 'creator-submitted' | 'creator-analytics' | 'creator-mystery-setup' | 'creator-route-spots' | 'creator-workspace-languages' | 'admin-dashboard' | 'admin-review' | 'player' | 'about' | 'business' =
     initialPath === '/play'
       ? 'player'
-      : initialPath === '/creator' || initialPath === '/creator/workspace'
-        ? 'creator-workspace'
-        : initialPath === '/creator/analytics' || initialPath.startsWith('/creator/analytics/')
-          ? 'creator-analytics'
-          : initialPath.startsWith('/creator/route-spots/')
-            ? 'creator-spot-detail'
-            : initialPath === '/creator/storytelling'
-              ? 'creator-storytelling'
-              : initialPath === '/creator/test-run'
-                ? 'creator-test-run'
-                : initialPath === '/creator/submitted'
-                  ? 'creator-submitted'
-                  : initialPath === '/admin' || initialPath === '/admin/dashboard'
-                    ? 'admin-dashboard'
-                    : initialPath.startsWith('/admin/review/')
-                      ? 'admin-review'
-                      : 'home';
+      : initialPath === '/about'
+        ? 'about'
+        : initialPath === '/business'
+          ? 'business'
+          : initialPath === '/creator' || initialPath === '/creator/workspace'
+            ? 'creator-workspace'
+            : initialPath === '/creator/analytics' || initialPath.startsWith('/creator/analytics/')
+              ? 'creator-analytics'
+              : initialPath.startsWith('/creator/route-spots/')
+                ? 'creator-spot-detail'
+                : initialPath === '/creator/storytelling'
+                  ? 'creator-storytelling'
+                  : initialPath === '/creator/test-run'
+                    ? 'creator-test-run'
+                    : initialPath === '/creator/submitted'
+                      ? 'creator-submitted'
+                      : initialPath === '/admin' || initialPath === '/admin/dashboard'
+                        ? 'admin-dashboard'
+                        : initialPath.startsWith('/admin/review/')
+                          ? 'admin-review'
+                          : 'home';
 
   const navigate = useNavigate();
+  const location = useLocation();
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
@@ -6584,7 +6592,65 @@ export default function LandingPage() {
   const [currentLang, setCurrentLang] = useState<Language>('ja');
   const t = LC[currentLang];
 
-  const [activePage, setActivePage] = useState<'home' | 'quests' | 'quest-detail' | 'creators' | 'auth' | 'profile' | 'creator-start' | 'creator-canvas' | 'creator-workspace' | 'creator-spot-detail' | 'creator-storytelling' | 'creator-test-run' | 'creator-submitted' | 'creator-analytics' | 'admin-dashboard' | 'admin-review' | 'player'>(initialActivePage);
+  const [activePage, setActivePage] = useState<'home' | 'quests' | 'quest-detail' | 'creators' | 'auth' | 'profile' | 'creator-start' | 'creator-canvas' | 'creator-workspace' | 'creator-spot-detail' | 'creator-storytelling' | 'creator-test-run' | 'creator-submitted' | 'creator-analytics' | 'creator-mystery-setup' | 'creator-route-spots' | 'creator-workspace-languages' | 'admin-dashboard' | 'admin-review' | 'player' | 'about' | 'business'>(initialActivePage);
+
+  // Sync activePage with URL path changes
+  useEffect(() => {
+    const path = location.pathname;
+    let newActivePage: typeof activePage | null = null;
+
+    if (path === '/about') {
+      newActivePage = 'about';
+    } else if (path === '/business') {
+      newActivePage = 'business';
+    } else if (path.startsWith('/quest/') && path !== '/quests') {
+      newActivePage = 'quest-detail';
+    } else if (path === '/quests' || path === '/quests/') {
+      newActivePage = 'quests';
+    } else if (path === '/creators' || path === '/creators/') {
+      newActivePage = 'creators';
+    } else if (path === '/auth/login' || path === '/auth/signup' || path === '/auth/forgot' || path === '/auth') {
+      newActivePage = 'auth';
+    } else if (path === '/profile') {
+      newActivePage = 'profile';
+    } else if (path === '/play' || path === '/player') {
+      newActivePage = 'player';
+    } else if (path === '/creator/start') {
+      newActivePage = 'creator-start';
+    } else if (path.startsWith('/creator/canvas')) {
+      newActivePage = 'creator-canvas';
+    } else if (path === '/creator/mystery-setup') {
+      newActivePage = 'creator-mystery-setup';
+    } else if (path.startsWith('/creator/route-spots/')) {
+      newActivePage = 'creator-spot-detail';
+    } else if (path === '/creator/route-spots') {
+      newActivePage = 'creator-route-spots';
+    } else if (path.startsWith('/creator/workspace/languages')) {
+      newActivePage = 'creator-workspace-languages';
+    } else if (path.startsWith('/creator/workspace')) {
+      newActivePage = 'creator-workspace';
+    } else if (path === '/creator/storytelling') {
+      newActivePage = 'creator-storytelling';
+    } else if (path === '/creator/test-run') {
+      newActivePage = 'creator-test-run';
+    } else if (path === '/creator/submitted') {
+      newActivePage = 'creator-submitted';
+    } else if (path.startsWith('/creator/analytics')) {
+      newActivePage = 'creator-analytics';
+    } else if (path === '/admin/dashboard') {
+      newActivePage = 'admin-dashboard';
+    } else if (path.startsWith('/admin/review/')) {
+      newActivePage = 'admin-review';
+    } else if (path === '/') {
+      newActivePage = 'home';
+    }
+
+    // Only update if we recognized the path
+    if (newActivePage !== null) {
+      setActivePage(newActivePage);
+    }
+  }, [location.pathname]);
+
   const [selectedQuest, setSelectedQuest] = useState<Quest | null>(null);
   const [activeFilter, setActiveFilter] = useState<string>('all');
   const [sortKey, setSortKey] = useState<'popular' | 'short' | 'distance'>('popular');
@@ -7196,6 +7262,10 @@ export default function LandingPage() {
         return activeSpotId ? `/creator/route-spots/${activeSpotId}` : '/creator/route-spots';
       case 'creator-workspace-languages':
         return '/creator/workspace/languages';
+      case 'about':
+        return '/about';
+      case 'business':
+        return '/business';
       default:
         return '/';
     }
@@ -7614,6 +7684,7 @@ export default function LandingPage() {
   };
 
   const goHome = (href?: string) => {
+    console.log('[DEBUG] goHome called, stack:', new Error().stack);
     applyRoute('home');
     setIsMenuOpen(false);
     resetAuth();
@@ -8734,32 +8805,32 @@ ${(input.challengeTypes || []).length > 0 ? `- チャレンジタイプ: ${(inpu
             </button>
 
             {/* Desktop Nav */}
-            <div className="hidden md:flex items-center gap-8">
+            <div className="hidden md:flex items-center gap-4 lg:gap-6">
               {/* Primary nav links - About link first */}
               <button
                 onClick={() => navigate('/about')}
-                className="text-sm font-medium text-stone-600 hover:text-brand-gold transition-colors relative group"
+                className="text-xs lg:text-sm font-medium text-stone-600 hover:text-brand-gold transition-colors relative group whitespace-nowrap"
               >
-                TOMOSHIBIについて
+                About
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-brand-gold transition-all group-hover:w-full" />
               </button>
               <button
                 onClick={() => handleNavClick('#features')}
-                className="text-sm font-medium text-stone-600 hover:text-brand-gold transition-colors relative group"
+                className="text-xs lg:text-sm font-medium text-stone-600 hover:text-brand-gold transition-colors relative group whitespace-nowrap"
               >
                 {t.nav.features}
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-brand-gold transition-all group-hover:w-full" />
               </button>
               <button
                 onClick={() => handleNavClick('#how-it-works')}
-                className="text-sm font-medium text-stone-600 hover:text-brand-gold transition-colors relative group"
+                className="text-xs lg:text-sm font-medium text-stone-600 hover:text-brand-gold transition-colors relative group whitespace-nowrap"
               >
                 {t.nav.howItWorks}
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-brand-gold transition-all group-hover:w-full" />
               </button>
               <button
                 onClick={() => handleNavClick('#creators')}
-                className="text-sm font-medium text-stone-600 hover:text-brand-gold transition-colors relative group"
+                className="text-xs lg:text-sm font-medium text-stone-600 hover:text-brand-gold transition-colors relative group whitespace-nowrap"
               >
                 {t.nav.creators}
                 <span className="absolute -bottom-1 left-0 w-0 h-0.5 bg-brand-gold transition-all group-hover:w-full" />
@@ -8771,7 +8842,7 @@ ${(input.challengeTypes || []).length > 0 ? `- チャレンジタイプ: ${(inpu
               {/* B2B link - subtle text style */}
               <button
                 onClick={() => navigate('/business')}
-                className="text-sm font-medium text-stone-500 hover:text-brand-gold transition-colors"
+                className="text-xs lg:text-sm font-medium text-stone-500 hover:text-brand-gold transition-colors whitespace-nowrap"
               >
                 {t.nav.business}
               </button>
@@ -9418,6 +9489,41 @@ ${(input.challengeTypes || []).length > 0 ? `- チャレンジタイプ: ${(inpu
         <PlayerGameView onBackHome={() => goHome()} />
       )}
 
+      {activePage === 'about' && (
+        <AboutPage
+          t={{
+            nav: { about: 'TOMOSHIBIについて' },
+            aboutPage: {
+              title: 'TOMOSHIBIについて',
+              subtitle: '街歩き×謎解きで、日常を冒険に変える',
+              missionTitle: 'Mission',
+              missionText: '私たちは、テクノロジーと物語の力で、人々が街を歩き、発見し、つながる新しい体験を創造します。日常の風景に隠された物語を解き明かすことで、街への愛着と人々の絆を深めます。',
+              visionTitle: 'Vision',
+              visionText: '世界中の街が、物語で彩られる未来。TOMOSHIBIは、ローカルの魅力を世界に届け、旅行者と地域をつなぐプラットフォームを目指します。',
+              valuesTitle: '私たちの価値観',
+              values: [
+                { title: '冒険心', description: '未知への好奇心を大切にし、新しい発見を楽しむ心を育みます。' },
+                { title: '地域愛', description: '街の歴史や文化を尊重し、地域の魅力を再発見する機会を提供します。' },
+                { title: 'つながり', description: '人と人、人と街をつなぎ、共有体験を通じて絆を深めます。' },
+                { title: '創造性', description: 'クリエイターの自由な発想を支援し、多様な物語を世界に届けます。' },
+              ],
+              teamTitle: '【作成中】運営チーム',
+              teamSubtitle: 'TOMOSHIBIを運営するメンバーを紹介します',
+              members: [
+                { name: 'メンバー 1', role: 'Founder / CEO', bio: 'TOMOSHIBIの創業者。街歩きと謎解きを通じて、新しい体験を創造することに情熱を注いでいます。' },
+                { name: 'メンバー 2', role: 'CTO', bio: '技術面でTOMOSHIBIを支える。ユーザー体験を最高にするための開発をリードしています。' },
+                { name: 'メンバー 3', role: 'クリエイティブディレクター', bio: 'ストーリーテリングとデザインを担当。没入感のある体験を設計しています。' },
+              ],
+              backToHome: 'ホームに戻る',
+            },
+          }}
+          onLogoHome={() => goHome()}
+        />
+      )}
+
+      {activePage === 'business' && (
+        <BusinessLandingPage />
+      )}
 
 
       {isHome && (

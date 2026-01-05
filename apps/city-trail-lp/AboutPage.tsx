@@ -56,24 +56,7 @@ export default function AboutPage({ t, onLogoHome }: AboutPageProps) {
     };
 
     return (
-        <div className="min-h-screen bg-brand-base">
-            {/* Header */}
-            <header className="sticky top-0 bg-white/80 backdrop-blur-md border-b border-stone-200 z-50">
-                <div className="container mx-auto px-4 md:px-8 py-4 flex items-center justify-between">
-                    <button
-                        onClick={handleBack}
-                        className="flex items-center gap-2 text-stone-600 hover:text-brand-dark transition-colors"
-                    >
-                        <ChevronLeft size={20} />
-                        <span className="text-sm font-medium">{t.aboutPage.backToHome}</span>
-                    </button>
-                    <button onClick={handleBack}>
-                        <TomoshibiLogo className="h-6 w-auto" color="#484132" />
-                    </button>
-                    <div className="w-24" /> {/* Spacer for centering */}
-                </div>
-            </header>
-
+        <>
             {/* Hero Section */}
             <section className="py-20 md:py-32 bg-gradient-to-b from-brand-base to-white">
                 <div className="container mx-auto px-4 md:px-8 text-center">
@@ -224,6 +207,6 @@ export default function AboutPage({ t, onLogoHome }: AboutPageProps) {
                     </p>
                 </div>
             </footer>
-        </div>
+        </>
     );
 }

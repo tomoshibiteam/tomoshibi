@@ -11,6 +11,7 @@ import {
     PlotKeyType,
     PuzzleType,
 } from './layton-types';
+import { getModelEndpoint } from '../ai/model-config';
 
 /**
  * モチーフ選定用プロンプト
@@ -97,7 +98,7 @@ ${JSON.stringify(spotsJson, null, 2)}
 
     try {
         const res = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
+            getModelEndpoint('motif', apiKey),
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

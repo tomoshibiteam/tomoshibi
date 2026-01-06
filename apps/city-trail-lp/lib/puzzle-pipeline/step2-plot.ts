@@ -9,6 +9,7 @@ import {
     SpotMotif,
     MainPlot,
 } from './layton-types';
+import { getModelEndpoint } from '../ai/model-config';
 
 /**
  * 物語骨格生成用プロンプト
@@ -89,7 +90,7 @@ ${JSON.stringify(motifsJson, null, 2)}
 
     try {
         const res = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
+            getModelEndpoint('story', apiKey),
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

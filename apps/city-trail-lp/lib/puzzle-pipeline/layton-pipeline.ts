@@ -22,6 +22,7 @@ import { createMainPlot } from './step2-plot';
 import { generateSpotPuzzle, generateMetaPuzzle } from './step3-puzzle';
 import { validateQuest, getRegenerationTargets } from './step4-validate';
 import { retrieveEvidence, geocodeSpotName } from './retriever';
+import { getModelEndpoint } from '../ai/model-config';
 
 /**
  * 完全なクエスト生成パイプライン
@@ -295,7 +296,7 @@ ${supportInfo.join('\n')}
 
     try {
         const res = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
+            getModelEndpoint('general', apiKey),
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -478,7 +479,7 @@ ${originalPrompt}
 
     try {
         const res = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
+            getModelEndpoint('story', apiKey),
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -568,7 +569,7 @@ JSONのみ出力してください。
 
     try {
         const res = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
+            getModelEndpoint('story', apiKey),
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

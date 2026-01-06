@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { TomoshibiLogo } from './TomoshibiLogo';
 import { Globe, Check, Languages, ChevronDown, ChevronUp, MapPin, BookOpen, Users, MessageCircle } from 'lucide-react';
 import { supabase } from './supabaseClient';
+import { getModelEndpoint } from './lib/ai/model-config';
 
 interface QuestData {
     id: string;
@@ -306,7 +307,7 @@ ${JSON.stringify(contentToTranslate, null, 2)}
 \`\`\``;
 
                 const res = await fetch(
-                    `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
+                    getModelEndpoint('translation', apiKey),
                     {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },

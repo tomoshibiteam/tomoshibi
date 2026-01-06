@@ -64,6 +64,7 @@ import {
   QualityChecklist,
   QUEST_MODE_CONFIG,
 } from './questCreatorTypes';
+import { getModelEndpoint } from './lib/ai/model-config';
 
 declare global {
   // MapLibre is loaded from CDN
@@ -8291,7 +8292,7 @@ ${(input.challengeTypes || []).length > 0 ? `- チャレンジタイプ: ${(inpu
 `.trim();
 
       const res = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
+        getModelEndpoint('general', apiKey),
         {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },

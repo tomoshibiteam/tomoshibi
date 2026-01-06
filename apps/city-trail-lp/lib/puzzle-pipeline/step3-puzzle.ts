@@ -16,6 +16,7 @@ import {
     PuzzleType,
 } from './layton-types';
 import { buildStoryContext } from './step2-plot';
+import { getModelEndpoint } from '../ai/model-config';
 
 /**
  * 謎生成用システムプロンプト
@@ -175,7 +176,7 @@ ${motif.selected_facts.map(f => {
 
     try {
         const res = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
+            getModelEndpoint('puzzle', apiKey),
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -315,7 +316,7 @@ ${JSON.stringify(plotKeys, null, 2)}
 
     try {
         const res = await fetch(
-            `https://generativelanguage.googleapis.com/v1beta/models/gemini-3-flash-preview:generateContent?key=${apiKey}`,
+            getModelEndpoint('puzzle', apiKey),
             {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },

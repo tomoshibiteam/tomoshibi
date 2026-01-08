@@ -113,13 +113,13 @@ const Quests = () => {
 
             {/* Search Bar */}
             <div className="relative mb-4">
-                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#c27a34]" />
+                <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-[#c27a34] transition-colors peer-focus:text-[#e67a28]" />
                 <input
                     type="text"
                     placeholder="クエストを検索..."
                     value={keyword}
                     onChange={(e) => setKeyword(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3 rounded-2xl bg-[#f7efe5] border border-[#eadfd0] text-sm text-[#2f1d0f] placeholder:text-[#b07a4c] focus:outline-none focus:ring-2 focus:ring-[#e67a28]/30 focus:border-[#e67a28]"
+                    className="peer w-full pl-12 pr-4 py-3 rounded-2xl bg-[#f7efe5] border border-[#eadfd0] text-sm text-[#2f1d0f] placeholder:text-[#b07a4c] focus:outline-none focus:ring-2 focus:ring-[#e67a28]/30 focus:border-[#e67a28] transition-all duration-200"
                 />
             </div>
 
@@ -191,12 +191,15 @@ const Quests = () => {
                     </Button>
                 </div>
             ) : filteredQuests.length === 0 ? (
-                <div className="text-center py-12">
-                    <Sparkles className="w-12 h-12 text-[#eadfd0] mx-auto mb-3" />
-                    <p className="text-sm text-[#7c644c]">該当するクエストがありません</p>
+                <div className="text-center py-12 animate-fade-in">
+                    <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#f7efe5] to-[#eadfd0] flex items-center justify-center mx-auto mb-4 animate-float">
+                        <Sparkles className="w-10 h-10 text-[#c27a34]" />
+                    </div>
+                    <h3 className="text-lg font-bold text-[#2f1d0f] mb-2">該当するクエストがありません</h3>
+                    <p className="text-sm text-[#7c644c] mb-4">条件を変更して再度お探しください</p>
                     <Button
                         variant="outline"
-                        className="mt-4 border-[#eadfd0]"
+                        className="border-[#eadfd0] hover:bg-[#f7efe5] hover:border-[#e67a28]/50 transition-all"
                         onClick={() => {
                             setKeyword("");
                             setSelectedArea("すべて");
@@ -207,11 +210,12 @@ const Quests = () => {
                 </div>
             ) : viewMode === "grid" ? (
                 <div className="grid grid-cols-2 gap-3">
-                    {filteredQuests.map((quest) => (
+                    {filteredQuests.map((quest, index) => (
                         <div
                             key={quest.id}
                             onClick={() => handleQuestClick(quest.id)}
-                            className="group rounded-2xl border border-[#eadfd0] bg-white overflow-hidden shadow-sm hover:shadow-md hover:border-[#e67a28]/30 transition-all cursor-pointer"
+                            className="group rounded-2xl border border-[#eadfd0] bg-white overflow-hidden shadow-sm hover:shadow-md hover:border-[#e67a28]/30 hover:-translate-y-1 transition-all duration-200 cursor-pointer animate-scale-in"
+                            style={{ animationDelay: `${index * 50}ms` }}
                         >
                             <div className="relative h-28 overflow-hidden bg-gradient-to-br from-[#f7efe5] to-[#eadfd0]">
                                 {quest.cover_image_url ? (

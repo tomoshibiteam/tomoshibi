@@ -158,8 +158,18 @@ const Home = () => {
             </div>
           </>
         ) : (
-          <div className="p-5 min-h-[200px] flex items-center justify-center">
-            <p className="text-white/60 text-sm">クエストがありません</p>
+          <div className="p-6 min-h-[200px] flex flex-col items-center justify-center text-center">
+            <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#ffb566]/20 to-[#e67a28]/20 flex items-center justify-center mb-4 animate-float">
+              <Compass className="w-8 h-8 text-[#e67a28]" />
+            </div>
+            <h2 className="text-lg font-bold text-white mb-2">冒険を始めよう</h2>
+            <p className="text-sm text-white/70 mb-4">現在公開中のクエストを準備しています</p>
+            <Button
+              className="bg-gradient-to-r from-[#ffb566] to-[#e67a28] text-white font-bold hover:opacity-90 shadow-lg"
+              onClick={() => navigate("/quests")}
+            >
+              クエストを探す
+            </Button>
           </div>
         )}
       </div>
@@ -281,17 +291,21 @@ const Home = () => {
             </Button>
           </div>
         ) : recentQuests.length === 0 ? (
-          <div className="text-center py-12">
-            <Sparkles className="w-12 h-12 text-[#eadfd0] mx-auto mb-3" />
-            <p className="text-sm text-[#7c644c]">クエストがありません</p>
+          <div className="text-center py-12 animate-fade-in">
+            <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#f7efe5] to-[#eadfd0] flex items-center justify-center mx-auto mb-4 animate-float">
+              <Sparkles className="w-10 h-10 text-[#c27a34]" />
+            </div>
+            <h3 className="text-lg font-bold text-[#2f1d0f] mb-2">冒険の準備中</h3>
+            <p className="text-sm text-[#7c644c] mb-4">新しいクエストを準備しています<br />もう少しお待ちください</p>
           </div>
         ) : (
           <div className="space-y-3">
-            {recentQuests.map((quest) => (
+            {recentQuests.map((quest, index) => (
               <div
                 key={quest.id}
                 onClick={() => handleQuestClick(quest.id)}
-                className="flex gap-3 p-3 rounded-2xl border border-[#eadfd0] bg-white shadow-sm hover:shadow-md hover:border-[#e67a28]/30 transition-all cursor-pointer group"
+                className="flex gap-3 p-3 rounded-2xl border border-[#eadfd0] bg-white shadow-sm hover:shadow-md hover:border-[#e67a28]/30 hover:-translate-y-0.5 transition-all duration-200 cursor-pointer group animate-slide-up"
+                style={{ animationDelay: `${index * 50}ms` }}
               >
                 {/* Thumbnail */}
                 <div className="w-24 h-20 rounded-xl overflow-hidden bg-gradient-to-br from-[#f7efe5] to-[#eadfd0] shrink-0">

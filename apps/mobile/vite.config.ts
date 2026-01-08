@@ -28,8 +28,8 @@ export default defineConfig(({ mode }) => {
         registerType: 'autoUpdate',
         includeAssets: ['favicon.ico', 'robots.txt', 'pwa-icon.png'],
         manifest: {
-          name: 'SPR探偵事務所',
-          short_name: 'SPR探偵事務所',
+          name: 'TOMOSHIBI | 街歩き×謎解きプラットフォーム',
+          short_name: 'TOMOSHIBI',
           description: '日常の行動がポイントになり、現地の謎を解くゲーム化された探偵アプリ。功績を積んで、より難しい依頼に挑戦しよう。',
           theme_color: '#006633',
           background_color: '#f0e6d8',

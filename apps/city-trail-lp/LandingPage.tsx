@@ -10899,20 +10899,19 @@ const CreatorMysterySetupPage = ({
     setSaveError(null);
     setSaving(true);
     try {
-      const { data, error } = await supabase
-        .from('quests')
-        .upsert({
-          id: questId || undefined,
-          creator_id: userId,
-          title,
-          description,
-          area_name: location,
-          location_lat: mapCenter.lat,
-          location_lng: mapCenter.lng,
-          cover_image_url: '',
-        })
-        .select()
-        .single();
+	      const { data, error } = await supabase
+	        .from('quests')
+	        .upsert({
+	          id: questId || undefined,
+	          creator_id: userId,
+	          title,
+	          description,
+	          area_name: location,
+	          location_lat: mapCenter.lat,
+	          location_lng: mapCenter.lng,
+	        })
+	        .select()
+	        .single();
       if (error) throw error;
       if (data?.id) {
         setQuestId(data.id);

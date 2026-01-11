@@ -52,6 +52,10 @@ export interface QuestGenerationRequest {
         protagonist?: string;  // 主人公
         objective?: string;    // 目的
         ending?: string;       // 結末
+        when?: string;         // いつ
+        where?: string;        // どこで
+        purpose?: string;      // 旅の目的
+        withWhom?: string;     // 誰と
     };
     /** 中心地点（現在地など） */
     center_location?: { lat: number; lng: number };

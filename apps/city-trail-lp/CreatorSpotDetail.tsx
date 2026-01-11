@@ -21,8 +21,26 @@ import {
     Upload,
     CheckCircle,
     Target,
-    Loader2 as Spinner
+    Loader2 as Spinner,
+    Puzzle,
+    BookOpen,
+    Gift,
+    Clapperboard,
+    Plus,
+    Trash2,
+    ChevronDown,
+    ChevronUp
 } from 'lucide-react';
+import {
+    type PuzzleType,
+    type PuzzleConfig,
+    type LoreCard,
+    type SpotReward,
+    type SceneRole,
+    type SceneSettings,
+    PUZZLE_TYPE_LABELS,
+    SCENE_ROLE_LABELS
+} from './questCreatorTypes';
 
 const RichTextToolbar = () => (
     <div className="flex items-center gap-1 p-2 border-b border-stone-200 bg-stone-50/50 backdrop-blur overflow-x-auto sticky top-0 z-10">
@@ -75,6 +93,34 @@ export default function CreatorSpotDetail() {
     const [factText, setFactText] = useState('');
     const [etc, setEtc] = useState('');
 
+    // Enhanced data states
+    const [puzzleConfig, setPuzzleConfig] = useState<PuzzleConfig>({
+        puzzleType: 'logic',
+        difficulty: 3,
+        solutionSteps: [''],
+        hints: { hint1: '', hint2: '', hint3: '' }
+    });
+    const [loreCard, setLoreCard] = useState<LoreCard>({
+        narrativeText: '',
+        usedFacts: [],
+        playerMaterial: ''
+    });
+    const [spotReward, setSpotReward] = useState<SpotReward>({
+        loreReveal: '',
+        plotKey: '',
+        nextHook: ''
+    });
+    const [sceneSettings, setSceneSettings] = useState<SceneSettings>({
+        sceneRole: 'development',
+        linkingRationale: ''
+    });
+
+    // Section expansion states
+    const [puzzleSectionExpanded, setPuzzleSectionExpanded] = useState(false);
+    const [loreSectionExpanded, setLoreSectionExpanded] = useState(false);
+    const [rewardSectionExpanded, setRewardSectionExpanded] = useState(false);
+    const [sceneSectionExpanded, setSceneSectionExpanded] = useState(false);
+
     useEffect(() => {
         if (spotId) {
             loadSpotData(spotId);
@@ -113,8 +159,19 @@ export default function CreatorSpotDetail() {
             setAnswerText(details.answer_text || '');
             setHintText(details.hint_text || '');
             setFactText(details.story_text || '');
-            // NOTE: ETC is not in standard schema yet, using local state only or mapping to a generic field if possible
-            // For now, we just keep it in state
+            // Load enhanced data if exists
+            if (details.puzzle_config) {
+                setPuzzleConfig(details.puzzle_config as PuzzleConfig);
+            }
+            if (details.lore_card) {
+                setLoreCard(details.lore_card as LoreCard);
+            }
+            if (details.reward) {
+                setSpotReward(details.reward as SpotReward);
+            }
+            if (details.scene_settings) {
+                setSceneSettings(details.scene_settings as SceneSettings);
+            }
         }
 
         setLoading(false);
@@ -132,7 +189,10 @@ export default function CreatorSpotDetail() {
             answer_text: answerText,
             hint_text: hintText,
             story_text: factText,
-            // Assuming we upsert
+            puzzle_config: puzzleConfig,
+            lore_card: loreCard,
+            reward: spotReward,
+            scene_settings: sceneSettings,
         };
 
         const { error } = await supabase
@@ -377,6 +437,281 @@ export default function CreatorSpotDetail() {
                                     />
                                 </div>
                             </div>
+                        </div>
+
+                        {/* Section 5: Enhanced Puzzle Details (謎詳細設定) */}
+                        <div className="space-y-4 pt-6 border-t border-stone-100">
+                            <button
+                                onClick={() => setPuzzleSectionExpanded(!puzzleSectionExpanded)}
+                                className="w-full flex items-center justify-between"
+                            >
+                                <h3 className="text-xl font-bold text-brand-dark flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-purple-100 text-purple-600 flex items-center justify-center">
+                                        <Puzzle size={18} />
+                                    </div>
+                                    謎詳細設定
+                                    <span className="text-[10px] text-stone-400 font-normal bg-stone-100 px-2 py-0.5 rounded-full">上級者向け</span>
+                                </h3>
+                                {puzzleSectionExpanded ? <ChevronUp size={20} className="text-stone-400" /> : <ChevronDown size={20} className="text-stone-400" />}
+                            </button>
+
+                            {puzzleSectionExpanded && (
+                                <div className="pl-11 space-y-6 animate-in slide-in-from-top-2 duration-200">
+                                    {/* Puzzle Type */}
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-stone-600 uppercase tracking-wider">謎タイプ</label>
+                                        <div className="flex flex-wrap gap-2">
+                                            {(Object.keys(PUZZLE_TYPE_LABELS) as PuzzleType[]).map((type) => (
+                                                <button
+                                                    key={type}
+                                                    onClick={() => setPuzzleConfig({ ...puzzleConfig, puzzleType: type })}
+                                                    className={`px-3 py-2 rounded-lg text-sm font-bold transition-all ${puzzleConfig.puzzleType === type
+                                                            ? 'bg-purple-100 text-purple-700 border-2 border-purple-300'
+                                                            : 'bg-stone-50 text-stone-600 border-2 border-transparent hover:bg-stone-100'
+                                                        }`}
+                                                >
+                                                    {PUZZLE_TYPE_LABELS[type].icon} {PUZZLE_TYPE_LABELS[type].label}
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    {/* Difficulty */}
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-stone-600 uppercase tracking-wider">難易度</label>
+                                        <div className="flex items-center gap-4">
+                                            <input
+                                                type="range"
+                                                min={1}
+                                                max={5}
+                                                value={puzzleConfig.difficulty}
+                                                onChange={(e) => setPuzzleConfig({ ...puzzleConfig, difficulty: parseInt(e.target.value) as 1 | 2 | 3 | 4 | 5 })}
+                                                className="flex-1"
+                                            />
+                                            <span className="text-lg font-bold text-purple-600">
+                                                {'⭐'.repeat(puzzleConfig.difficulty)}{'☆'.repeat(5 - puzzleConfig.difficulty)}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Solution Steps */}
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-stone-600 uppercase tracking-wider">解法ステップ</label>
+                                        <div className="space-y-2">
+                                            {puzzleConfig.solutionSteps.map((step, idx) => (
+                                                <div key={idx} className="flex gap-2">
+                                                    <span className="w-6 h-8 rounded bg-stone-100 flex items-center justify-center text-xs font-bold text-stone-500">{idx + 1}</span>
+                                                    <input
+                                                        type="text"
+                                                        value={step}
+                                                        onChange={(e) => {
+                                                            const newSteps = [...puzzleConfig.solutionSteps];
+                                                            newSteps[idx] = e.target.value;
+                                                            setPuzzleConfig({ ...puzzleConfig, solutionSteps: newSteps });
+                                                        }}
+                                                        placeholder="例: 門の左右の像を見る"
+                                                        className="flex-1 px-3 py-2 rounded-lg border border-stone-200 text-sm focus:outline-none focus:border-purple-300"
+                                                    />
+                                                    {puzzleConfig.solutionSteps.length > 1 && (
+                                                        <button
+                                                            onClick={() => {
+                                                                const newSteps = puzzleConfig.solutionSteps.filter((_, i) => i !== idx);
+                                                                setPuzzleConfig({ ...puzzleConfig, solutionSteps: newSteps });
+                                                            }}
+                                                            className="text-stone-400 hover:text-rose-500"
+                                                        >
+                                                            <Trash2 size={16} />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            ))}
+                                            <button
+                                                onClick={() => setPuzzleConfig({ ...puzzleConfig, solutionSteps: [...puzzleConfig.solutionSteps, ''] })}
+                                                className="flex items-center gap-1 text-sm text-purple-600 hover:text-purple-800 font-bold"
+                                            >
+                                                <Plus size={14} /> ステップ追加
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Hints (3-tier) */}
+                                    <div className="space-y-3 p-4 rounded-xl bg-amber-50/50 border border-amber-100">
+                                        <label className="text-xs font-bold text-amber-700 uppercase tracking-wider">ヒント（3段階）</label>
+                                        <input
+                                            type="text"
+                                            value={puzzleConfig.hints.hint1}
+                                            onChange={(e) => setPuzzleConfig({ ...puzzleConfig, hints: { ...puzzleConfig.hints, hint1: e.target.value } })}
+                                            placeholder="ヒント1（抽象）: 門の装飾を観察して"
+                                            className="w-full px-3 py-2 rounded-lg border border-amber-200 bg-white text-sm focus:outline-none focus:border-amber-300"
+                                        />
+                                        <input
+                                            type="text"
+                                            value={puzzleConfig.hints.hint2}
+                                            onChange={(e) => setPuzzleConfig({ ...puzzleConfig, hints: { ...puzzleConfig.hints, hint2: e.target.value } })}
+                                            placeholder="ヒント2（具体）: 左右の像が何を表すか"
+                                            className="w-full px-3 py-2 rounded-lg border border-amber-200 bg-white text-sm focus:outline-none focus:border-amber-300"
+                                        />
+                                        <input
+                                            type="text"
+                                            value={puzzleConfig.hints.hint3}
+                                            onChange={(e) => setPuzzleConfig({ ...puzzleConfig, hints: { ...puzzleConfig.hints, hint3: e.target.value } })}
+                                            placeholder="ヒント3（救済）: 「雷」と「風」の神様です"
+                                            className="w-full px-3 py-2 rounded-lg border border-amber-200 bg-white text-sm focus:outline-none focus:border-amber-300"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Section 6: Lore Card (ロアカード) */}
+                        <div className="space-y-4 pt-6 border-t border-stone-100">
+                            <button
+                                onClick={() => setLoreSectionExpanded(!loreSectionExpanded)}
+                                className="w-full flex items-center justify-between"
+                            >
+                                <h3 className="text-xl font-bold text-brand-dark flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-sky-100 text-sky-600 flex items-center justify-center">
+                                        <BookOpen size={18} />
+                                    </div>
+                                    ロアカード
+                                    <span className="text-[10px] text-stone-400 font-normal bg-stone-100 px-2 py-0.5 rounded-full">上級者向け</span>
+                                </h3>
+                                {loreSectionExpanded ? <ChevronUp size={20} className="text-stone-400" /> : <ChevronDown size={20} className="text-stone-400" />}
+                            </button>
+
+                            {loreSectionExpanded && (
+                                <div className="pl-11 space-y-4 animate-in slide-in-from-top-2 duration-200">
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-stone-600 uppercase tracking-wider">物語文（この地点の意味づけ）</label>
+                                        <textarea
+                                            value={loreCard.narrativeText}
+                                            onChange={(e) => setLoreCard({ ...loreCard, narrativeText: e.target.value })}
+                                            placeholder="例: この場所は江戸時代から多くの旅人を見守ってきた..."
+                                            rows={3}
+                                            className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:outline-none focus:border-sky-300 resize-none"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-stone-600 uppercase tracking-wider">プレイヤー資料（これだけで謎が解ける情報）</label>
+                                        <textarea
+                                            value={loreCard.playerMaterial}
+                                            onChange={(e) => setLoreCard({ ...loreCard, playerMaterial: e.target.value })}
+                                            placeholder="例: 門の両側には風神と雷神が祀られている..."
+                                            rows={3}
+                                            className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:outline-none focus:border-sky-300 resize-none"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Section 7: Reward (報酬) */}
+                        <div className="space-y-4 pt-6 border-t border-stone-100">
+                            <button
+                                onClick={() => setRewardSectionExpanded(!rewardSectionExpanded)}
+                                className="w-full flex items-center justify-between"
+                            >
+                                <h3 className="text-xl font-bold text-brand-dark flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-emerald-100 text-emerald-600 flex items-center justify-center">
+                                        <Gift size={18} />
+                                    </div>
+                                    報酬（正解時の演出）
+                                    <span className="text-[10px] text-stone-400 font-normal bg-stone-100 px-2 py-0.5 rounded-full">上級者向け</span>
+                                </h3>
+                                {rewardSectionExpanded ? <ChevronUp size={20} className="text-stone-400" /> : <ChevronDown size={20} className="text-stone-400" />}
+                            </button>
+
+                            {rewardSectionExpanded && (
+                                <div className="pl-11 space-y-4 animate-in slide-in-from-top-2 duration-200">
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-stone-600 uppercase tracking-wider">背景理解（lore_reveal）</label>
+                                        <textarea
+                                            value={spotReward.loreReveal}
+                                            onChange={(e) => setSpotReward({ ...spotReward, loreReveal: e.target.value })}
+                                            placeholder="例: 風神雷神は浅草寺を守護する神々で..."
+                                            rows={2}
+                                            className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:outline-none focus:border-emerald-300 resize-none"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-stone-600 uppercase tracking-wider flex items-center gap-2">
+                                            物語の鍵（plot_key）
+                                            <span className="text-[10px] bg-brand-gold/20 text-brand-gold px-2 py-0.5 rounded-full">最終謎で使用</span>
+                                        </label>
+                                        <input
+                                            type="text"
+                                            value={spotReward.plotKey}
+                                            onChange={(e) => setSpotReward({ ...spotReward, plotKey: e.target.value })}
+                                            placeholder="例: 雷"
+                                            className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:outline-none focus:border-emerald-300"
+                                        />
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-stone-600 uppercase tracking-wider">次への誘導（next_hook）</label>
+                                        <input
+                                            type="text"
+                                            value={spotReward.nextHook}
+                                            onChange={(e) => setSpotReward({ ...spotReward, nextHook: e.target.value })}
+                                            placeholder="例: 次は仲見世通りを進んで..."
+                                            className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:outline-none focus:border-emerald-300"
+                                        />
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Section 8: Scene Settings (シーン設定) */}
+                        <div className="space-y-4 pt-6 border-t border-stone-100">
+                            <button
+                                onClick={() => setSceneSectionExpanded(!sceneSectionExpanded)}
+                                className="w-full flex items-center justify-between"
+                            >
+                                <h3 className="text-xl font-bold text-brand-dark flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-rose-100 text-rose-600 flex items-center justify-center">
+                                        <Clapperboard size={18} />
+                                    </div>
+                                    シーン設定
+                                    <span className="text-[10px] text-stone-400 font-normal bg-stone-100 px-2 py-0.5 rounded-full">上級者向け</span>
+                                </h3>
+                                {sceneSectionExpanded ? <ChevronUp size={20} className="text-stone-400" /> : <ChevronDown size={20} className="text-stone-400" />}
+                            </button>
+
+                            {sceneSectionExpanded && (
+                                <div className="pl-11 space-y-4 animate-in slide-in-from-top-2 duration-200">
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-stone-600 uppercase tracking-wider">シーンの役割</label>
+                                        <div className="grid grid-cols-2 gap-2">
+                                            {(Object.keys(SCENE_ROLE_LABELS) as SceneRole[]).map((role) => (
+                                                <button
+                                                    key={role}
+                                                    onClick={() => setSceneSettings({ ...sceneSettings, sceneRole: role })}
+                                                    className={`px-3 py-2 rounded-lg text-sm text-left transition-all ${sceneSettings.sceneRole === role
+                                                            ? 'bg-rose-100 text-rose-700 border-2 border-rose-300'
+                                                            : 'bg-stone-50 text-stone-600 border-2 border-transparent hover:bg-stone-100'
+                                                        }`}
+                                                >
+                                                    <span className="font-bold">{SCENE_ROLE_LABELS[role].label}</span>
+                                                    <p className="text-xs opacity-70">{SCENE_ROLE_LABELS[role].description}</p>
+                                                </button>
+                                            ))}
+                                        </div>
+                                    </div>
+
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-stone-600 uppercase tracking-wider">なぜこの謎がこのスポットか（linking_rationale）</label>
+                                        <textarea
+                                            value={sceneSettings.linkingRationale}
+                                            onChange={(e) => setSceneSettings({ ...sceneSettings, linkingRationale: e.target.value })}
+                                            placeholder="例: 風神雷神像は門の象徴であり、名前の由来..."
+                                            rows={2}
+                                            className="w-full px-3 py-2 rounded-lg border border-stone-200 text-sm focus:outline-none focus:border-rose-300 resize-none"
+                                        />
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                     </div>

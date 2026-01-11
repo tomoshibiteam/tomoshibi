@@ -1,11 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { APIProvider, Map, AdvancedMarker, useMap, useMapsLibrary } from '@vis.gl/react-google-maps';
+import { APIProvider, Map, AdvancedMarker, useMap } from '@vis.gl/react-google-maps';
 import { TomoshibiLogo } from './TomoshibiLogo';
 import { supabase } from './supabaseClient';
 import { useAuth } from './AuthProvider';
 import { useNavigate } from 'react-router-dom';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
-import { Image, Upload, X, Loader2 } from 'lucide-react';
+import { Image, Upload, X, Loader2, ChevronDown, ChevronUp, BookOpen } from 'lucide-react';
+import type { MainPlot } from './questCreatorTypes';
 
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_KEY || '';
@@ -14,24 +15,32 @@ const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_KEY || '';
 const MapHandler = ({
     mapCenter,
     onMapClick,
-    onReverseGeocode
+    onReverseGeocode,
+    locationQuery
 }: {
     mapCenter: { lat: number, lng: number },
     onMapClick: (lat: number, lng: number) => void,
-    onReverseGeocode: (address: string) => void
+    onReverseGeocode: (address: string) => void,
+    locationQuery?: string
 }) => {
     const map = useMap();
-    const geocoding = useMapsLibrary('geocoding');
+    const geocoderRef = useRef<google.maps.Geocoder | null>(null);
     const [markerVisible, setMarkerVisible] = useState(true);
     const geocodeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-    // Note: Removed setCenter on mapCenter change for better UX
-    // Users can see where they clicked without the map jumping around
+    const addressGeocodeTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+    const lastResolvedRef = useRef<string>('');
 
     useEffect(() => {
-        if (!map || !geocoding) return;
+        if (!map) return;
+        map.setCenter(mapCenter);
+    }, [map, mapCenter]);
 
-        const geocoder = new geocoding.Geocoder();
+    useEffect(() => {
+        if (!map) return;
+        if (!geocoderRef.current && (window as any)?.google?.maps?.Geocoder) {
+            geocoderRef.current = new google.maps.Geocoder();
+        }
+        if (!geocoderRef.current) return;
 
         const listener = map.addListener('click', (e: google.maps.MapMouseEvent) => {
             if (e.latLng) {
@@ -45,7 +54,7 @@ const MapHandler = ({
                 }
 
                 geocodeTimeoutRef.current = setTimeout(() => {
-                    geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+                    geocoderRef.current?.geocode({ location: { lat, lng } }, (results, status) => {
                         if (status === 'OK' && results && results.length > 0) {
                             // より短い地名を優先的に取得
                             let shortName = '';
@@ -84,8 +93,41 @@ const MapHandler = ({
             if (geocodeTimeoutRef.current) {
                 clearTimeout(geocodeTimeoutRef.current);
             }
+            if (addressGeocodeTimeoutRef.current) {
+                clearTimeout(addressGeocodeTimeoutRef.current);
+            }
         };
-    }, [map, geocoding, onMapClick, onReverseGeocode]);
+    }, [map, onMapClick, onReverseGeocode]);
+
+    useEffect(() => {
+        if (!geocoderRef.current && (window as any)?.google?.maps?.Geocoder) {
+            geocoderRef.current = new google.maps.Geocoder();
+        }
+        if (!geocoderRef.current) return;
+        const query = (locationQuery || '').trim();
+        if (!query) return;
+        if (query === lastResolvedRef.current) return;
+        if (addressGeocodeTimeoutRef.current) {
+            clearTimeout(addressGeocodeTimeoutRef.current);
+        }
+        addressGeocodeTimeoutRef.current = setTimeout(() => {
+            geocoderRef.current?.geocode({ address: query }, (results, status) => {
+                if (status === 'OK' && results && results.length > 0) {
+                    const result = results[0];
+                    const loc = result.geometry?.location;
+                    if (loc) {
+                        onMapClick(loc.lat(), loc.lng());
+                    }
+                    if (result.formatted_address && result.formatted_address !== query) {
+                        onReverseGeocode(result.formatted_address);
+                        lastResolvedRef.current = result.formatted_address;
+                    } else {
+                        lastResolvedRef.current = query;
+                    }
+                }
+            });
+        }, 400);
+    }, [locationQuery, onMapClick, onReverseGeocode]);
 
     return (
         <>
@@ -129,9 +171,46 @@ export default function CreatorMysterySetup() {
     const [questId, setQuestId] = useState<string | null>(localStorage.getItem('quest-id'));
     const [coverImage, setCoverImage] = useState<string>('');
     const [uploading, setUploading] = useState(false);
+    const [mainPlotExpanded, setMainPlotExpanded] = useState(false);
+    const [mainPlot, setMainPlot] = useState<MainPlot>({
+        premise: '',
+        goal: '',
+        antagonist: '',
+        finalReveal: ''
+    });
 
     const inputRef = useRef<HTMLInputElement | null>(null);
     const fileInputRef = useRef<HTMLInputElement | null>(null);
+
+    const resolveLocationFromCoords = async (lat: number, lng: number): Promise<string | null> => {
+        if (!(window as any)?.google?.maps?.Geocoder) return null;
+        const geocoder = new google.maps.Geocoder();
+        return new Promise((resolve) => {
+            geocoder.geocode({ location: { lat, lng } }, (results, status) => {
+                if (status !== 'OK' || !results || results.length === 0) {
+                    resolve(null);
+                    return;
+                }
+                let shortName = '';
+                for (const result of results) {
+                    for (const component of result.address_components) {
+                        if (component.types.includes('locality')) {
+                            shortName = component.long_name;
+                            break;
+                        }
+                        if (component.types.includes('sublocality_level_1') && !shortName) {
+                            shortName = component.long_name;
+                        }
+                        if (component.types.includes('administrative_area_level_2') && !shortName) {
+                            shortName = component.long_name;
+                        }
+                    }
+                    if (shortName) break;
+                }
+                resolve(shortName || results[0].formatted_address || null);
+            });
+        });
+    };
 
     // Load existing quest if ID exists, or clear for new quest
     useEffect(() => {
@@ -176,6 +255,38 @@ export default function CreatorMysterySetup() {
                 setCoverImage(data.cover_image_url || '');
                 if (data.location_lat && data.location_lng) {
                     setMapCenter({ lat: data.location_lat, lng: data.location_lng });
+                }
+                // Load main_plot if exists
+                if (data.main_plot) {
+                    setMainPlot(data.main_plot as MainPlot);
+                }
+                if (!data.area_name) {
+                    let coords: { lat: number; lng: number } | null = null;
+                    if (data.location_lat && data.location_lng) {
+                        coords = { lat: data.location_lat, lng: data.location_lng };
+                    } else {
+                        const { data: spotData } = await supabase
+                            .from('spots')
+                            .select('lat, lng')
+                            .eq('quest_id', questId)
+                            .order('order_index', { ascending: true })
+                            .limit(1)
+                            .maybeSingle();
+                        if (spotData?.lat && spotData?.lng) {
+                            coords = { lat: spotData.lat, lng: spotData.lng };
+                        }
+                    }
+                    if (coords) {
+                        setMapCenter(coords);
+                        const resolved = await resolveLocationFromCoords(coords.lat, coords.lng);
+                        if (resolved) {
+                            setLocation(resolved);
+                            await supabase
+                                .from('quests')
+                                .update({ area_name: resolved, location_lat: coords.lat, location_lng: coords.lng })
+                                .eq('id', questId);
+                        }
+                    }
                 }
             } else {
                 console.log('[Mystery Setup] No data found for questId:', questId);
@@ -231,6 +342,7 @@ export default function CreatorMysterySetup() {
             location_lat: mapCenter.lat,
             location_lng: mapCenter.lng,
             cover_image_url: coverImage,
+            main_plot: mainPlot,
             updated_at: new Date().toISOString(),
             created_at: new Date().toISOString()
         };
@@ -413,6 +525,77 @@ export default function CreatorMysterySetup() {
                                     )}
                                 </div>
 
+                                {/* Main Plot Section (物語骨格) - Collapsible */}
+                                <div className="space-y-2 group">
+                                    <button
+                                        onClick={() => setMainPlotExpanded(!mainPlotExpanded)}
+                                        className="w-full flex items-center justify-between text-sm font-bold text-brand-dark hover:text-brand-gold transition-colors"
+                                    >
+                                        <span className="flex items-center gap-2">
+                                            <BookOpen size={16} />
+                                            物語骨格
+                                            <span className="text-[10px] text-stone-400 font-normal bg-stone-100 px-2 py-0.5 rounded-full">任意・上級者向け</span>
+                                        </span>
+                                        {mainPlotExpanded ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+                                    </button>
+
+                                    {mainPlotExpanded && (
+                                        <div className="p-4 rounded-xl bg-gradient-to-br from-indigo-50/50 to-white border border-indigo-100 space-y-4 animate-in slide-in-from-top-2 duration-200">
+                                            <p className="text-xs text-stone-500">
+                                                物語の設計図を定義します。入力しておくと、AI生成時により一貫したストーリーが作られます。
+                                            </p>
+
+                                            {/* Premise */}
+                                            <div className="space-y-1">
+                                                <label className="text-xs font-bold text-stone-600">前提（Premise）</label>
+                                                <textarea
+                                                    value={mainPlot.premise}
+                                                    onChange={(e) => setMainPlot({ ...mainPlot, premise: e.target.value })}
+                                                    placeholder="例: 江戸時代、ある豪商が残した宝の地図が発見された..."
+                                                    rows={2}
+                                                    className="w-full px-3 py-2 rounded-lg border border-stone-200 bg-white text-sm placeholder:text-stone-300 focus:outline-none focus:border-indigo-300 focus:ring-2 ring-indigo-100 transition-all resize-none"
+                                                />
+                                            </div>
+
+                                            {/* Goal */}
+                                            <div className="space-y-1">
+                                                <label className="text-xs font-bold text-stone-600">目的（Goal）</label>
+                                                <input
+                                                    type="text"
+                                                    value={mainPlot.goal}
+                                                    onChange={(e) => setMainPlot({ ...mainPlot, goal: e.target.value })}
+                                                    placeholder="例: 宝の在処を突き止める"
+                                                    className="w-full px-3 py-2 rounded-lg border border-stone-200 bg-white text-sm placeholder:text-stone-300 focus:outline-none focus:border-indigo-300 focus:ring-2 ring-indigo-100 transition-all"
+                                                />
+                                            </div>
+
+                                            {/* Antagonist/Mystery */}
+                                            <div className="space-y-1">
+                                                <label className="text-xs font-bold text-stone-600">対立/謎（Antagonist or Mystery）</label>
+                                                <input
+                                                    type="text"
+                                                    value={mainPlot.antagonist}
+                                                    onChange={(e) => setMainPlot({ ...mainPlot, antagonist: e.target.value })}
+                                                    placeholder="例: 何者かが宝を守るため、巧妙な暗号を残した"
+                                                    className="w-full px-3 py-2 rounded-lg border border-stone-200 bg-white text-sm placeholder:text-stone-300 focus:outline-none focus:border-indigo-300 focus:ring-2 ring-indigo-100 transition-all"
+                                                />
+                                            </div>
+
+                                            {/* Final Reveal */}
+                                            <div className="space-y-1">
+                                                <label className="text-xs font-bold text-stone-600">真相（Final Reveal Outline）</label>
+                                                <textarea
+                                                    value={mainPlot.finalReveal}
+                                                    onChange={(e) => setMainPlot({ ...mainPlot, finalReveal: e.target.value })}
+                                                    placeholder="例: 宝とは金銀財宝ではなく、豪商が人々と築いた信頼関係だった..."
+                                                    rows={2}
+                                                    className="w-full px-3 py-2 rounded-lg border border-stone-200 bg-white text-sm placeholder:text-stone-300 focus:outline-none focus:border-indigo-300 focus:ring-2 ring-indigo-100 transition-all resize-none"
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+
                                 {/* Action Buttons */}
                                 {(() => {
                                     const isFormComplete = location.trim() !== '' && title.trim() !== '' && description.trim() !== '';
@@ -461,6 +644,7 @@ export default function CreatorMysterySetup() {
                                 mapCenter={mapCenter}
                                 onMapClick={(lat, lng) => setMapCenter({ lat, lng })}
                                 onReverseGeocode={(address) => setLocation(address)}
+                                locationQuery={location}
                             />
                         </Map>
 

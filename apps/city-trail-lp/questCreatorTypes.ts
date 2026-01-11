@@ -1,5 +1,109 @@
 // Type definitions for Suno-style Quest Creator Canvas
 
+// ========== Enhanced Quest Data Editor Types ==========
+
+/**
+ * 物語骨格（Main Plot）- Step 1 で編集
+ */
+export interface MainPlot {
+  premise: string;           // 前提（物語の設定）
+  goal: string;              // 目的（プレイヤーのゴール）
+  antagonist: string;        // 対立/謎（障害や中心的な謎）
+  finalReveal: string;       // 真相（最終的に明かされる真実）
+}
+
+/**
+ * 謎設定（Puzzle Configuration）- Step 2 で編集
+ */
+export type PuzzleType = 'logic' | 'pattern' | 'cipher' | 'wordplay' | 'lateral' | 'arithmetic';
+
+export interface PuzzleConfig {
+  puzzleType: PuzzleType;
+  difficulty: 1 | 2 | 3 | 4 | 5;
+  solutionSteps: string[];    // 解法ステップ
+  hints: {
+    hint1: string;            // 抽象的ヒント
+    hint2: string;            // 具体的ヒント
+    hint3: string;            // 救済ヒント（ほぼ答え）
+  };
+}
+
+/**
+ * ロアカード（Lore Card）- Step 2 で編集
+ */
+export interface LoreCard {
+  narrativeText: string;      // 物語文（この地点の意味づけ）
+  usedFacts: string[];        // 使用する事実（spot_facts の ID リスト）
+  playerMaterial: string;     // プレイヤー資料（謎を解くのに必要な情報）
+}
+
+/**
+ * 報酬設定（Spot Reward）- Step 2 で編集
+ */
+export interface SpotReward {
+  loreReveal: string;         // 背景理解（正解後に明かされる情報）
+  plotKey: string;            // 物語の鍵（最終謎で使用されるキーワード）
+  nextHook: string;           // 次への誘導
+}
+
+/**
+ * シーン設定（Scene Settings）- Step 2 で編集
+ */
+export type SceneRole =
+  | 'introduction'     // 導入
+  | 'development'      // 展開
+  | 'turning_point'    // 転換
+  | 'truth_approach'   // 真相接近
+  | 'misdirect_clear'  // ミスリード解除
+  | 'conclusion';      // 結末
+
+export interface SceneSettings {
+  sceneRole: SceneRole;
+  linkingRationale: string;   // なぜこの謎がこのスポットか
+}
+
+/**
+ * メタパズル（Meta Puzzle）- Step 3 で編集
+ */
+export interface MetaPuzzleKeyEntry {
+  spotId: string;
+  plotKey: string;
+  isUsed: boolean;
+}
+
+export interface MetaPuzzle {
+  keys: MetaPuzzleKeyEntry[];        // 各スポットのplot_keyと使用フラグ
+  questionText: string;              // 最終謎の出題文
+  finalAnswer: string;               // 最終答え
+  truthConnection: string;           // 真相との接続説明
+}
+
+/**
+ * 謎タイプの日本語ラベル
+ */
+export const PUZZLE_TYPE_LABELS: Record<PuzzleType, { label: string; icon: string }> = {
+  logic: { label: '論理', icon: '🧠' },
+  pattern: { label: 'パターン', icon: '🔢' },
+  cipher: { label: '暗号', icon: '🔐' },
+  wordplay: { label: '言葉遊び', icon: '📝' },
+  lateral: { label: '水平思考', icon: '💡' },
+  arithmetic: { label: '算数', icon: '🔢' },
+};
+
+/**
+ * シーンロールの日本語ラベル
+ */
+export const SCENE_ROLE_LABELS: Record<SceneRole, { label: string; description: string }> = {
+  introduction: { label: '導入', description: '物語の始まり、世界観の説明' },
+  development: { label: '展開', description: '謎解きを進める過程' },
+  turning_point: { label: '転換', description: '物語の転機、新事実の発覚' },
+  truth_approach: { label: '真相接近', description: '真実に近づく瞬間' },
+  misdirect_clear: { label: 'ミスリード解除', description: '誤った思い込みの訂正' },
+  conclusion: { label: '結末', description: '物語の締めくくり' },
+};
+
+// ========== End of Enhanced Quest Data Editor Types ==========
+
 export type SectionStatus = 'idle' | 'generating' | 'ready' | 'editing' | 'error' | 'locked' | 'needs-review';
 
 export type SectionType =

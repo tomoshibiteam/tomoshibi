@@ -1,11 +1,12 @@
-import React, { useRef, useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { APIProvider, Map, AdvancedMarker, useMap, useMapsLibrary } from '@vis.gl/react-google-maps';
 import { TomoshibiLogo } from './TomoshibiLogo';
 import { supabase } from './supabaseClient';
 import { GripVertical, Trash2, Pencil } from 'lucide-react';
 import { PlaceAutocompleteInput } from './PlaceAutocompleteInput';
 import ConfirmationModal from './ConfirmationModal';
+import { useAuth } from './AuthProvider';
 
 const API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 const MAPTILER_KEY = import.meta.env.VITE_MAPTILER_KEY || '';
@@ -30,40 +31,96 @@ const MapHandler = ({
     onMapClick: (lat: number, lng: number) => void
 }) => {
     const map = useMap();
-    const maps = useMapsLibrary('maps');
-    const [path, setPath] = useState<google.maps.Polyline | null>(null);
+    const routesLib = useMapsLibrary('routes');
     const hasFitBoundsRef = useRef<boolean>(false);
+    const routeRequestIdRef = useRef(0);
+    const renderersRef = useRef<Array<{ outline: google.maps.DirectionsRenderer; main: google.maps.DirectionsRenderer }>>([]);
+    const timeoutsRef = useRef<number[]>([]);
+
+    const clearRenderers = useCallback(() => {
+        timeoutsRef.current.forEach((id) => window.clearTimeout(id));
+        timeoutsRef.current = [];
+        renderersRef.current.forEach(({ outline, main }) => {
+            outline.setMap(null);
+            main.setMap(null);
+        });
+        renderersRef.current = [];
+    }, []);
 
     useEffect(() => {
-        if (!map || !maps) return;
+        if (!map || !routesLib) return;
+        clearRenderers();
+        if (routeSpots.length < 2) return;
 
-        if (path) {
-            path.setPath(routeSpots.map(s => ({ lat: s.lat, lng: s.lng })));
-        } else {
-            const line = new maps.Polyline({
-                path: routeSpots.map(s => ({ lat: s.lat, lng: s.lng })),
-                geodesic: true,
-                strokeColor: '#2563eb',
-                strokeOpacity: 0.75,
-                strokeWeight: 4,
+        hasFitBoundsRef.current = false;
+        const segments = routeSpots.slice(0, -1).map((spot, idx) => ({
+            origin: spot,
+            destination: routeSpots[idx + 1],
+        }));
+
+        renderersRef.current = segments.map(() => {
+            const outline = new google.maps.DirectionsRenderer({
+                suppressMarkers: true,
+                preserveViewport: true,
+                polylineOptions: {
+                    strokeColor: '#ffffff',
+                    strokeOpacity: 0.9,
+                    strokeWeight: 10,
+                    zIndex: 1,
+                },
             });
-            line.setMap(map);
-            setPath(line);
-        }
+            outline.setMap(map);
 
-        if (routeSpots.length > 0 && !hasFitBoundsRef.current) {
-            const bounds = new google.maps.LatLngBounds();
-            routeSpots.forEach(s => bounds.extend({ lat: s.lat, lng: s.lng }));
-            map.fitBounds(bounds, 40);
-            hasFitBoundsRef.current = true;
-        }
+            const main = new google.maps.DirectionsRenderer({
+                suppressMarkers: true,
+                preserveViewport: true,
+                polylineOptions: {
+                    strokeColor: '#1a73e8',
+                    strokeOpacity: 0.95,
+                    strokeWeight: 6,
+                    zIndex: 2,
+                },
+            });
+            main.setMap(map);
+            return { outline, main };
+        });
+
+        const requestId = ++routeRequestIdRef.current;
+        const service = new google.maps.DirectionsService();
+
+        segments.forEach((segment, idx) => {
+            const timeoutId = window.setTimeout(() => {
+                if (routeRequestIdRef.current !== requestId) return;
+                service.route(
+                    {
+                        origin: { lat: segment.origin.lat, lng: segment.origin.lng },
+                        destination: { lat: segment.destination.lat, lng: segment.destination.lng },
+                        travelMode: google.maps.TravelMode.WALKING,
+                    },
+                    (result, status) => {
+                        if (routeRequestIdRef.current !== requestId) return;
+                        if (status === google.maps.DirectionsStatus.OK && result) {
+                            renderersRef.current[idx]?.main.setDirections(result);
+                            renderersRef.current[idx]?.outline.setDirections(result);
+                            if (idx === segments.length - 1 && !hasFitBoundsRef.current) {
+                                const bounds = new google.maps.LatLngBounds();
+                                routeSpots.forEach((s) => bounds.extend({ lat: s.lat, lng: s.lng }));
+                                map.fitBounds(bounds, 40);
+                                hasFitBoundsRef.current = true;
+                            }
+                        } else {
+                            console.warn('[RouteSpots] Directions failed:', status);
+                        }
+                    }
+                );
+            }, idx * 400);
+            timeoutsRef.current.push(timeoutId);
+        });
 
         return () => {
-            if (path && routeSpots.length === 0) {
-                path.setMap(null);
-            }
+            clearRenderers();
         };
-    }, [map, maps, routeSpots, path]);
+    }, [map, routesLib, routeSpots, clearRenderers]);
 
     // Handle map clicks
     useEffect(() => {
@@ -98,7 +155,9 @@ const MapHandler = ({
 
 
 export default function CreatorRouteSpots() {
+    const { user } = useAuth();
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
     const [questId, setQuestId] = useState<string | null>(localStorage.getItem('quest-id'));
     const [routeSpots, setRouteSpots] = useState<RouteSpot[]>([]);
     const [spotName, setSpotName] = useState('');
@@ -124,7 +183,7 @@ export default function CreatorRouteSpots() {
         setLoadingSpots(true);
         const { data, error } = await supabase
             .from('spots')
-            .select('*')
+            .select('*, spot_details(*)')
             .eq('quest_id', questId)
             .order('order_index', { ascending: true });
 
@@ -140,25 +199,40 @@ export default function CreatorRouteSpots() {
             })));
 
             // Load spot details to check if each spot has details
-            const spotIds = data.map(s => s.id);
-            if (spotIds.length > 0) {
-                const { data: detailsData } = await supabase
-                    .from('spot_details')
-                    .select('spot_id, question_text, answer_text')
-                    .in('spot_id', spotIds);
-
-                const detailsMap: Record<string, boolean> = {};
-                detailsData?.forEach(d => {
-                    // Consider has details if question_text or answer_text is set
-                    detailsMap[d.spot_id] = !!(d.question_text?.trim() || d.answer_text?.trim());
-                });
-                setSpotDetails(detailsMap);
-            }
+            const detailsMap: Record<string, boolean> = {};
+            data.forEach((spot: any) => {
+                const detail = Array.isArray(spot.spot_details) ? spot.spot_details[0] : spot.spot_details;
+                detailsMap[spot.id] = !!(detail?.question_text?.trim() || detail?.answer_text?.trim());
+            });
+            setSpotDetails(detailsMap);
         }
         setLoadingSpots(false);
     };
 
     useEffect(() => {
+        const queryQuestId = searchParams.get('questId');
+        if (queryQuestId && queryQuestId !== questId) {
+            setQuestId(queryQuestId);
+            localStorage.setItem('quest-id', queryQuestId);
+            return;
+        }
+        if (!questId && user?.id) {
+            supabase
+                .from('quests')
+                .select('id')
+                .eq('creator_id', user.id)
+                .order('updated_at', { ascending: false })
+                .limit(1)
+                .maybeSingle()
+                .then(({ data }) => {
+                    if (data?.id) {
+                        setQuestId(data.id);
+                        localStorage.setItem('quest-id', data.id);
+                    }
+                })
+                .catch(() => { });
+            return;
+        }
         if (!questId) return;
 
         // 新規クエスト作成フラグをチェック（ID紐付け）
@@ -173,7 +247,7 @@ export default function CreatorRouteSpots() {
         }
 
         loadSpots();
-    }, [questId]);
+    }, [questId, searchParams, user?.id]);
 
     // MapTiler logic removed in favor of Google Places Autocomplete
 
@@ -508,11 +582,11 @@ export default function CreatorRouteSpots() {
                             <div className="flex items-center gap-4 px-2 py-1.5 bg-stone-50 rounded-lg mb-3">
                                 <span className="text-[10px] font-bold text-stone-400 uppercase">完了条件</span>
                                 <div className="flex items-center gap-1.5">
-                                    <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${routeSpots.length >= 10 ? 'bg-emerald-500 text-white' : 'border border-stone-300 text-stone-400'}`}>
-                                        {routeSpots.length >= 10 ? '✓' : ''}
+                                    <div className={`w-4 h-4 rounded-full flex items-center justify-center text-[10px] ${routeSpots.length >= 5 ? 'bg-emerald-500 text-white' : 'border border-stone-300 text-stone-400'}`}>
+                                        {routeSpots.length >= 5 ? '✓' : ''}
                                     </div>
-                                    <span className={`text-xs ${routeSpots.length >= 10 ? 'text-emerald-700' : 'text-stone-500'}`}>
-                                        10箇所以上 <span className="font-mono">({routeSpots.length}/10)</span>
+                                    <span className={`text-xs ${routeSpots.length >= 5 ? 'text-emerald-700' : 'text-stone-500'}`}>
+                                        5箇所以上 <span className="font-mono">({routeSpots.length}/5)</span>
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-1.5">
@@ -545,9 +619,9 @@ export default function CreatorRouteSpots() {
                                         }
                                         navigate('/creator/workspace');
                                     }}
-                                    disabled={!(routeSpots.length >= 10 && routeSpots.every(s => spotDetails[s.id]))}
-                                    title={!(routeSpots.length >= 10 && routeSpots.every(s => spotDetails[s.id])) ? '完了条件を満たしてください' : ''}
-                                    className={`flex-1 py-2.5 rounded-lg font-bold text-sm transition-all ${routeSpots.length >= 10 && routeSpots.every(s => spotDetails[s.id])
+                                    disabled={!(routeSpots.length >= 5 && routeSpots.every(s => spotDetails[s.id]))}
+                                    title={!(routeSpots.length >= 5 && routeSpots.every(s => spotDetails[s.id])) ? '完了条件を満たしてください' : ''}
+                                    className={`flex-1 py-2.5 rounded-lg font-bold text-sm transition-all ${routeSpots.length >= 5 && routeSpots.every(s => spotDetails[s.id])
                                         ? 'bg-brand-dark text-white hover:bg-brand-gold hover:shadow-lg'
                                         : 'bg-stone-200 text-stone-400 cursor-not-allowed'
                                         }`}

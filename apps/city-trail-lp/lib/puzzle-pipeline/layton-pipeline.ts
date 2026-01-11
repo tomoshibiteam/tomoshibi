@@ -39,6 +39,7 @@ export async function generateLaytonQuest(
     const onError = callbacks?.onError || (() => { });
 
     try {
+        const questContext = buildQuestContext(request);
         // ==========================================================================
         // Phase 0: スポット情報の取得（初期生成）
         // ==========================================================================
@@ -60,7 +61,7 @@ export async function generateLaytonQuest(
             total_spots: spotsInput.length,
         });
 
-        const motifs = await selectMotifs(spotsInput, request.prompt, apiKey);
+        const motifs = await selectMotifs(spotsInput, request.prompt, apiKey, questContext);
 
         // ==========================================================================
         // Step 2: 物語骨格生成
@@ -71,7 +72,7 @@ export async function generateLaytonQuest(
             progress: 35,
         });
 
-        const mainPlot = await createMainPlot(spotsInput, motifs, request.prompt, apiKey);
+        const mainPlot = await createMainPlot(spotsInput, motifs, request.prompt, apiKey, questContext);
         onPlotComplete(mainPlot);
 
         // ==========================================================================
@@ -158,7 +159,7 @@ export async function generateLaytonQuest(
 
         const questOutput: QuestOutput = {
             quest_id: `quest-${Date.now()}`,
-            quest_title: await generateQuestTitle(mainPlot, request.prompt, apiKey),
+            quest_title: await generateQuestTitle(mainPlot, request.prompt, apiKey, questContext),
             main_plot: mainPlot,
             spots,
             meta_puzzle: metaPuzzle,
@@ -205,6 +206,7 @@ async function generateInitialSpots(
     request: QuestGenerationRequest,
     apiKey: string
 ): Promise<SpotInput[]> {
+    const desiredSpotCount = Math.min(12, Math.max(5, request.spot_count));
     // Build support info section
     const supportInfo: string[] = [];
     if (request.genre_support) {
@@ -221,6 +223,18 @@ async function generateInitialSpots(
     }
     if (request.prompt_support?.ending) {
         supportInfo.push(`- 結末: ${request.prompt_support.ending}`);
+    }
+    if (request.prompt_support?.when) {
+        supportInfo.push(`- いつ: ${request.prompt_support.when}`);
+    }
+    if (request.prompt_support?.where) {
+        supportInfo.push(`- どこで: ${request.prompt_support.where}`);
+    }
+    if (request.prompt_support?.purpose) {
+        supportInfo.push(`- 目的: ${request.prompt_support.purpose}`);
+    }
+    if (request.prompt_support?.withWhom) {
+        supportInfo.push(`- 誰と: ${request.prompt_support.withWhom}`);
     }
     if (request.theme_tags?.length) {
         supportInfo.push(`- テーマタグ: ${request.theme_tags.join(', ')}`);
@@ -239,7 +253,7 @@ ${request.center_location ? `【📍 エリア指定（必須）】
 この範囲外のスポットは絶対に含めないでください。
 ` : ''}
 【基本設定】
-- スポット数: ${request.spot_count}件
+- スポット数: ${desiredSpotCount}件
 - 難易度: ${request.difficulty}
 
 ${supportInfo.length > 0 ? `【補助条件】
@@ -247,7 +261,11 @@ ${supportInfo.join('\n')}
 
 ※補助条件はメインリクエストを上書きしません。
 メインリクエストと矛盾する場合はメインを優先してください。
+補助条件がある場合は、スポットの選び方・雰囲気に必ず反映してください。
 ` : ''}
+【差別化の指示】
+- 旅の条件（いつ/目的/誰と）がある場合、スポットの性質や雰囲気を明確に変える
+- 例: 夜=夜景/ネオン/ライトアップ、朝=市場/公園/静かな寺、カップル=ロマンチック、家族=安全で広い、ひとり=静けさと内省
 【🚨🚨🚨 絶対厳守：ウォーキングクエストのルール 🚨🚨🚨】
 これは「徒歩で巡るウォーキングクエスト」です。
 
@@ -316,10 +334,11 @@ ${supportInfo.join('\n')}
         const jsonMatch = responseText.match(/```json([\s\S]*?)```/);
         const jsonText = jsonMatch ? jsonMatch[1] : responseText;
         const parsed = JSON.parse(jsonText.trim());
+        const parsedSpots = Array.isArray(parsed) ? parsed.slice(0, desiredSpotCount) : [];
 
         // 追加の根拠収集 + Geocodingで正確な座標を取得（並行実行）
         const spotsWithEvidence = await Promise.all(
-            parsed.map(async (spot: any, idx: number) => {
+            parsedSpots.map(async (spot: any, idx: number) => {
                 try {
                     // スポット名から正確な座標を取得（Google Geocoding API）
                     const geocoded = await geocodeSpotName(spot.spot_name);
@@ -366,14 +385,21 @@ ${supportInfo.join('\n')}
         // 2. スポット間の距離で並べ替え（徒歩で回れる順序に）
         const searchRadiusMeters = (request.radius_km || 1) * 1000;
         const spotDistanceMeters = 800; // スポット間は800m以内
-        const filteredSpots = filterSpotsWithinWalkingDistance(
+        let filteredSpots = filterSpotsWithinWalkingDistance(
             spotsWithEvidence,
             spotDistanceMeters,
             request.center_location,
             searchRadiusMeters
         );
 
-        return filteredSpots;
+        if (filteredSpots.length < desiredSpotCount) {
+            console.warn(`[ウォーキングクエスト] スポット数が不足: ${filteredSpots.length}件 → ${desiredSpotCount}件に補完`);
+            const usedKeys = new Set(filteredSpots.map((spot) => `${spot.spot_name}-${spot.lat}-${spot.lng}`));
+            const fallback = spotsWithEvidence.filter((spot) => !usedKeys.has(`${spot.spot_name}-${spot.lat}-${spot.lng}`));
+            filteredSpots = [...filteredSpots, ...fallback].slice(0, desiredSpotCount);
+        }
+
+        return filteredSpots.slice(0, desiredSpotCount);
     } catch (error: any) {
         console.error('Initial spots generation error:', error);
         throw error;
@@ -456,12 +482,51 @@ function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
 }
 
 /**
+ * 旅の条件・世界観をまとめた文脈を作成
+ */
+function buildQuestContext(request: QuestGenerationRequest): string {
+    const lines: string[] = [];
+    if (request.genre_support) {
+        lines.push(`ジャンル: ${request.genre_support}`);
+    }
+    if (request.tone_support) {
+        lines.push(`トーン: ${request.tone_support}`);
+    }
+    if (request.theme_tags?.length) {
+        lines.push(`テーマタグ: ${request.theme_tags.join(', ')}`);
+    }
+    if (request.prompt_support?.protagonist) {
+        lines.push(`主人公: ${request.prompt_support.protagonist}`);
+    }
+    if (request.prompt_support?.objective) {
+        lines.push(`目的: ${request.prompt_support.objective}`);
+    }
+    if (request.prompt_support?.ending) {
+        lines.push(`結末: ${request.prompt_support.ending}`);
+    }
+    if (request.prompt_support?.when) {
+        lines.push(`いつ: ${request.prompt_support.when}`);
+    }
+    if (request.prompt_support?.where) {
+        lines.push(`どこで: ${request.prompt_support.where}`);
+    }
+    if (request.prompt_support?.purpose) {
+        lines.push(`旅の目的: ${request.prompt_support.purpose}`);
+    }
+    if (request.prompt_support?.withWhom) {
+        lines.push(`誰と: ${request.prompt_support.withWhom}`);
+    }
+    return lines.join('\n');
+}
+
+/**
  * クエストタイトルを生成
  */
 async function generateQuestTitle(
     mainPlot: MainPlot,
     originalPrompt: string,
-    apiKey: string
+    apiKey: string,
+    questContext?: string
 ): Promise<string> {
     const prompt = `
 以下の物語に相応しい、魅力的なクエストタイトルを1つだけ生成してください。
@@ -474,6 +539,9 @@ ${mainPlot.antagonist_or_mystery}
 【元のリクエスト】
 ${originalPrompt}
 
+${questContext ? `【旅の条件・世界観】
+${questContext}
+` : ''}
 タイトルだけを出力してください（JSON不要）。
 `.trim();
 
@@ -521,6 +589,7 @@ async function generatePlayerPreview(
     // 難易度ラベル
     const difficultyLabel = request.difficulty === 'easy' ? '初級' : request.difficulty === 'hard' ? '上級' : '中級';
 
+    const questContext = buildQuestContext(request);
     const prompt = `
 あなたは「プレイヤーが"やってみたい！"と思える」クエスト紹介文を作る専門家です。
 
@@ -538,6 +607,11 @@ async function generatePlayerPreview(
 スポット名：${quest.spots.map(s => s.spot_name).join('、')}
 難易度：${difficultyLabel}
 
+${questContext ? `【旅の条件・世界観】
+${questContext}
+
+※旅の条件がある場合は、one_linerやtrailerに必ず反映し、他と違う雰囲気が伝わるようにする。
+` : ''}
 【出力するJSON（日本語）】
 {
   "one_liner": "30〜45文字のキャッチコピー",
@@ -562,7 +636,7 @@ async function generatePlayerPreview(
 【重要】
 - teasersは3つとも別の種類の仕掛け感を出す（反射/音/置換/並べ替え/看板/模様/視点など）
 - highlight_spotsは同じ言い回しにしない
-- tagsは5〜7個
+- tagsは5〜7個（旅の条件に沿った具体タグを必ず含める）
 
 JSONのみ出力してください。
 `.trim();

@@ -18,11 +18,11 @@ export type TaskType =
  * - Pro: Higher quality for complex creative/logical tasks
  */
 const MODEL_MAP: Record<TaskType, string> = {
-    translation: 'gemini-3-flash-preview',
-    story: 'gemini-3-pro-preview',
-    puzzle: 'gemini-3-pro-preview',
-    motif: 'gemini-3-pro-preview',
-    general: 'gemini-3-pro-preview',
+    translation: 'gemini-2.0-flash',
+    story: 'gemini-2.0-flash',
+    puzzle: 'gemini-2.0-flash',
+    motif: 'gemini-2.0-flash',
+    general: 'gemini-2.0-flash',
 };
 
 /**
@@ -34,7 +34,7 @@ const MODEL_MAP: Record<TaskType, string> = {
  * @example
  * ```typescript
  * const model = getModelForTask('translation');
- * // Returns: 'gemini-3-flash-preview'
+ * // Returns: 'gemini-2.0-flash'
  * ```
  */
 export function getModelForTask(taskType: TaskType): string {
@@ -57,7 +57,7 @@ export function getModelEndpoint(taskType: TaskType, apiKey: string): string {
  * Check if a task type uses the Flash model (for cost estimation)
  */
 export function usesFlashModel(taskType: TaskType): boolean {
-    return getModelForTask(taskType) === 'gemini-3-flash-preview';
+    return getModelForTask(taskType) === 'gemini-2.0-flash';
 }
 
 /**

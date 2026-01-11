@@ -17,8 +17,12 @@ import {
     ChevronRight,
     GripVertical,
     Wand2,
-    X
+    X,
+    Key,
+    ChevronDown,
+    ChevronUp
 } from 'lucide-react';
+import type { MetaPuzzle, MetaPuzzleKeyEntry } from './questCreatorTypes';
 
 interface CastCharacter {
     id: string;
@@ -94,8 +98,16 @@ export default function CreatorStorytelling() {
     const [prologue, setPrologue] = useState('');
     const [epilogue, setEpilogue] = useState('');
     const [characters, setCharacters] = useState<CastCharacter[]>([]);
-    const [activeTab, setActiveTab] = useState<'prologue' | 'epilogue' | 'cast' | 'spots'>('prologue');
+    const [activeTab, setActiveTab] = useState<'prologue' | 'epilogue' | 'cast' | 'spots' | 'meta'>('prologue');
     const [questId, setQuestId] = useState<string | null>(null);
+
+    // Meta Puzzle state
+    const [metaPuzzle, setMetaPuzzle] = useState<MetaPuzzle>({
+        keys: [],
+        questionText: '',
+        finalAnswer: '',
+        truthConnection: ''
+    });
 
     // Spot conversation state
     const [spots, setSpots] = useState<SpotData[]>([]);
@@ -121,10 +133,10 @@ export default function CreatorStorytelling() {
             setQuestId(storedQuestId);
 
             try {
-                // Load story timelines (prologue, epilogue, characters)
+                // Load story timelines (prologue, epilogue, characters, meta_puzzle)
                 const { data } = await supabase
                     .from('story_timelines')
-                    .select('prologue, epilogue, characters, cast_name, cast_tone')
+                    .select('prologue, epilogue, characters, cast_name, cast_tone, meta_puzzle')
                     .eq('quest_id', storedQuestId)
                     .single();
 
@@ -142,6 +154,10 @@ export default function CreatorStorytelling() {
                         }]);
                     } else {
                         setCharacters(DEFAULT_CHARACTERS);
+                    }
+                    // Load meta_puzzle if exists
+                    if (data.meta_puzzle) {
+                        setMetaPuzzle(data.meta_puzzle as MetaPuzzle);
                     }
                 } else {
                     setCharacters(DEFAULT_CHARACTERS);
@@ -226,12 +242,13 @@ export default function CreatorStorytelling() {
         }
         setSaving(true);
         try {
-            // Save story timelines (prologue, epilogue, characters)
+            // Save story timelines (prologue, epilogue, characters, meta_puzzle)
             await supabase.from('story_timelines').upsert({
                 quest_id: questId,
                 prologue,
                 epilogue,
                 characters,
+                meta_puzzle: metaPuzzle,
             }, { onConflict: 'quest_id' });
 
             // Save spot_story_messages
@@ -426,6 +443,14 @@ export default function CreatorStorytelling() {
                                 <Users size={18} />
                                 登場人物
                             </button>
+                            <button
+                                onClick={() => setActiveTab('meta')}
+                                className={`w-full text-left px-4 py-3 rounded-xl text-sm font-bold flex items-center gap-3 transition-colors ${activeTab === 'meta' ? 'bg-amber-50 text-amber-700' : 'text-stone-600 hover:bg-stone-50'}`}
+                            >
+                                <Key size={18} />
+                                メタパズル
+                                <span className="text-xs font-normal text-stone-400 ml-auto">最終謎</span>
+                            </button>
                         </div>
 
                         {/* Quick Hints */}
@@ -436,7 +461,9 @@ export default function CreatorStorytelling() {
                             <p className="text-xs text-stone-600 leading-relaxed">
                                 {activeTab === 'spots'
                                     ? '各スポットで「到着後→謎→解決後」の自然な流れを作りましょう。前後の文脈を確認しながら会話を書くと繋がりが良くなります。'
-                                    : '魅力的なクエストには引き込まれる物語が必要です。プロローグで期待感を高め、エピローグでプレイヤーの達成感を演出しましょう。'
+                                    : activeTab === 'meta'
+                                        ? '各スポットで取得した「物語の鍵」を組み合わせて最終謎を設計します。プレイヤーが達成感を感じる結末を演出しましょう。'
+                                        : '魅力的なクエストには引き込まれる物語が必要です。プロローグで期待感を高め、エピローグでプレイヤーの達成感を演出しましょう。'
                                 }
                             </p>
                         </div>
@@ -447,7 +474,7 @@ export default function CreatorStorytelling() {
                         {/* Toolbar */}
                         <div className="border-b border-stone-100 p-4 flex justify-between items-center bg-stone-50/50">
                             <span className="text-xs font-bold text-stone-400 uppercase tracking-wider">
-                                {activeTab === 'prologue' ? 'オープニング' : activeTab === 'epilogue' ? 'エンディング' : activeTab === 'spots' ? 'スポット会話編集' : '登場人物管理'}
+                                {activeTab === 'prologue' ? 'オープニング' : activeTab === 'epilogue' ? 'エンディング' : activeTab === 'spots' ? 'スポット会話編集' : activeTab === 'meta' ? 'メタパズル設定' : '登場人物管理'}
                             </span>
                             <div className="flex gap-2">
                                 <button
@@ -696,6 +723,93 @@ export default function CreatorStorytelling() {
                                                 )}
                                             </div>
                                         ))}
+                                    </div>
+                                </div>
+                            )}
+                            {activeTab === 'meta' && (
+                                <div className="space-y-6 h-full">
+                                    <p className="text-sm text-stone-500">各スポットで獲得する「物語の鍵」を組み合わせて、最終謎を設計します。</p>
+
+                                    {/* Keys from Spots */}
+                                    <div className="space-y-3">
+                                        <label className="text-xs font-bold text-stone-600 uppercase tracking-wider">使用する鍵（各スポットのplot_key）</label>
+                                        <div className="space-y-2 p-3 bg-stone-50 rounded-xl border border-stone-200">
+                                            {spots.length === 0 ? (
+                                                <p className="text-sm text-stone-400">スポットがまだ登録されていません。Step 2でスポットを追加してください。</p>
+                                            ) : (
+                                                spots.map((spot, idx) => {
+                                                    const keyEntry = metaPuzzle.keys.find(k => k.spotId === spot.id);
+                                                    return (
+                                                        <div key={spot.id} className="flex items-center gap-3 p-2 bg-white rounded-lg border border-stone-100">
+                                                            <div className="w-6 h-6 rounded-full bg-brand-gold/20 flex items-center justify-center text-xs font-bold text-brand-dark">{idx + 1}</div>
+                                                            <span className="text-sm font-medium text-stone-700 flex-1 truncate">{spot.name}</span>
+                                                            <input
+                                                                type="text"
+                                                                value={keyEntry?.plotKey || ''}
+                                                                onChange={(e) => {
+                                                                    const newKeys = metaPuzzle.keys.filter(k => k.spotId !== spot.id);
+                                                                    if (e.target.value) {
+                                                                        newKeys.push({ spotId: spot.id, plotKey: e.target.value, isUsed: true });
+                                                                    }
+                                                                    setMetaPuzzle({ ...metaPuzzle, keys: newKeys });
+                                                                }}
+                                                                placeholder="鍵（例: 雷）"
+                                                                className="w-24 px-2 py-1 rounded border border-stone-200 text-sm focus:outline-none focus:border-amber-300"
+                                                            />
+                                                            <label className="flex items-center gap-1 text-xs text-stone-500">
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={keyEntry?.isUsed ?? false}
+                                                                    onChange={(e) => {
+                                                                        const newKeys = metaPuzzle.keys.filter(k => k.spotId !== spot.id);
+                                                                        newKeys.push({ spotId: spot.id, plotKey: keyEntry?.plotKey || '', isUsed: e.target.checked });
+                                                                        setMetaPuzzle({ ...metaPuzzle, keys: newKeys });
+                                                                    }}
+                                                                    className="rounded"
+                                                                />
+                                                                使用
+                                                            </label>
+                                                        </div>
+                                                    );
+                                                })
+                                            )}
+                                        </div>
+                                    </div>
+
+                                    {/* Final Question */}
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-stone-600 uppercase tracking-wider">最終謎の出題文</label>
+                                        <textarea
+                                            value={metaPuzzle.questionText}
+                                            onChange={(e) => setMetaPuzzle({ ...metaPuzzle, questionText: e.target.value })}
+                                            placeholder="例: 集めた3つの鍵を組み合わせると何が見える？"
+                                            rows={3}
+                                            className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm focus:outline-none focus:border-amber-300 resize-none"
+                                        />
+                                    </div>
+
+                                    {/* Final Answer */}
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-stone-600 uppercase tracking-wider">最終答え</label>
+                                        <input
+                                            type="text"
+                                            value={metaPuzzle.finalAnswer}
+                                            onChange={(e) => setMetaPuzzle({ ...metaPuzzle, finalAnswer: e.target.value })}
+                                            placeholder="例: 雷門寺"
+                                            className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm focus:outline-none focus:border-amber-300"
+                                        />
+                                    </div>
+
+                                    {/* Truth Connection */}
+                                    <div className="space-y-2">
+                                        <label className="text-xs font-bold text-stone-600 uppercase tracking-wider">真相との接続説明</label>
+                                        <textarea
+                                            value={metaPuzzle.truthConnection}
+                                            onChange={(e) => setMetaPuzzle({ ...metaPuzzle, truthConnection: e.target.value })}
+                                            placeholder="例: 雷門は浅草寺の正式名称ではなく..."
+                                            rows={4}
+                                            className="w-full px-4 py-3 rounded-xl border border-stone-200 text-sm focus:outline-none focus:border-amber-300 resize-none"
+                                        />
                                     </div>
                                 </div>
                             )}

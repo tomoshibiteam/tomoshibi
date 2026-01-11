@@ -13,6 +13,7 @@ interface QuestData {
     area_name: string;
     difficulty: string;
     target_audience: string;
+    tags?: string[];
 }
 
 interface StoryData {
@@ -47,11 +48,11 @@ interface CharacterData {
 
 interface SpotConversation {
     spot_id: string;
-    message_type: 'pre_puzzle' | 'post_puzzle';
-    sequence: number;
+    stage: 'pre_puzzle' | 'post_puzzle';
+    order_index: number;
     speaker_type: 'character' | 'narrator';
     speaker_name: string;
-    message_text: string;
+    text: string;
 }
 
 const AVAILABLE_LANGUAGES = [
@@ -124,13 +125,17 @@ export default function CreatorMultilingual() {
                     .single();
 
                 if (questData) {
+                    const fallbackFromTags = Array.isArray(questData.tags) && questData.tags.length
+                        ? questData.tags.join(' / ')
+                        : '';
                     setQuest({
                         id: questData.id,
                         title: questData.title || '',
                         description: questData.description || '',
                         area_name: questData.area_name || '',
                         difficulty: questData.difficulty || '',
-                        target_audience: questData.target_audience || '',
+                        target_audience: questData.target_audience || fallbackFromTags,
+                        tags: questData.tags || [],
                     });
                 }
 
@@ -139,7 +144,7 @@ export default function CreatorMultilingual() {
                     .from('story_timelines')
                     .select('prologue, epilogue, prologue_title, cast_name, cast_tone, characters')
                     .eq('quest_id', storedQuestId)
-                    .single();
+                    .maybeSingle();
 
                 if (storyData) {
                     setStory({
@@ -168,7 +173,7 @@ export default function CreatorMultilingual() {
                     const spotIds = spotsData.map(s => s.id);
                     const { data: detailsData } = await supabase
                         .from('spot_details')
-                        .select('spot_id, nav_text, story_text, question_text, hint_text, answer_text, completion_message')
+                        .select('spot_id, nav_text, story_text, question_text, hint_text, answer_text, completion_message, puzzle_config')
                         .in('spot_id', spotIds);
 
                     const mergedSpots = spotsData.map(spot => {
@@ -187,12 +192,39 @@ export default function CreatorMultilingual() {
                     });
                     setSpots(mergedSpots as SpotData[]);
 
+                    if (questData) {
+                        let difficultyFallback = questData.difficulty || '';
+                        let targetFallback = questData.target_audience || '';
+                        if (!difficultyFallback && detailsData?.length) {
+                            const difficulties = detailsData
+                                .map((d: any) => d?.puzzle_config?.difficulty)
+                                .filter((val: any) => typeof val === 'number' && !Number.isNaN(val)) as number[];
+                            if (difficulties.length) {
+                                const avg = difficulties.reduce((sum, v) => sum + v, 0) / difficulties.length;
+                                difficultyFallback = avg <= 2 ? '初級' : avg <= 3.5 ? '中級' : '上級';
+                            }
+                        }
+                        if (!targetFallback && Array.isArray(questData.tags) && questData.tags.length) {
+                            targetFallback = questData.tags.join(' / ');
+                        }
+                        if (
+                            (difficultyFallback && difficultyFallback !== questData.difficulty) ||
+                            (targetFallback && targetFallback !== questData.target_audience)
+                        ) {
+                            await supabase
+                                .from('quests')
+                                .update({ difficulty: difficultyFallback, target_audience: targetFallback })
+                                .eq('id', storedQuestId);
+                            setQuest((prev) => prev ? { ...prev, difficulty: difficultyFallback, target_audience: targetFallback } : prev);
+                        }
+                    }
+
                     // Fetch spot conversations
                     const { data: conversationsData } = await supabase
                         .from('spot_story_messages')
-                        .select('spot_id, message_type, sequence, speaker_type, speaker_name, message_text')
+                        .select('spot_id, stage, order_index, speaker_type, speaker_name, text')
                         .in('spot_id', spotIds)
-                        .order('sequence');
+                        .order('order_index');
 
                     if (conversationsData) {
                         setSpotConversations(conversationsData as SpotConversation[]);
@@ -733,8 +765,8 @@ ${JSON.stringify(contentToTranslate, null, 2)}
                                 <div className="px-6 pb-6 space-y-4">
                                     {spotConversations.length > 0 ? (
                                         spots.map((spot, idx) => {
-                                            const preMessages = spotConversations.filter(c => c.spot_id === spot.id && c.message_type === 'pre_puzzle');
-                                            const postMessages = spotConversations.filter(c => c.spot_id === spot.id && c.message_type === 'post_puzzle');
+                                            const preMessages = spotConversations.filter(c => c.spot_id === spot.id && c.stage === 'pre_puzzle');
+                                            const postMessages = spotConversations.filter(c => c.spot_id === spot.id && c.stage === 'post_puzzle');
 
                                             if (preMessages.length === 0 && postMessages.length === 0) return null;
 
@@ -754,7 +786,7 @@ ${JSON.stringify(contentToTranslate, null, 2)}
                                                                     {preMessages.map((msg, mIdx) => (
                                                                         <div key={mIdx} className={`p-3 rounded-lg ${msg.speaker_type === 'narrator' ? 'bg-stone-100 italic' : 'bg-indigo-50'}`}>
                                                                             <p className="text-xs font-bold text-stone-500 mb-1">{msg.speaker_name}</p>
-                                                                            <p className="text-sm text-stone-700">{msg.message_text}</p>
+                                                                            <p className="text-sm text-stone-700">{msg.text}</p>
                                                                         </div>
                                                                     ))}
                                                                 </div>
@@ -767,7 +799,7 @@ ${JSON.stringify(contentToTranslate, null, 2)}
                                                                     {postMessages.map((msg, mIdx) => (
                                                                         <div key={mIdx} className={`p-3 rounded-lg ${msg.speaker_type === 'narrator' ? 'bg-stone-100 italic' : 'bg-green-50'}`}>
                                                                             <p className="text-xs font-bold text-stone-500 mb-1">{msg.speaker_name}</p>
-                                                                            <p className="text-sm text-stone-700">{msg.message_text}</p>
+                                                                            <p className="text-sm text-stone-700">{msg.text}</p>
                                                                         </div>
                                                                     ))}
                                                                 </div>

@@ -677,7 +677,15 @@ interface CastCharacter {
 
 type ScenarioBlock =
   | { type: 'prologue'; id: string; content: string }
-  | { type: 'dialogue'; id: string; characterId: string; text: string; position: 'left' | 'right' }
+  | {
+    type: 'dialogue';
+    id: string;
+    characterId: string;
+    text: string;
+    position: 'left' | 'right';
+    spotId?: string;
+    stage?: 'pre_puzzle' | 'post_puzzle';
+  }
   | { type: 'spot'; id: string; spotId: string; name: string }
   | { type: 'epilogue'; id: string; content: string; social?: string };
 
@@ -2187,6 +2195,11 @@ function CreatorWorkspacePage({
   onOpenShareModal,
   onOpenPublishModal,
   isPaidUser = false,
+  questTitle = '',
+  questDescription = '',
+  questLocation = '',
+  routeSpots = [],
+  storySettings,
 }: {
   onBack: () => void;
   onPreview: () => void;
@@ -2246,6 +2259,11 @@ function CreatorWorkspacePage({
   onOpenShareModal?: () => void;
   onOpenPublishModal?: () => void;
   isPaidUser?: boolean;
+  questTitle?: string;
+  questDescription?: string;
+  questLocation?: string;
+  routeSpots?: RouteSpot[];
+  storySettings: StorySettings;
 }) {
   const [showAiDraftModal, setShowAiDraftModal] = useState(false);
   const [aiDraftMessage, setAiDraftMessage] = useState<string | null>(null);
@@ -2373,18 +2391,96 @@ function CreatorWorkspacePage({
     },
   ];
 
-  const getStatus = (card: (typeof cards)[number]): 'done' | 'active' | 'idle' => {
-    if (!questId) return 'idle';
-    const savedStatus = localStorage.getItem(`step-status:${questId}:${card.step}`);
-    if (savedStatus === 'completed') return 'done';
-    if (savedStatus === 'in_progress') return 'active';
+  const progressKeyMap = new globalThis.Map<(typeof cards)[number]['key'], number>();
+  const resolvedQuestId =
+    questId ?? (typeof window !== 'undefined' ? localStorage.getItem('quest-id') : null);
+  const getStoredStatus = (step: number) => {
+    if (!resolvedQuestId) return null;
+    const saved = localStorage.getItem(`step-status:${resolvedQuestId}:${step}`);
+    if (saved === 'completed' || saved === 'in_progress') return saved;
+    return null;
+  };
+  const toFilled = (value: string | null | undefined) => (value && value.trim().length > 0 ? 1 : 0);
+  const basicProgress = (toFilled(questTitle) + toFilled(questLocation) + toFilled(questDescription)) / 3;
+  const minSpotCount = 5;
+  const spotCountProgress = Math.min(routeSpots.length / minSpotCount, 1);
+  const completeSpotCount = routeSpots.filter((spot) => {
+    if (spot.status === 'complete') return true;
+    const details = spot.details;
+    const hasQuestion = (details?.challengeText || '').trim().length > 0;
+    const hasAnswer =
+      details?.answerType === 'choice'
+        ? (details.choiceOptions || []).length > 0
+        : (details?.answerText || '').trim().length > 0;
+    return hasQuestion && hasAnswer;
+  }).length;
+  const spotDetailProgress = routeSpots.length ? completeSpotCount / routeSpots.length : 0;
+  const spotsProgress = routeSpots.length ? (spotCountProgress + spotDetailProgress) / 2 : 0;
+  const dialogueCount = storySettings.scenario.filter((b) => b.type === 'dialogue' && (b as any).text?.trim().length > 0).length;
+  const storyProgress =
+    (toFilled(storySettings.castName) +
+      toFilled(storySettings.prologueBody) +
+      toFilled(storySettings.epilogueBody) +
+      (dialogueCount > 0 ? 1 : 0)) /
+    4;
+  const questLanguages = resolvedQuestId ? localStorage.getItem(`quest-languages:${resolvedQuestId}`) : null;
+  const selectedLanguages = questLanguages ? (() => {
+    try {
+      return JSON.parse(questLanguages) as string[];
+    } catch {
+      return [];
+    }
+  })() : [];
+  const multilingualProgress = selectedLanguages.length > 1 ? 1 : 0;
+  const testStatus = resolvedQuestId ? localStorage.getItem(`step-status:${resolvedQuestId}:5`) : null;
+  const testProgress = testStatus === 'completed' ? 1 : testStatus === 'in_progress' ? 0.5 : 0;
+  const publishStatus = resolvedQuestId ? localStorage.getItem(`step-status:${resolvedQuestId}:6`) : null;
+  const publishProgress = publishStatus === 'completed' ? 1 : publishStatus === 'in_progress' ? 0.5 : 0;
+  const computedProgressByKey: Record<(typeof cards)[number]['key'], number> = {
+    basic: basicProgress,
+    spots: spotsProgress,
+    story: storyProgress,
+    multilingual: multilingualProgress,
+    test: testProgress,
+    publish: publishProgress,
+  };
+
+  const storedBasic = getStoredStatus(1);
+  const storedSpots = getStoredStatus(2);
+  const storedStory = getStoredStatus(3);
+  const storedMultilingual = getStoredStatus(4);
+  const storedTest = getStoredStatus(5);
+  const storedPublish = getStoredStatus(6);
+
+  const capUnconfirmed = (value: number) => Math.min(value, 0.9);
+  const withStoredProgress = (stored: string | null, computed: number) => {
+    if (stored === 'completed') return 1;
+    if (stored === 'in_progress') return capUnconfirmed(Math.max(computed, 0.5));
+    if (computed >= 1) return 0.9;
+    return computed;
+  };
+
+  progressKeyMap.set('basic', withStoredProgress(storedBasic, basicProgress));
+  progressKeyMap.set('spots', withStoredProgress(storedSpots, spotsProgress));
+  progressKeyMap.set('story', withStoredProgress(storedStory, storyProgress));
+  progressKeyMap.set('multilingual', withStoredProgress(storedMultilingual, multilingualProgress));
+  progressKeyMap.set('test', withStoredProgress(storedTest, testProgress));
+  progressKeyMap.set('publish', withStoredProgress(storedPublish, publishProgress));
+
+  const getStatus = (card: (typeof cards)[number]): 'done' | 'active' | 'idle' | 'unconfirmed' => {
+    if (!resolvedQuestId) return 'idle';
+    const stored = getStoredStatus(card.step);
+    if (stored === 'completed') return 'done';
+    if (stored === 'in_progress') return 'active';
+    const computed = computedProgressByKey[card.key] || 0;
+    if (computed >= 1) return 'unconfirmed';
+    if (computed > 0) return 'active';
     return 'idle';
   };
 
-  const completedCount = cards.filter((card) => getStatus(card) === 'done').length;
-  const inProgressCount = cards.filter((card) => getStatus(card) === 'active').length;
-  // Calculate progress: completed = 100%, in_progress = 50% contribution
-  const progressPercent = Math.round(((completedCount + inProgressCount * 0.5) / cards.length) * 100);
+  const progressPercent = Math.round(
+    (cards.reduce((sum, card) => sum + (progressKeyMap.get(card.key) || 0), 0) / cards.length) * 100
+  );
   const formatMinutes = (m: number | null) => (m != null ? `${m} 分` : '—');
 
   return (
@@ -2580,6 +2676,7 @@ function CreatorWorkspacePage({
             // isLocked removed - all steps are accessible
             const isActive = status === 'active';
             const isDone = status === 'done';
+            const isUnconfirmed = status === 'unconfirmed';
 
             // Card Styles - fully unified design for all cards
             const baseCardClass = "relative rounded-3xl p-6 border transition-all duration-300 flex flex-col h-full";
@@ -2611,11 +2708,11 @@ function CreatorWorkspacePage({
 
                 {/* Header */}
                 <div className="flex items-start justify-between mb-4">
-                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-inner ${isDone ? 'bg-emerald-100 text-emerald-600' : isActive ? 'bg-brand-gold/20 text-brand-gold' : 'bg-stone-100 text-stone-500'}`}>
+                  <div className={`w-12 h-12 rounded-2xl flex items-center justify-center text-xl shadow-inner ${isDone ? 'bg-emerald-100 text-emerald-600' : isUnconfirmed ? 'bg-amber-100 text-amber-700' : isActive ? 'bg-brand-gold/20 text-brand-gold' : 'bg-stone-100 text-stone-500'}`}>
                     <card.icon size={24} />
                   </div>
-                  <span className={`text-xs font-bold px-2 py-1 rounded-full ${isDone ? 'bg-emerald-100 text-emerald-700' : isActive ? 'bg-amber-100 text-amber-700' : 'bg-stone-100 text-stone-500'}`}>
-                    {isDone ? '完了' : isActive ? '進行中' : '未着手'}
+                  <span className={`text-xs font-bold px-2 py-1 rounded-full ${isDone ? 'bg-emerald-100 text-emerald-700' : isUnconfirmed ? 'bg-amber-100 text-amber-700' : isActive ? 'bg-amber-100 text-amber-700' : 'bg-stone-100 text-stone-500'}`}>
+                    {isDone ? '完了' : isUnconfirmed ? '未確認' : isActive ? '進行中' : '未着手'}
                   </span>
                 </div>
 
@@ -2640,7 +2737,7 @@ function CreatorWorkspacePage({
                       onClick={handleStart}
                       className={`px-5 py-2 rounded-full text-sm font-bold flex items-center gap-2 transition-all ${isDone ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200' : 'bg-stone-100 text-stone-600 hover:bg-brand-dark hover:text-white'}`}
                     >
-                      {isDone ? '編集する' : '開始する'}
+                      {isDone ? '編集する' : isUnconfirmed ? '確認する' : '開始する'}
                       <ArrowRight size={14} />
                     </button>
                   </div>
@@ -3619,6 +3716,9 @@ function CreatorStorytellingPage({
   const [prologueBlocks, setPrologueBlocks] = useState<StoryBlock[]>([]);
   const [epilogueBlocks, setEpilogueBlocks] = useState<StoryBlock[]>([]);
   const [timelineLoaded, setTimelineLoaded] = useState(false);
+  const [dialogueLoaded, setDialogueLoaded] = useState(false);
+  const [dialogueStatus, setDialogueStatus] = useState<'idle' | 'loading' | 'empty' | 'error' | 'loaded'>('idle');
+  const [dialogueError, setDialogueError] = useState<string | null>(null);
   const [scenario, setScenario] = useState<ScenarioBlock[]>(
     storySettings.scenario.length
       ? storySettings.scenario
@@ -3628,6 +3728,21 @@ function CreatorStorytellingPage({
         { type: 'epilogue', id: 'epilogue', content: storySettings.epilogueBody || '', social: storySettings.socialMessage || '' },
       ]
   );
+  const spotIdsKey = spots.map((s) => s.id).join(',');
+
+  useEffect(() => {
+    setTimelineLoaded(false);
+    setDialogueLoaded(false);
+    setDialogueStatus('idle');
+    setDialogueError(null);
+  }, [questId]);
+
+  useEffect(() => {
+    if (!spots.length) return;
+    setDialogueLoaded(false);
+    setDialogueStatus('idle');
+    setDialogueError(null);
+  }, [spotIdsKey, spots.length]);
 
   useEffect(() => {
     setScenario((prev) =>
@@ -3642,6 +3757,31 @@ function CreatorStorytellingPage({
       })
     );
   }, [prologueBody, epilogueBody, socialMessage, spots]);
+
+  useEffect(() => {
+    if (!spots.length) return;
+    const spotBlocks = scenario.filter((b) => b.type === 'spot') as Extract<ScenarioBlock, { type: 'spot' }>[];
+    if (spotBlocks.length === 0) {
+      setScenario([
+        { type: 'prologue', id: 'prologue', content: prologueBody || '' },
+        ...spots.map((s) => ({ type: 'spot', id: `spot-${s.id}`, spotId: s.id, name: s.name })),
+        { type: 'epilogue', id: 'epilogue', content: epilogueBody || '', social: socialMessage || '' },
+      ]);
+      return;
+    }
+    const existingSpotIds = new Set(spotBlocks.map((b) => b.spotId));
+    const missing = spots.filter((s) => !existingSpotIds.has(s.id));
+    if (!missing.length) return;
+    const insertIndex = scenario.findIndex((b) => b.type === 'epilogue');
+    const missingBlocks = missing.map((s) => ({ type: 'spot', id: `spot-${s.id}`, spotId: s.id, name: s.name } as ScenarioBlock));
+    if (insertIndex >= 0) {
+      const next = [...scenario];
+      next.splice(insertIndex, 0, ...missingBlocks);
+      setScenario(next);
+    } else {
+      setScenario([...scenario, ...missingBlocks]);
+    }
+  }, [spots, scenario, prologueBody, epilogueBody, socialMessage]);
 
   const addBlock = (stage: 'prologue' | 'epilogue') => {
     const setter = stage === 'prologue' ? setPrologueBlocks : setEpilogueBlocks;
@@ -3699,7 +3839,7 @@ function CreatorStorytellingPage({
         'prologue, epilogue, characters, timeline_data, timeline_json, cast_name, cast_tone, cast_icon, prologue_title, prologue_image, epilogue_image, social_message'
       )
       .eq('quest_id', questId)
-      .single()
+      .maybeSingle()
       .then(({ data }) => {
         if (data) {
           setCastName((data.cast_name as string) || storySettings.castName || '');
@@ -3739,6 +3879,113 @@ function CreatorStorytellingPage({
       .catch(() => setTimelineLoaded(true));
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [questId]);
+
+  useEffect(() => {
+    if (!questId || !spots.length || !timelineLoaded || dialogueLoaded) return;
+    console.log('[Storytelling] Loading spot dialogues:', { questId, spots: spots.length });
+    const spotIds = spots.map((s) => s.id);
+    if (!spotIds.length) return;
+    setDialogueStatus('loading');
+    const uuidRe = /^[0-9a-fA-F-]{36}$/;
+    const validSpotIds = spotIds.filter((id) => uuidRe.test(id));
+    if (validSpotIds.length !== spotIds.length) {
+      const invalid = spotIds.filter((id) => !uuidRe.test(id));
+      console.warn('[Storytelling] Invalid spot IDs for query:', invalid);
+      setDialogueStatus('error');
+      setDialogueError(`invalid spot ids: ${invalid.join(', ')}`);
+      setDialogueLoaded(true);
+      return;
+    }
+    supabase
+      .from('spot_story_messages')
+      .select('spot_id, stage, order_index, speaker_type, speaker_name, text')
+      .in('spot_id', validSpotIds)
+      .order('stage', { ascending: true })
+      .order('order_index', { ascending: true })
+      .then(({ data, error }) => {
+        if (error) {
+          console.warn('[Storytelling] spot_story_messages fetch error:', error, { spotIds });
+          setDialogueStatus('error');
+          setDialogueError(error.message || String(error));
+          setDialogueLoaded(true);
+          return;
+        }
+        if (!data || data.length === 0) {
+          console.log('[Storytelling] No spot_story_messages found for spots:', spotIds);
+          setDialogueStatus('empty');
+          setDialogueError(null);
+          setDialogueLoaded(true);
+          return;
+        }
+        const bySpot = new globalThis.Map<string, { pre: any[]; post: any[] }>();
+        data.forEach((msg: any) => {
+          const entry = bySpot.get(msg.spot_id) || { pre: [], post: [] };
+          if (msg.stage === 'post_puzzle') {
+            entry.post.push(msg);
+          } else {
+            entry.pre.push(msg);
+          }
+          bySpot.set(msg.spot_id, entry);
+        });
+        const resolveCharacterId = (name: string | null | undefined) => {
+          const normalized = (name || '').trim();
+          if (normalized) {
+            const match = characters.find((c) => c.name === normalized);
+            if (match) return match.id;
+            if (castName && normalized === castName) return 'cast-main';
+          }
+          return 'cast-main';
+        };
+        const nextScenario: ScenarioBlock[] = [];
+        nextScenario.push({ type: 'prologue', id: 'prologue', content: prologueBody || '' });
+        spots.forEach((spot, spotIndex) => {
+          const entry = bySpot.get(spot.id);
+          if (entry) {
+            entry.pre
+              .sort((a, b) => (a.order_index || 0) - (b.order_index || 0))
+              .forEach((msg, idx) => {
+                nextScenario.push({
+                  type: 'dialogue',
+                  id: `pre-${spot.id}-${idx + 1}`,
+                  characterId: resolveCharacterId(msg.speaker_name),
+                  text: msg.text || '',
+                  position: 'left',
+                  spotId: spot.id,
+                  stage: 'pre_puzzle',
+                });
+              });
+          }
+          nextScenario.push({ type: 'spot', id: `spot-${spot.id}`, spotId: spot.id, name: spot.name });
+          if (entry) {
+            entry.post
+              .sort((a, b) => (a.order_index || 0) - (b.order_index || 0))
+              .forEach((msg, idx) => {
+                nextScenario.push({
+                  type: 'dialogue',
+                  id: `post-${spot.id}-${idx + 1}`,
+                  characterId: resolveCharacterId(msg.speaker_name),
+                  text: msg.text || '',
+                  position: 'left',
+                  spotId: spot.id,
+                  stage: 'post_puzzle',
+                });
+              });
+          }
+        });
+        nextScenario.push({ type: 'epilogue', id: 'epilogue', content: epilogueBody || '', social: socialMessage || '' });
+        console.log('[Storytelling] Applied spot dialogues to scenario:', nextScenario);
+        setScenario(nextScenario);
+        setDialogueStatus('loaded');
+        setDialogueError(null);
+        setDialogueLoaded(true);
+      })
+      .catch((err) => {
+        console.warn('[Storytelling] spot_story_messages fetch failed:', err);
+        setDialogueStatus('error');
+        setDialogueError(err?.message || String(err));
+        setDialogueLoaded(true);
+      });
+  }, [questId, spots, timelineLoaded, dialogueLoaded, scenario, characters, castName, prologueBody, epilogueBody, socialMessage]);
 
   const handleSave = async () => {
     if (!questId) {
@@ -3801,18 +4048,32 @@ function CreatorStorytellingPage({
     ...characters.map((c) => ({ id: c.id, name: c.name || 'キャラクター', tone: c.tone })),
   ];
 
-  const insertDialogue = (afterId: string) => {
-    const idx = scenario.findIndex((b) => b.id === afterId);
-    if (idx === -1) return;
+  const insertDialogueForSpot = (spotId: string, stage: 'pre_puzzle' | 'post_puzzle') => {
     const newBlock: ScenarioBlock = {
       type: 'dialogue',
-      id: `dialogue-${Date.now()}`,
+      id: `dialogue-${Date.now()}-${Math.random().toString(16).slice(2)}`,
       characterId: availableSpeakers[0]?.id || 'cast-main',
       text: '',
       position: 'left',
+      spotId,
+      stage,
     };
+    const spotIndex = scenario.findIndex((b) => b.type === 'spot' && b.spotId === spotId);
+    if (spotIndex === -1) {
+      setScenario([...scenario, newBlock]);
+      return;
+    }
+    let lastMatchIndex = -1;
+    scenario.forEach((b, idx) => {
+      if (b.type !== 'dialogue') return;
+      if (b.spotId !== spotId) return;
+      if ((b.stage || 'pre_puzzle') === stage) {
+        lastMatchIndex = idx;
+      }
+    });
+    const insertIndex = lastMatchIndex >= 0 ? lastMatchIndex + 1 : stage === 'pre_puzzle' ? spotIndex : spotIndex + 1;
     const updated = [...scenario];
-    updated.splice(idx + 1, 0, newBlock);
+    updated.splice(insertIndex, 0, newBlock);
     setScenario(updated);
   };
 
@@ -3821,6 +4082,44 @@ function CreatorStorytellingPage({
       prev.map((b) => (b.id === id && b.type === 'dialogue' ? { ...b, ...payload } : b))
     );
   };
+
+  const dialogueBySpot = (() => {
+    const grouped: Record<string, { pre: ScenarioBlock[]; post: ScenarioBlock[] }> = {};
+    const ensureGroup = (id: string) => {
+      if (!grouped[id]) grouped[id] = { pre: [], post: [] };
+      return grouped[id];
+    };
+    spots.forEach((s) => ensureGroup(s.id));
+    let pendingPre: ScenarioBlock[] = [];
+    let currentSpotId: string | null = null;
+    scenario.forEach((block) => {
+      if (block.type === 'spot') {
+        currentSpotId = block.spotId;
+        const group = ensureGroup(block.spotId);
+        if (pendingPre.length) {
+          pendingPre.forEach((d) => group.pre.push(d));
+          pendingPre = [];
+        }
+        return;
+      }
+      if (block.type !== 'dialogue') return;
+      const spotId = block.spotId;
+      const stage = block.stage;
+      if (spotId) {
+        const group = ensureGroup(spotId);
+        if (stage === 'post_puzzle') group.post.push(block);
+        else group.pre.push(block);
+        return;
+      }
+      if (!currentSpotId) {
+        pendingPre.push(block);
+        return;
+      }
+      const group = ensureGroup(currentSpotId);
+      group.post.push(block);
+    });
+    return grouped;
+  })();
 
   return (
     <section className="min-h-screen bg-white">
@@ -4042,77 +4341,145 @@ function CreatorStorytellingPage({
               <Scroll size={18} className="text-brand-gold" />
               <h3 className="text-lg font-bold text-brand-dark">シナリオフロー (Timeline)</h3>
             </div>
-            <p className="text-xs text-stone-600">プロローグとスポットの間に会話を挿入して、物語のテンポを整えましょう。</p>
-            <div className="space-y-3">
-              {scenario.map((block, idx) => (
-                <div key={block.id} className="relative">
-                  {/* block */}
-                  {block.type === 'prologue' && (
-                    <div className="rounded-2xl border border-brand-gold/40 bg-brand-gold/10 px-4 py-3 text-sm text-brand-dark">
-                      🎬 プロローグ：{prologueTitle || 'タイトル未設定'}
-                    </div>
-                  )}
-                  {block.type === 'spot' && (
+            {dialogueStatus === 'loading' && (
+              <div className="rounded-2xl border border-stone-200 bg-stone-50 px-4 py-2 text-xs text-stone-600">
+                会話データを読み込み中です…
+              </div>
+            )}
+            {dialogueStatus === 'empty' && (
+              <div className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-2 text-xs text-amber-800">
+                会話データが見つかりません。Canvasで「生成→保存」が完了しているか確認してください。
+              </div>
+            )}
+            {dialogueStatus === 'error' && (
+              <div className="rounded-2xl border border-rose-300 bg-rose-50 px-4 py-2 text-xs text-rose-700">
+                会話データの読み込みに失敗しました。{dialogueError ? `(${dialogueError})` : 'ネットワーク状態とコンソールを確認してください。'}
+              </div>
+            )}
+            <p className="text-xs text-stone-600">各スポットに到着した瞬間と、謎解き後に展開される会話を整理して編集できます。</p>
+            <div className="space-y-4">
+              <div className="rounded-2xl border border-brand-gold/40 bg-brand-gold/10 px-4 py-3 text-sm text-brand-dark">
+                🎬 プロローグ：{prologueTitle || 'タイトル未設定'}
+              </div>
+              {spots.map((spot) => {
+                const group = dialogueBySpot[spot.id] || { pre: [], post: [] };
+                const preDialogues = group.pre.filter((b) => b.type === 'dialogue') as Extract<
+                  ScenarioBlock,
+                  { type: 'dialogue' }
+                >[];
+                const postDialogues = group.post.filter((b) => b.type === 'dialogue') as Extract<
+                  ScenarioBlock,
+                  { type: 'dialogue' }
+                >[];
+                return (
+                  <div key={spot.id} className="rounded-3xl border border-stone-200 bg-white p-4 shadow-sm space-y-4">
                     <div className="rounded-2xl border border-stone-300 bg-stone-100 px-4 py-3 flex items-center gap-3 text-sm text-brand-dark">
                       <MapPin size={16} className="text-brand-dark" />
                       <div>
-                        <p className="font-bold">スポット: {block.name}</p>
-                        <p className="text-xs text-stone-500">Step2で設定（編集不可）</p>
+                        <p className="font-bold">スポット: {spot.name}</p>
+                        <p className="text-xs text-stone-500">到着後に会話 → 謎解き → 解決後に会話</p>
                       </div>
                     </div>
-                  )}
-                  {block.type === 'dialogue' && (
-                    <div className="rounded-2xl border border-brand-gold/30 bg-white px-4 py-3 space-y-2 shadow-sm">
-                      <div className="flex items-center gap-3">
-                        <span className="text-xs font-bold text-stone-500">会話</span>
-                        <select
-                          value={block.characterId}
-                          onChange={(e) => updateDialogue(block.id, { characterId: e.target.value })}
-                          className="text-sm border border-stone-300 rounded-full px-3 py-1"
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-bold text-stone-500">到着時の会話</p>
+                        <button
+                          onClick={() => insertDialogueForSpot(spot.id, 'pre_puzzle')}
+                          className="inline-flex items-center gap-2 text-xs font-bold text-brand-dark border border-dashed border-brand-gold px-3 py-1.5 rounded-full hover:border-brand-dark"
                         >
-                          {availableSpeakers.map((s) => (
-                            <option key={s.id} value={s.id}>
-                              {s.name || 'キャラクター'}
-                            </option>
-                          ))}
-                        </select>
-                        <select
-                          value={block.position}
-                          onChange={(e) => updateDialogue(block.id, { position: e.target.value as 'left' | 'right' })}
-                          className="text-xs border border-stone-300 rounded-full px-2 py-1 text-stone-600"
-                        >
-                          <option value="left">左に表示</option>
-                          <option value="right">右に表示</option>
-                        </select>
+                          <PlusCircle size={14} /> 追加
+                        </button>
                       </div>
-                      <textarea
-                        value={block.text}
-                        onChange={(e) => updateDialogue(block.id, { text: e.target.value })}
-                        rows={2}
-                        placeholder="セリフを入力"
-                        className="w-full px-3 py-2 rounded-xl border border-stone-300 text-sm"
-                      />
+                      {preDialogues.length === 0 && (
+                        <p className="text-xs text-stone-500">まだ会話がありません。</p>
+                      )}
+                      {preDialogues.map((block) => (
+                        <div key={block.id} className="rounded-2xl border border-brand-gold/30 bg-white px-4 py-3 space-y-2 shadow-sm">
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs font-bold text-stone-500">会話</span>
+                            <select
+                              value={block.characterId}
+                              onChange={(e) => updateDialogue(block.id, { characterId: e.target.value })}
+                              className="text-sm border border-stone-300 rounded-full px-3 py-1"
+                            >
+                              {availableSpeakers.map((s) => (
+                                <option key={s.id} value={s.id}>
+                                  {s.name || 'キャラクター'}
+                                </option>
+                              ))}
+                            </select>
+                            <select
+                              value={block.position}
+                              onChange={(e) => updateDialogue(block.id, { position: e.target.value as 'left' | 'right' })}
+                              className="text-xs border border-stone-300 rounded-full px-2 py-1 text-stone-600"
+                            >
+                              <option value="left">左に表示</option>
+                              <option value="right">右に表示</option>
+                            </select>
+                          </div>
+                          <textarea
+                            value={block.text}
+                            onChange={(e) => updateDialogue(block.id, { text: e.target.value })}
+                            rows={2}
+                            placeholder="セリフを入力"
+                            className="w-full px-3 py-2 rounded-xl border border-stone-300 text-sm"
+                          />
+                        </div>
+                      ))}
                     </div>
-                  )}
-                  {block.type === 'epilogue' && (
-                    <div className="rounded-2xl border border-brand-gold/40 bg-brand-gold/10 px-4 py-3 text-sm text-brand-dark">
-                      🏁 エピローグ（プレビュー反映）
+                    <div className="space-y-2">
+                      <div className="flex items-center justify-between">
+                        <p className="text-xs font-bold text-stone-500">謎解き後の会話</p>
+                        <button
+                          onClick={() => insertDialogueForSpot(spot.id, 'post_puzzle')}
+                          className="inline-flex items-center gap-2 text-xs font-bold text-brand-dark border border-dashed border-brand-gold px-3 py-1.5 rounded-full hover:border-brand-dark"
+                        >
+                          <PlusCircle size={14} /> 追加
+                        </button>
+                      </div>
+                      {postDialogues.length === 0 && (
+                        <p className="text-xs text-stone-500">まだ会話がありません。</p>
+                      )}
+                      {postDialogues.map((block) => (
+                        <div key={block.id} className="rounded-2xl border border-brand-gold/30 bg-white px-4 py-3 space-y-2 shadow-sm">
+                          <div className="flex items-center gap-3">
+                            <span className="text-xs font-bold text-stone-500">会話</span>
+                            <select
+                              value={block.characterId}
+                              onChange={(e) => updateDialogue(block.id, { characterId: e.target.value })}
+                              className="text-sm border border-stone-300 rounded-full px-3 py-1"
+                            >
+                              {availableSpeakers.map((s) => (
+                                <option key={s.id} value={s.id}>
+                                  {s.name || 'キャラクター'}
+                                </option>
+                              ))}
+                            </select>
+                            <select
+                              value={block.position}
+                              onChange={(e) => updateDialogue(block.id, { position: e.target.value as 'left' | 'right' })}
+                              className="text-xs border border-stone-300 rounded-full px-2 py-1 text-stone-600"
+                            >
+                              <option value="left">左に表示</option>
+                              <option value="right">右に表示</option>
+                            </select>
+                          </div>
+                          <textarea
+                            value={block.text}
+                            onChange={(e) => updateDialogue(block.id, { text: e.target.value })}
+                            rows={2}
+                            placeholder="セリフを入力"
+                            className="w-full px-3 py-2 rounded-xl border border-stone-300 text-sm"
+                          />
+                        </div>
+                      ))}
                     </div>
-                  )}
-
-                  {/* add dialogue button */}
-                  {idx < scenario.length - 1 && (
-                    <div className="flex justify-center">
-                      <button
-                        onClick={() => insertDialogue(block.id)}
-                        className="mt-2 mb-2 inline-flex items-center gap-2 text-xs font-bold text-brand-dark border border-dashed border-brand-gold px-3 py-1.5 rounded-full hover:border-brand-dark"
-                      >
-                        <PlusCircle size={14} /> 会話・イベントを追加
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ))}
+                  </div>
+                );
+              })}
+              <div className="rounded-2xl border border-brand-gold/40 bg-brand-gold/10 px-4 py-3 text-sm text-brand-dark">
+                🏁 エピローグ（プレビュー反映）
+              </div>
             </div>
           </div>
 
@@ -4889,7 +5256,7 @@ function CreatorRouteSpotsPage({
               <div className="space-y-2 text-sm">
                 <label className="flex items-center gap-2">
                   <input type="checkbox" readOnly checked={validations.minSpots} className="accent-brand-gold" />
-                  10箇所以上のスポットを追加（最大15）
+                  5箇所以上のスポットを追加（最大15）
                 </label>
                 <label className="flex items-center gap-2">
                   <input type="checkbox" readOnly checked={validations.notTooFar} className="accent-brand-gold" />
@@ -6569,10 +6936,10 @@ export default function LandingPage() {
             ? 'creator-workspace'
             : initialPath === '/creator/analytics' || initialPath.startsWith('/creator/analytics/')
               ? 'creator-analytics'
-              : initialPath.startsWith('/creator/route-spots/')
-                ? 'creator-spot-detail'
-                : initialPath === '/creator/storytelling'
-                  ? 'creator-storytelling'
+          : initialPath.startsWith('/creator/route-spots/')
+            ? 'creator-spot-detail'
+            : initialPath === '/creator/storytelling' || initialPath.startsWith('/creator/storytelling/')
+              ? 'creator-storytelling'
                   : initialPath === '/creator/test-run'
                     ? 'creator-test-run'
                     : initialPath === '/creator/submitted'
@@ -6594,6 +6961,7 @@ export default function LandingPage() {
   const t = LC[currentLang];
 
   const [activePage, setActivePage] = useState<'home' | 'quests' | 'quest-detail' | 'creators' | 'auth' | 'profile' | 'creator-start' | 'creator-canvas' | 'creator-workspace' | 'creator-spot-detail' | 'creator-storytelling' | 'creator-test-run' | 'creator-submitted' | 'creator-analytics' | 'creator-mystery-setup' | 'creator-route-spots' | 'creator-workspace-languages' | 'admin-dashboard' | 'admin-review' | 'player' | 'about' | 'business'>(initialActivePage);
+  const [questId, setQuestId] = useState<string | null>(null);
 
   // Sync activePage with URL path changes
   useEffect(() => {
@@ -6630,7 +6998,7 @@ export default function LandingPage() {
       newActivePage = 'creator-workspace-languages';
     } else if (path.startsWith('/creator/workspace')) {
       newActivePage = 'creator-workspace';
-    } else if (path === '/creator/storytelling') {
+    } else if (path === '/creator/storytelling' || path.startsWith('/creator/storytelling/')) {
       newActivePage = 'creator-storytelling';
     } else if (path === '/creator/test-run') {
       newActivePage = 'creator-test-run';
@@ -6649,6 +7017,22 @@ export default function LandingPage() {
     // Only update if we recognized the path
     if (newActivePage !== null) {
       setActivePage(newActivePage);
+    }
+  }, [location.pathname]);
+
+  // Extract questId from URL and set it
+  useEffect(() => {
+    const routeInfo = parsePathToRoute(location.pathname);
+    if (location.pathname.startsWith('/creator/canvas/new')) {
+      setQuestId(null);
+      localStorage.removeItem('quest-id');
+      return;
+    }
+    if (routeInfo.questId) {
+      console.log('[DEBUG] Setting questId from URL:', routeInfo.questId);
+      setQuestId(routeInfo.questId);
+      localStorage.setItem('quest-id', routeInfo.questId);
+      loadWorkspaceStep(routeInfo.questId);
     }
   }, [location.pathname]);
 
@@ -6681,7 +7065,6 @@ export default function LandingPage() {
   const [routeSpots, setRouteSpots] = useState<RouteSpot[]>([]);
   const [activeSpotId, setActiveSpotId] = useState<string | null>(null);
   const [questLatLng, setQuestLatLng] = useState<{ lat: number; lng: number } | null>(null);
-  const [questId, setQuestId] = useState<string | null>(null);
 
   // Quest Publishing System state
   const [questMode, setQuestMode] = useState<QuestMode>('PRIVATE');
@@ -7207,6 +7590,12 @@ export default function LandingPage() {
     [setRouteSpots]
   );
 
+  useEffect(() => {
+    if (activePage === 'creator-storytelling' && questId) {
+      fetchRouteSpots(questId);
+    }
+  }, [activePage, questId, fetchRouteSpots]);
+
 
 
 
@@ -7242,15 +7631,15 @@ export default function LandingPage() {
       case 'creator-canvas':
         return questId ? `/creator/canvas/${questId}` : '/creator/canvas';
       case 'creator-mystery-setup':
-        return '/creator/mystery-setup';
+        return questId ? `/creator/mystery-setup/${questId}` : '/creator/mystery-setup';
       case 'creator-route-spots':
-        return '/creator/route-spots';
+        return questId ? `/creator/route-spots?questId=${questId}` : '/creator/route-spots';
       case 'creator-workspace':
         return questId ? `/creator/workspace/${questId}` : '/creator/workspace';
       case 'creator-storytelling':
-        return '/creator/storytelling';
+        return questId ? `/creator/storytelling/${questId}` : '/creator/storytelling';
       case 'creator-test-run':
-        return '/creator/test-run';
+        return questId ? `/creator/test-run/${questId}` : '/creator/test-run';
       case 'creator-submitted':
         return '/creator/submitted';
       case 'creator-analytics':
@@ -7330,14 +7719,36 @@ export default function LandingPage() {
       if (qId === 'new') qId = null;
       return { page: 'creator-canvas' as AppPage, questId: qId };
     }
-    if (pathname === '/creator/mystery-setup') return { page: 'creator-mystery-setup' as AppPage };
-    if (pathname === '/creator/route-spots') return { page: 'creator-route-spots' as AppPage };
-    if (pathname.startsWith('/creator/route-spots/')) {
-      const spotId = pathname.split('/')[3];
-      return { page: 'creator-spot-detail' as AppPage, spotId };
+    if (pathname === '/creator/mystery-setup' || pathname.startsWith('/creator/mystery-setup/')) {
+      const questId = pathname.split('/')[3] || null;
+      return { page: 'creator-mystery-setup' as AppPage, questId };
     }
-    if (pathname === '/creator/storytelling') return { page: 'creator-storytelling' as AppPage };
-    if (pathname === '/creator/test-run') return { page: 'creator-test-run' as AppPage };
+    if (pathname === '/creator/route-spots' || pathname.startsWith('/creator/route-spots/')) {
+      const parts = pathname.split('/');
+      // Check if it's a spot detail page (4 parts) or route spots page (3 parts with questId)
+      if (parts.length === 4 && parts[3]) {
+        // Could be either /creator/route-spots/{questId} or /creator/route-spots/{spotId}
+        // If it looks like a UUID, treat as questId for route-spots page
+        // Otherwise, treat as spotId for spot-detail page
+        const param = parts[3];
+        if (param.includes('-') && param.length > 30) {
+          // Likely a UUID questId
+          return { page: 'creator-route-spots' as AppPage, questId: param };
+        } else {
+          // Likely a spotId
+          return { page: 'creator-spot-detail' as AppPage, spotId: param };
+        }
+      }
+      return { page: 'creator-route-spots' as AppPage };
+    }
+    if (pathname === '/creator/storytelling' || pathname.startsWith('/creator/storytelling/')) {
+      const questId = pathname.split('/')[3] || null;
+      return { page: 'creator-storytelling' as AppPage, questId };
+    }
+    if (pathname === '/creator/test-run' || pathname.startsWith('/creator/test-run/')) {
+      const questId = pathname.split('/')[3] || null;
+      return { page: 'creator-test-run' as AppPage, questId };
+    }
     if (pathname === '/creator/submitted') return { page: 'creator-submitted' as AppPage };
     if (pathname === '/creator/analytics') return { page: 'creator-analytics' as AppPage };
     if (pathname.startsWith('/creator/analytics/')) {
@@ -7395,6 +7806,10 @@ export default function LandingPage() {
   // 注: 7302-7307行のuseEffectが先にURLからクエストIDをセットするため、
   // ここではフォールバックとしてのみ機能する
   useEffect(() => {
+    if (window.location.pathname.startsWith('/creator/canvas/new')) {
+      localStorage.removeItem('quest-id');
+      return;
+    }
     // URLからすでにクエストIDがセットされている場合はスキップ
     const route = parsePathToRoute(window.location.pathname);
     const urlQuestId = (route as any).questId;
@@ -7887,7 +8302,7 @@ export default function LandingPage() {
 
   const goToRouteSpots = () => {
     setActiveWorkspaceStep(2);
-    applyRoute('creator-route-spots');
+    applyRoute('creator-route-spots', { questId: questId || undefined });
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -7906,6 +8321,9 @@ export default function LandingPage() {
 
   const goToStorytelling = () => {
     setActiveWorkspaceStep(3);
+    if (questId) {
+      fetchRouteSpots(questId);
+    }
     applyRoute('creator-storytelling', { questId });
     setShowCreatorOnboarding(false);
     setIsMenuOpen(false);
@@ -8421,11 +8839,11 @@ ${(input.challengeTypes || []).length > 0 ? `- チャレンジタイプ: ${(inpu
         if (draft.routeSpots?.length) {
           const storyMessages: Array<{
             spot_id: string;
-            message_type: 'pre_puzzle' | 'post_puzzle';
-            sequence: number;
+            stage: 'pre_puzzle' | 'post_puzzle';
+            order_index: number;
             speaker_type: 'character' | 'narrator';
             speaker_name: string;
-            message_text: string;
+            text: string;
           }> = [];
 
           for (let i = 0; i < spots.length; i++) {
@@ -8437,11 +8855,11 @@ ${(input.challengeTypes || []).length > 0 ? `- チャレンジタイプ: ${(inpu
             (draftSpot.preDialogue || []).forEach((line, seq) => {
               storyMessages.push({
                 spot_id: spot.id,
-                message_type: 'pre_puzzle',
-                sequence: seq + 1,
+                stage: 'pre_puzzle',
+                order_index: seq + 1,
                 speaker_type: line.speakerType || 'character',
                 speaker_name: line.speakerName || '',
-                message_text: line.text || '',
+                text: line.text || '',
               });
             });
 
@@ -8449,11 +8867,11 @@ ${(input.challengeTypes || []).length > 0 ? `- チャレンジタイプ: ${(inpu
             (draftSpot.postDialogue || []).forEach((line, seq) => {
               storyMessages.push({
                 spot_id: spot.id,
-                message_type: 'post_puzzle',
-                sequence: seq + 1,
+                stage: 'post_puzzle',
+                order_index: seq + 1,
                 speaker_type: line.speakerType || 'character',
                 speaker_name: line.speakerName || '',
-                message_text: line.text || '',
+                text: line.text || '',
               });
             });
           }
@@ -9223,6 +9641,10 @@ ${(input.challengeTypes || []).length > 0 ? `- チャレンジタイプ: ${(inpu
           onLogoHome={() => goHome()}
           onPublish={handlePublish}
           onTestRun={() => goToTestRun()}
+          onQuestIdChange={(id) => {
+            setQuestId(id);
+            localStorage.setItem('quest-id', id);
+          }}
         />
       )}
 
@@ -9418,6 +9840,11 @@ ${(input.challengeTypes || []).length > 0 ? `- チャレンジタイプ: ${(inpu
           onOpenShareModal={() => openQualityModal('SHARE')}
           onOpenPublishModal={() => openQualityModal('PUBLISH')}
           isPaidUser={profile?.role === 'creator' || profile?.role === 'admin'}
+          questTitle={questTitle}
+          questDescription={questDescription}
+          questLocation={questLocation}
+          routeSpots={routeSpots}
+          storySettings={storySettings}
         />
       )}
 

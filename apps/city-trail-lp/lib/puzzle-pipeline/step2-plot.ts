@@ -44,7 +44,8 @@ export async function createMainPlot(
     spotsInput: SpotInput[],
     motifs: SpotMotif[],
     questTheme: string,
-    apiKey: string
+    apiKey: string,
+    questContext?: string
 ): Promise<MainPlot> {
     const motifsJson = motifs.map((m, idx) => ({
         spot_id: m.spot_id,
@@ -61,6 +62,11 @@ ${PLOT_CREATION_PROMPT}
 【クエストテーマ】
 ${questTheme}
 
+${questContext ? `【旅の条件・世界観】
+${questContext}
+
+※旅の条件がある場合は、物語の発端や目的に必ず反映してください。
+` : ''}
 【スポットモチーフ】
 ${JSON.stringify(motifsJson, null, 2)}
 

@@ -40,6 +40,7 @@ interface BasicInfoPreview {
     tags: string[];
     highlights?: string[]; // Key selling points (3-5 items)
     recommendedFor?: string[]; // Target audience/scenes
+    coverImageUrl?: string;
 }
 
 interface StoryPreview {
@@ -67,6 +68,7 @@ interface PlayerPreviewProps {
         endPoint?: string;
     };
     difficultyExplanation?: string;
+    isGeneratingCover?: boolean;
     onPlay: () => void;
     onEdit: () => void;
     onSaveDraft: () => void;
@@ -115,6 +117,7 @@ export default function PlayerPreview({
     playerPreviewData,
     routeMetadata,
     difficultyExplanation,
+    isGeneratingCover = false,
     onPlay,
     onEdit,
     onSaveDraft,
@@ -137,6 +140,16 @@ export default function PlayerPreview({
         <div className="min-h-screen bg-gradient-to-b from-stone-50 to-white">
             {/* Hero Section */}
             <div className="relative bg-gradient-to-br from-brand-dark via-stone-800 to-stone-900 text-white overflow-hidden">
+                {basicInfo?.coverImageUrl && (
+                    <div className="absolute inset-0 z-0">
+                        <img
+                            src={basicInfo.coverImageUrl}
+                            alt={basicInfo?.title || 'Quest cover'}
+                            className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-br from-brand-dark/80 via-stone-900/75 to-stone-900/85" />
+                    </div>
+                )}
                 {/* Background Pattern */}
                 <div className="absolute inset-0 opacity-10 z-0">
                     <div className="absolute inset-0" style={{
@@ -155,6 +168,11 @@ export default function PlayerPreview({
                             <Sparkles size={12} />
                             AIが生成したクエスト
                         </span>
+                        {isGeneratingCover && (
+                            <span className="px-3 py-1 rounded-full bg-white/10 text-white/80 text-xs font-bold">
+                                カバー画像生成中...
+                            </span>
+                        )}
                     </motion.div>
 
                     {/* Title */}

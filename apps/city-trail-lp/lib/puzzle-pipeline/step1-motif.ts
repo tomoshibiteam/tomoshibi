@@ -55,7 +55,8 @@ const MOTIF_SELECTION_PROMPT = `あなたは物語構成の専門家です。
 export async function selectMotifs(
     spots: SpotInput[],
     questTheme: string,
-    apiKey: string
+    apiKey: string,
+    questContext?: string
 ): Promise<SpotMotif[]> {
     const spotsJson = spots.map((spot, idx) => ({
         spot_id: `S${idx + 1}`,
@@ -71,6 +72,11 @@ ${MOTIF_SELECTION_PROMPT}
 【クエストテーマ】
 ${questTheme}
 
+${questContext ? `【旅の条件・世界観】
+${questContext}
+
+※旅の条件がある場合は、scene_roleやモチーフの雰囲気に必ず反映してください。
+` : ''}
 【スポット一覧】
 ${JSON.stringify(spotsJson, null, 2)}
 

@@ -9,11 +9,14 @@
     "start": "node server.js",
     "dev:lp": "cd apps/city-trail-lp && npm run dev -- --host --port 4173",
     "dev:mobile": "cd apps/mobile && npm run dev -- --host --port 4174",
-    "dev": "npm run dev:lp & npm run dev:mobile"
+    "dev": "concurrently -k -n lp,mobile -c cyan,magenta \"npm run dev:lp\" \"npm run dev:mobile\""
   },
   "dependencies": {
     "compression": "^1.7.4",
     "express": "^4.19.2",
     "serve-static": "^1.15.0"
+  },
+  "devDependencies": {
+    "concurrently": "^9.2.1"
   }
 }

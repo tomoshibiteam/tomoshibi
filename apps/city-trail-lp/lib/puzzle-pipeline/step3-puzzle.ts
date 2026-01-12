@@ -17,6 +17,7 @@ import {
 } from './layton-types';
 import { buildStoryContext } from './step2-plot';
 import { getModelEndpoint } from '../ai/model-config';
+import { safeParseJson } from './json-utils';
 
 /**
  * 謎生成用システムプロンプト
@@ -196,7 +197,7 @@ ${motif.selected_facts.map(f => {
         // JSONを抽出
         const jsonMatch = responseText.match(/```json([\s\S]*?)```/);
         const jsonText = jsonMatch ? jsonMatch[1] : responseText;
-        const parsed = JSON.parse(jsonText.trim());
+        const parsed = safeParseJson(jsonText);
 
         return buildSpotScene(spotInput, motif, parsed);
     } catch (error: any) {
@@ -218,6 +219,8 @@ function buildSpotScene(
         spot_name: motif.spot_name,
         lat: spotInput.lat,
         lng: spotInput.lng,
+        place_id: spotInput.place_id,
+        address: spotInput.address,
         scene_role: motif.scene_role,
         lore_card: {
             short_story_text: parsed.lore_card?.short_story_text || '',
@@ -254,6 +257,8 @@ function buildFallbackSpotScene(
         spot_name: motif.spot_name,
         lat: spotInput.lat,
         lng: spotInput.lng,
+        place_id: spotInput.place_id,
+        address: spotInput.address,
         scene_role: motif.scene_role,
         lore_card: {
             short_story_text: `${spotInput.spot_name}には、まだ解き明かされていない謎がある。`,
@@ -335,7 +340,7 @@ ${JSON.stringify(plotKeys, null, 2)}
 
         const jsonMatch = responseText.match(/```json([\s\S]*?)```/);
         const jsonText = jsonMatch ? jsonMatch[1] : responseText;
-        const parsed = JSON.parse(jsonText.trim());
+        const parsed = safeParseJson(jsonText);
 
         return {
             prompt: parsed.prompt || '全ての鍵を組み合わせて、最後の謎を解け。',

@@ -58,6 +58,20 @@
       ::-webkit-scrollbar-thumb:hover {
         background: #78716c; 
       }
+      .scrollbar-hide {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      .scrollbar-hide::-webkit-scrollbar {
+        display: none;
+      }
+      .no-scrollbar {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+      }
+      .no-scrollbar::-webkit-scrollbar {
+        display: none;
+      }
       /* Map marker animations */
       @keyframes markerAppear {
         0% { transform: scale(0) translateY(-10px); opacity: 0; }

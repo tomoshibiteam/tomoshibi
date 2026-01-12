@@ -154,7 +154,7 @@ function extractEvidencesFromText(
 /**
  * スポット名から正確な座標を取得（Google Geocoding API）
  */
-export async function geocodeSpotName(spotName: string): Promise<{ lat: number; lng: number } | null> {
+export async function geocodeSpotName(spotName: string): Promise<{ lat: number; lng: number; place_id?: string; formatted_address?: string } | null> {
     const apiKey = (import.meta as any).env?.VITE_GOOGLE_MAPS_API_KEY;
     if (!apiKey) {
         console.warn('Google Maps API key not found for geocoding');
@@ -175,11 +175,14 @@ export async function geocodeSpotName(spotName: string): Promise<{ lat: number; 
         const data = await res.json();
 
         if (data.status === 'OK' && data.results?.length > 0) {
-            const location = data.results[0].geometry?.location;
+            const result = data.results[0];
+            const location = result.geometry?.location;
             if (location) {
                 return {
                     lat: location.lat,
                     lng: location.lng,
+                    place_id: result.place_id,
+                    formatted_address: result.formatted_address,
                 };
             }
         }

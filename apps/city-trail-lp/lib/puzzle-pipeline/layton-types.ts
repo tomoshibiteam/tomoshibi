@@ -24,6 +24,10 @@ export interface SpotInput {
     /** 座標 */
     lat: number;
     lng: number;
+    /** Google Maps place_id */
+    place_id?: string;
+    /** 住所 */
+    address?: string;
     /** 制約条件 */
     constraints?: {
         order?: number;
@@ -186,6 +190,8 @@ export interface SpotScene {
     spot_name: string;
     lat: number;
     lng: number;
+    place_id?: string;
+    address?: string;
     /** シーンの役割 */
     scene_role: SceneRole;
     /** ロアカード */

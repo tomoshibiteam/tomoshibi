@@ -12,6 +12,7 @@ import {
     PuzzleType,
 } from './layton-types';
 import { getModelEndpoint } from '../ai/model-config';
+import { safeParseJson } from './json-utils';
 
 /**
  * モチーフ選定用プロンプト
@@ -124,7 +125,7 @@ ${JSON.stringify(spotsJson, null, 2)}
         // JSONを抽出
         const jsonMatch = responseText.match(/```json([\s\S]*?)```/);
         const jsonText = jsonMatch ? jsonMatch[1] : responseText;
-        const parsed = JSON.parse(jsonText.trim());
+        const parsed = safeParseJson(jsonText);
 
         // 結果を整形
         return parsed.map((item: any): SpotMotif => ({

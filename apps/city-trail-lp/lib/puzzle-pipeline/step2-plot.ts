@@ -10,32 +10,39 @@ import {
     MainPlot,
 } from './layton-types';
 import { getModelEndpoint } from '../ai/model-config';
+import { safeParseJson } from './json-utils';
 
 /**
  * 物語骨格生成用プロンプト
  */
-const PLOT_CREATION_PROMPT = `あなたは物語作家です。
+const PLOT_CREATION_PROMPT = `あなたは「映画予告編のように没入感を作る」トップコピーライター兼ストーリー設計者です。
 以下のスポットモチーフを使って、一貫した謎解き物語を構築してください。
 
 【重要な原則】
-1. premise（発端）→ goal（目的）→ antagonist_or_mystery（対立/謎）→ final_reveal（真相） の4点を明確に
+1. premise（長文説明）→ goal（目的）→ antagonist_or_mystery（対立/謎）→ final_reveal（真相） の4点を明確に
 2. 各スポットが物語の一部として必ず機能すること
 3. 最後のmeta_puzzleで全てが繋がる構造にすること
 4. 「解く = 学ぶ + 進む」を意識した物語設計
 
-【文章の読みやすさ（最重要）】
-- 中学生が読んでスラスラ理解できる言葉を使う
-- 専門用語・難しい漢字・意味不明なカタカナ語は絶対禁止
-- 一文は短く、リズムよく読めるように
-- 難しい概念は「たとえ話」や「身近な例」で説明
-- 読んでいて「しんどい」と感じさせない、軽やかな文体
+【premise（長文説明）の必須ルール】
+- 日本語。二人称（あなた）中心。現在形。テンポ良い短文多め
+- 誇張はOK。ただし体験として成立しない嘘はNG（事実不明は断定しない）
+- ネタバレ禁止：解法、答え、犯人、最終地点、どんでん返し、エンディングの核心は書かない
+- “導入〜期待”だけで引っ張る。謎の種類や雰囲気は言語化してよいが、具体の答えは出さない
+- 固有IPは入力に明示された場合のみ使用。それ以外は連想表現に留める
+- 説明は500〜800字。段落は3〜5つ。最後の1文は問いかけで締める
+- 改行は \\n\\n で段落を分ける
 
-【物語のジャンル例】
-- 失われた宝を探す冒険
-- 過去の事件の真相解明
-- 伝説の謎を解き明かす調査
-- 時を超えたメッセージの解読
-- 古の知恵を継承する試練`;
+【premiseに必ず含める8要素（抜けたら失格）】
+1) 雰囲気の一撃目（映画のオープニング感）
+2) プレイヤーの役割（なりきり）
+3) 舞台の“絵”になる描写（路地/広場/寺院/市場/港/橋などの具体名詞）
+4) 事件・異変（導入フック）
+5) 痕跡（シンボル/暗号/伝承/手がかり）
+6) 賭け金（タイムリミット/危機/失敗示唆：ただし曖昧に）
+7) 体験の約束（ただの散歩ではない：パズル/緊張/発見/学び）
+8) CTA（友達/家族でOK等＋最後に問いかけで締め）
+`;
 
 /**
  * Main Plotを生成
@@ -73,10 +80,10 @@ ${JSON.stringify(motifsJson, null, 2)}
 【出力形式】
 以下のJSONを出力してください：
 {
-  "premise": "物語の発端（なぜ主人公がこの冒険を始めるのか）",
-  "goal": "主人公の目的（何を達成しようとしているのか）",
-  "antagonist_or_mystery": "対立要素または中心の謎（何が障害なのか、何が明かされるべきなのか）",
-  "final_reveal_outline": "最終的な真相の概要（meta_puzzleで明かされる結論）",
+  "premise": "タイトル直下に置く長文説明（500〜800字、3〜5段落、最後は問いかけで締める。段落は\\n\\nで分ける）",
+  "goal": "主人公の目的（1〜2文で簡潔に）",
+  "antagonist_or_mystery": "対立要素または中心の謎（1〜2文で簡潔に）",
+  "final_reveal_outline": "最終的な真相の概要（meta_puzzleで明かされる結論、ネタバレ表現は避ける）",
   "spot_story_hooks": [
     {
       "spot_id": "S1",
@@ -116,7 +123,7 @@ ${JSON.stringify(motifsJson, null, 2)}
         // JSONを抽出
         const jsonMatch = responseText.match(/```json([\s\S]*?)```/);
         const jsonText = jsonMatch ? jsonMatch[1] : responseText;
-        const parsed = JSON.parse(jsonText.trim());
+        const parsed = safeParseJson(jsonText);
 
         return {
             premise: parsed.premise || '古くから伝わる謎を解き明かす冒険が始まる。',
@@ -136,9 +143,14 @@ ${JSON.stringify(motifsJson, null, 2)}
  */
 function createDefaultPlot(questTheme: string, motifs: SpotMotif[]): MainPlot {
     const spotNames = motifs.map(m => m.spot_name).join('、');
+    const premise = [
+        `霧の残る街に、静かなざわめきが走る。あなたは${questTheme}の調査役だ。路地、広場、橋、そして人の視線が交差する通り。足元の石畳に、見逃せない痕が刻まれている。`,
+        `街に起きた小さな異変は、やがて大きな謎へ変わる。古い伝承、繰り返されるシンボル、意味深な暗号。${spotNames}を巡るたび、手がかりは増える。だが答えはまだ遠い。`,
+        `タイムリミットの気配が背中を押す。失敗の影ははっきりとは見えない。けれど、あなたは知っている。これはただの散歩ではない。パズルと緊張、発見と学びが連なる道だ。友達でも、家族でもいい。あなたは、この街の真相に踏み込む覚悟があるか？`,
+    ].join('\n\n');
 
     return {
-        premise: `${questTheme}にまつわる古い謎が、あなたを待っている。`,
+        premise,
         goal: `${spotNames}を巡り、隠された真実を解き明かすこと。`,
         antagonist_or_mystery: '時の流れに埋もれた秘密と、それを守る謎の数々。',
         final_reveal_outline: '全てのスポットで集めた鍵を組み合わせることで、最終的な真相が明らかになる。',

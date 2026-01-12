@@ -23,6 +23,7 @@ import { generateSpotPuzzle, generateMetaPuzzle } from './step3-puzzle';
 import { validateQuest, getRegenerationTargets } from './step4-validate';
 import { retrieveEvidence, geocodeSpotName } from './retriever';
 import { getModelEndpoint } from '../ai/model-config';
+import { safeParseJson } from './json-utils';
 
 /**
  * 完全なクエスト生成パイプライン
@@ -278,11 +279,13 @@ ${supportInfo.join('\n')}
 - まず中心となるエリア（例：浅草寺前）を決める
 - その半径500m以内にある実在スポットだけを選ぶ
 - 徒歩5分で次のスポットに着ける配置にする
+- Google Mapsで単独のスポットとして表示される固有名を使う（施設名/店名/駅名/公園名など）
 
 ■ 禁止事項
 - 電車・バス・車での移動が必要になる配置
 - 「〜区」「〜市」全体から広くスポットを選ぶこと
 - 1km以上離れたスポットを入れること
+- 曖昧な地名やエリア名だけでスポット名を作ること（例: 「渋谷周辺」「駅前一帯」）
 
 【文章の読みやすさ（重要）】
 - spot_summaryは中学生でも読めるやさしい言葉で書く
@@ -293,7 +296,7 @@ ${supportInfo.join('\n')}
 各スポットについて以下を含むJSON配列を出力：
 [
   {
-    "spot_name": "スポット名（実在する場所）",
+    "spot_name": "スポット名（Google Mapsで単独のスポットとして表示される正式名称）",
     "spot_summary": "2-4行の概要（歴史的背景、特徴）",
     "spot_facts": [
       "事実1: この場所を象徴する具体的な事実",
@@ -333,7 +336,7 @@ ${supportInfo.join('\n')}
 
         const jsonMatch = responseText.match(/```json([\s\S]*?)```/);
         const jsonText = jsonMatch ? jsonMatch[1] : responseText;
-        const parsed = JSON.parse(jsonText.trim());
+        const parsed = safeParseJson(jsonText);
         const parsedSpots = Array.isArray(parsed) ? parsed.slice(0, desiredSpotCount) : [];
 
         // 追加の根拠収集 + Geocodingで正確な座標を取得（並行実行）
@@ -344,6 +347,8 @@ ${supportInfo.join('\n')}
                     const geocoded = await geocodeSpotName(spot.spot_name);
                     const accurateLat = geocoded?.lat || spot.lat || 35.6804;
                     const accurateLng = geocoded?.lng || spot.lng || 139.769;
+                    const placeId = geocoded?.place_id;
+                    const formattedAddress = geocoded?.formatted_address;
 
                     const evidence = await retrieveEvidence(
                         `spot-${idx}`,
@@ -364,6 +369,8 @@ ${supportInfo.join('\n')}
                         spot_theme_tags: spot.spot_theme_tags || [],
                         lat: accurateLat,
                         lng: accurateLng,
+                        place_id: placeId,
+                        address: formattedAddress || '',
                     } as SpotInput;
                 } catch {
                     // フォールバック：Geocodingも失敗した場合
@@ -375,6 +382,8 @@ ${supportInfo.join('\n')}
                         spot_theme_tags: spot.spot_theme_tags || [],
                         lat: geocoded?.lat || spot.lat || 35.6804,
                         lng: geocoded?.lng || spot.lng || 139.769,
+                        place_id: geocoded?.place_id,
+                        address: geocoded?.formatted_address || '',
                     } as SpotInput;
                 }
             })
@@ -531,6 +540,14 @@ async function generateQuestTitle(
     const prompt = `
 以下の物語に相応しい、魅力的なクエストタイトルを1つだけ生成してください。
 
+【タイトルルール】
+- 日本語。映画予告編のように一瞬で引き込む
+- 舞台や異変の気配が伝わる言葉を入れる
+- 説明文やサブタイトルは不要
+- 固有IPは入力に明示された場合のみ使用
+- 記号や装飾語は使いすぎない
+- 1行で出力する
+
 【物語の概要】
 ${mainPlot.premise}
 ${mainPlot.goal}
@@ -565,9 +582,12 @@ ${questContext}
         const title = data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() || '';
 
         // タイトルのクリーンアップ
-        return title.replace(/^["「『]|["」』]$/g, '').trim() || `${originalPrompt.slice(0, 20)}の謎`;
+        const normalizedTitle = title.replace(/\s+/g, ' ').replace(/^["「『]|["」』]$/g, '').trim();
+        const fallbackBase = originalPrompt.trim();
+        return normalizedTitle || (fallbackBase ? `${fallbackBase}の謎` : '未設定の謎');
     } catch {
-        return `${originalPrompt.slice(0, 20)}の謎`;
+        const fallbackBase = originalPrompt.trim();
+        return fallbackBase ? `${fallbackBase}の謎` : '未設定の謎';
     }
 }
 
@@ -598,6 +618,7 @@ async function generatePlayerPreview(
 - 「どう解くか」ではなく「何が起きるか」だけを書く
 - 抽象語（ワクワク、ドキドキ、謎が待っている）は禁止
 - 「固有名詞＋動詞＋現象」で具体的に書く
+ - trailerは世界観の空気→あなたの立場/関与→体験の形式→呼びかけの順で書く
 
 【クエスト情報（制作用データ：プレビューには直接出さない）】
 タイトル：${quest.quest_title}
@@ -615,7 +636,7 @@ ${questContext}
 【出力するJSON（日本語）】
 {
   "one_liner": "30〜45文字のキャッチコピー",
-  "trailer": "80〜140文字の予告文（2〜3行）",
+  "trailer": "250〜380文字の導入文（3〜5文、世界観→あなたの役割→体験形式→呼びかけの順）",
   "mission": "あなたは◯◯して最後に◯◯を突き止める（1行）",
   "teasers": [
     "スポット名で◯◯すると、△△が見えてくる（25〜40文字）",
@@ -662,7 +683,7 @@ JSONのみ出力してください。
 
         const jsonMatch = responseText.match(/```json([\s\S]*?)```/);
         const jsonText = jsonMatch ? jsonMatch[1] : responseText;
-        const parsed = JSON.parse(jsonText.trim());
+        const parsed = safeParseJson(jsonText);
 
         return {
             title: quest.quest_title,

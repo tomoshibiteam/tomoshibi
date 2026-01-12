@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { APIProvider, Map, AdvancedMarker, useMap, useMapsLibrary } from '@vis.gl/react-google-maps';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -80,6 +80,7 @@ interface SpotData {
     address: string;
     lat: number;
     lng: number;
+    placeId?: string;
     directions: string;
     storyText: string;
     challengeText: string;
@@ -117,50 +118,240 @@ type SpotDialogue = {
     postDialogue: DialogueLine[];
 };
 
+type SpoilerMode = 'director' | 'peek' | 'vault';
+
 // Google Maps API Key
 const MAPS_API_KEY = import.meta.env.VITE_GOOGLE_MAPS_API_KEY || '';
 
+const toRad = (deg: number) => (deg * Math.PI) / 180;
+const haversineKm = (a: { lat: number; lng: number }, b: { lat: number; lng: number }) => {
+    const R = 6371; // km
+    const dLat = toRad(b.lat - a.lat);
+    const dLng = toRad(b.lng - a.lng);
+    const lat1 = toRad(a.lat);
+    const lat2 = toRad(b.lat);
+    const sinDLat = Math.sin(dLat / 2);
+    const sinDLng = Math.sin(dLng / 2);
+    const h = sinDLat * sinDLat + Math.cos(lat1) * Math.cos(lat2) * sinDLng * sinDLng;
+    return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+};
+
+const estimateWalkMinutes = (km: number) => {
+    const walkingSpeedKmH = 4.5;
+    return Math.max(1, Math.round((km / walkingSpeedKmH) * 60));
+};
+
+const getSpotExperienceIcon = (spot: Pick<SpotData, 'puzzleType' | 'sceneRole'>) => {
+    const type = (spot.puzzleType || '').toLowerCase();
+    if (type.includes('logic')) return { emoji: '🧠', label: '推理' };
+    if (type.includes('cipher')) return { emoji: '🔢', label: '暗号' };
+    if (type.includes('pattern')) return { emoji: '🧩', label: 'パターン' };
+    if (type.includes('observation')) return { emoji: '👁', label: '観察' };
+    const role = spot.sceneRole || '';
+    if (role.includes('転')) return { emoji: '🔥', label: '山場' };
+    return { emoji: '🗺️', label: '探索' };
+};
+
+const getScenePhase = (sceneRole?: string) => {
+    const v = sceneRole || '';
+    if (v.includes('序') || v.includes('導入')) return '序';
+    if (v.includes('承') || v.includes('展開')) return '中';
+    if (v.includes('転') || v.includes('転換') || v.includes('クライマックス')) return '転';
+    if (v.includes('結') || v.includes('解決') || v.includes('終')) return '結';
+    return null;
+};
+
 // Map handler component for displaying route spots with polyline
 // Pans to each new spot during generation, then fits all spots when complete
-const RouteMapHandler = ({ spots, isGenerating = false }: { spots: SpotData[], isGenerating?: boolean }) => {
+const RouteMapHandler = ({
+    spots,
+    isGenerating = false,
+    spoilerMode = 'director',
+    activeIndex = null,
+    litSpotId = null,
+}: {
+    spots: SpotData[];
+    isGenerating?: boolean;
+    spoilerMode?: SpoilerMode;
+    activeIndex?: number | null;
+    litSpotId?: string | null;
+}) => {
     const map = useMap();
     const maps = useMapsLibrary('maps');
-    const [path, setPath] = useState<google.maps.Polyline | null>(null);
+    const routes = useMapsLibrary('routes');
+    const directionsServiceRef = useRef<google.maps.DirectionsService | null>(null);
+    const directionsRendererRef = useRef<google.maps.DirectionsRenderer | null>(null);
+    const directionsRequestIdRef = useRef(0);
+    const segmentRequestIdRef = useRef(0);
     const prevSpotCountRef = useRef<number>(0);
     const hasCompletedFitRef = useRef<boolean>(false);
-
+    const lightPathRef = useRef<google.maps.Polyline | null>(null);
+    const lightAnimRef = useRef<number | null>(null);
     useEffect(() => {
-        if (!map || !maps || spots.length === 0) return;
+        if (!map || !routes) return;
 
-        // Update or create polyline
-        if (path) {
-            path.setPath(spots.map(s => ({ lat: s.lat, lng: s.lng })));
-        } else {
-            const line = new maps.Polyline({
-                path: spots.map(s => ({ lat: s.lat, lng: s.lng })),
-                geodesic: true,
-                strokeColor: '#C9A227', // brand-gold
-                strokeOpacity: 0.8,
-                strokeWeight: 4,
-            });
-            line.setMap(map);
-            setPath(line);
+        if (spots.length < 2) {
+            if (directionsRendererRef.current) {
+                directionsRendererRef.current.setMap(null);
+                directionsRendererRef.current = null;
+            }
+            return;
         }
 
-        // If a new spot was added, pan to it
+        if (!directionsServiceRef.current) {
+            directionsServiceRef.current = new routes.DirectionsService();
+        }
+        if (!directionsRendererRef.current) {
+            directionsRendererRef.current = new routes.DirectionsRenderer({
+                suppressMarkers: true,
+                preserveViewport: true,
+                polylineOptions: {
+                    strokeColor: '#C9A227',
+                    strokeOpacity: isGenerating ? 0.4 : 0.8,
+                    strokeWeight: 4,
+                },
+            });
+        }
+
+        directionsRendererRef.current.setMap(map);
+        directionsRendererRef.current.setOptions({
+            polylineOptions: {
+                strokeColor: '#C9A227',
+                strokeOpacity: isGenerating ? 0.4 : 0.8,
+                strokeWeight: 4,
+            },
+        });
+
+        const origin = spots[0];
+        const destination = spots[spots.length - 1];
+        const waypoints = spots.slice(1, -1).map((s) => ({
+            location: { lat: s.lat, lng: s.lng },
+            stopover: true,
+        }));
+
+        const requestId = ++directionsRequestIdRef.current;
+        directionsServiceRef.current.route(
+            {
+                origin: { lat: origin.lat, lng: origin.lng },
+                destination: { lat: destination.lat, lng: destination.lng },
+                waypoints,
+                travelMode: routes.TravelMode.WALKING,
+                provideRouteAlternatives: false,
+                optimizeWaypoints: false,
+            },
+            (result, status) => {
+                if (requestId !== directionsRequestIdRef.current) return;
+                if (status === 'OK' && result) {
+                    directionsRendererRef.current?.setDirections(result);
+                }
+            }
+        );
+    }, [map, routes, spots, isGenerating]);
+
+    useEffect(() => {
+        if (!map || !maps) return;
+
         if (spots.length > prevSpotCountRef.current) {
             const newSpot = spots[spots.length - 1];
             map.panTo({ lat: newSpot.lat, lng: newSpot.lng });
             map.setZoom(16); // Zoom in to show the new spot
+
+            if (spots.length >= 2 && (maps as any).SymbolPath) {
+                const prevSpot = spots[spots.length - 2];
+                const fallbackPath = [
+                    { lat: prevSpot.lat, lng: prevSpot.lng },
+                    { lat: newSpot.lat, lng: newSpot.lng },
+                ];
+
+                const animateLightPath = (pathCoords: google.maps.LatLngLiteral[]) => {
+                    if (lightAnimRef.current) {
+                        window.cancelAnimationFrame(lightAnimRef.current);
+                    }
+                    if (lightPathRef.current) {
+                        lightPathRef.current.setMap(null);
+                    }
+
+                    const glowSymbol = {
+                        path: (maps as any).SymbolPath.CIRCLE,
+                        scale: 6,
+                        fillColor: '#FCD34D',
+                        fillOpacity: 1,
+                        strokeColor: '#F59E0B',
+                        strokeOpacity: 0.9,
+                        strokeWeight: 2,
+                    };
+
+                    const glowLine = new maps.Polyline({
+                        path: pathCoords,
+                        geodesic: true,
+                        strokeColor: '#FCD34D',
+                        strokeOpacity: 0.35,
+                        strokeWeight: 6,
+                        icons: [{ icon: glowSymbol, offset: '0%' }],
+                    });
+                    glowLine.setMap(map);
+                    lightPathRef.current = glowLine;
+
+                    const start = performance.now();
+                    const duration = 1200;
+                    const animate = (t: number) => {
+                        const progress = Math.min(1, (t - start) / duration);
+                        glowLine.set('icons', [{ icon: glowSymbol, offset: `${(progress * 100).toFixed(1)}%` }]);
+                        if (progress < 1) {
+                            lightAnimRef.current = window.requestAnimationFrame(animate);
+                        } else {
+                            window.setTimeout(() => {
+                                if (lightPathRef.current === glowLine) {
+                                    glowLine.setMap(null);
+                                    lightPathRef.current = null;
+                                }
+                            }, 300);
+                        }
+                    };
+                    lightAnimRef.current = window.requestAnimationFrame(animate);
+                };
+
+                if (routes) {
+                    if (!directionsServiceRef.current) {
+                        directionsServiceRef.current = new routes.DirectionsService();
+                    }
+                    const requestId = ++segmentRequestIdRef.current;
+                    directionsServiceRef.current.route(
+                        {
+                            origin: { lat: prevSpot.lat, lng: prevSpot.lng },
+                            destination: { lat: newSpot.lat, lng: newSpot.lng },
+                            travelMode: routes.TravelMode.WALKING,
+                            provideRouteAlternatives: false,
+                        },
+                        (result, status) => {
+                            if (requestId !== segmentRequestIdRef.current) return;
+                            if (status === 'OK' && result?.routes?.[0]?.overview_path?.length) {
+                                const pathCoords = result.routes[0].overview_path.map((p) => ({
+                                    lat: p.lat(),
+                                    lng: p.lng(),
+                                }));
+                                animateLightPath(pathCoords);
+                            } else {
+                                animateLightPath(fallbackPath);
+                            }
+                        }
+                    );
+                } else {
+                    animateLightPath(fallbackPath);
+                }
+            }
+
             prevSpotCountRef.current = spots.length;
         }
+    }, [map, maps, routes, spots]);
 
-        return () => {
-            if (path && spots.length === 0) {
-                path.setMap(null);
-            }
-        };
-    }, [map, maps, spots, path]);
+    useEffect(() => {
+        if (!map || isGenerating || activeIndex === null || activeIndex < 0) return;
+        const target = spots[activeIndex];
+        if (!target) return;
+        map.panTo({ lat: target.lat, lng: target.lng });
+        map.setZoom(16);
+    }, [map, spots, activeIndex, isGenerating]);
 
     // When generation is complete, fit all spots in view
     useEffect(() => {
@@ -185,27 +376,62 @@ const RouteMapHandler = ({ spots, isGenerating = false }: { spots: SpotData[], i
         if (spots.length === 0) {
             hasCompletedFitRef.current = false;
             prevSpotCountRef.current = 0;
+            if (lightPathRef.current) {
+                lightPathRef.current.setMap(null);
+                lightPathRef.current = null;
+            }
         }
     }, [spots.length]);
 
+    useEffect(() => {
+        return () => {
+            if (lightAnimRef.current) {
+                window.cancelAnimationFrame(lightAnimRef.current);
+            }
+            if (lightPathRef.current) {
+                lightPathRef.current.setMap(null);
+            }
+            if (directionsRendererRef.current) {
+                directionsRendererRef.current.setMap(null);
+            }
+        };
+    }, []);
+
     return (
         <>
-            {spots.map((spot, idx) => (
-                <AdvancedMarker
-                    key={spot.id}
-                    position={{ lat: spot.lat, lng: spot.lng }}
-                    title={spot.name}
-                >
-                    <motion.div
-                        initial={{ scale: 0, y: -20 }}
-                        animate={{ scale: 1, y: 0 }}
-                        transition={{ delay: idx * 0.15, type: 'spring', stiffness: 300 }}
-                        className="w-10 h-10 rounded-full bg-brand-gold text-white text-sm font-bold flex items-center justify-center shadow-lg border-2 border-white"
+            {spots.map((spot, idx) => {
+                const isLit = litSpotId === spot.id;
+                return (
+                    <AdvancedMarker
+                        key={spot.id}
+                        position={{ lat: spot.lat, lng: spot.lng }}
+                        title={spoilerMode === 'director' ? `Spot ${idx + 1}` : spot.name}
                     >
-                        {idx + 1}
-                    </motion.div>
-                </AdvancedMarker>
-            ))}
+                        <motion.div
+                            initial={{ scale: 0, y: -16 }}
+                            animate={{ scale: 1, y: 0 }}
+                            transition={{ delay: idx * 0.15, type: 'spring', stiffness: 300 }}
+                            className={`relative flex items-center justify-center w-8 h-8 rounded-full text-[11px] font-bold shadow-lg border transition-transform ${
+                                isGenerating && !isLit
+                                    ? 'bg-white/95 text-brand-gold border-brand-gold/40'
+                                    : isLit
+                                        ? 'bg-gradient-to-br from-amber-300 via-amber-200 to-yellow-200 text-amber-900 border-white/90'
+                                        : 'bg-gradient-to-br from-amber-500 via-amber-400 to-yellow-300 text-white border-white/80'
+                            } ${activeIndex === idx ? 'scale-110' : ''} ${isLit ? 'animate-[markerPulse_1.6s_ease-in-out_2]' : ''}`}
+                        >
+                            {isLit && (
+                                <>
+                                    <span className="absolute -inset-3 rounded-full bg-amber-300/45 blur-lg animate-[shadowPulse_1.8s_ease-in-out_2]" />
+                                    <span className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-10 h-3 rounded-full bg-amber-200/50 blur-md" />
+                                </>
+                            )}
+                            <div className="absolute -inset-1.5 rounded-full bg-amber-200/40 blur-sm" />
+                            <span className="relative z-10">{idx + 1}</span>
+                        </motion.div>
+                    </AdvancedMarker>
+                );
+            })}
+
         </>
     );
 };
@@ -326,8 +552,16 @@ export default function QuestCreatorCanvas({
     // Content tab state (route / story / mystery)
     const [contentTab, setContentTab] = useState<'route' | 'story' | 'mystery'>('route');
 
+    // Journey teaser toggle
+    const [isJourneyTeaserExpanded, setIsJourneyTeaserExpanded] = useState(false);
+    const [isBasicDescriptionExpanded, setIsBasicDescriptionExpanded] = useState(false);
+
     // Selected spot for detail view
     const [selectedSpotIndex, setSelectedSpotIndex] = useState<number | null>(null);
+    const [spoilerMode] = useState<SpoilerMode>('vault');
+    const [litSpotId, setLitSpotId] = useState<string | null>(null);
+    const litTimeoutRef = useRef<number | null>(null);
+    const prevLitSpotCountRef = useRef(0);
 
     // 謎・テストタブの展開状態
     const [expandedMysterySpots, setExpandedMysterySpots] = useState<Set<string>>(new Set());
@@ -373,6 +607,35 @@ export default function QuestCreatorCanvas({
             }, 500);
         }
     }, [searchParams, prompt]);
+
+    useEffect(() => {
+        if (spots.length === 0) {
+            setLitSpotId(null);
+            prevLitSpotCountRef.current = 0;
+            return;
+        }
+        if (spots.length > prevLitSpotCountRef.current) {
+            const latest = spots[spots.length - 1];
+            if (latest?.id) {
+                setLitSpotId(latest.id);
+                if (litTimeoutRef.current) {
+                    window.clearTimeout(litTimeoutRef.current);
+                }
+                litTimeoutRef.current = window.setTimeout(() => {
+                    setLitSpotId(null);
+                }, 1800);
+            }
+        }
+        prevLitSpotCountRef.current = spots.length;
+    }, [spots]);
+
+    useEffect(() => {
+        return () => {
+            if (litTimeoutRef.current) {
+                window.clearTimeout(litTimeoutRef.current);
+            }
+        };
+    }, []);
 
     // Saving state
     const [isSaving, setIsSaving] = useState(false);
@@ -805,8 +1068,7 @@ ${spotInputs
         setIsGenerating(true);
         setError(null);
 
-        // Switch to player preview mode immediately (UI shows preview while generation happens in background)
-        setViewMode('preview');
+        // Keep map-based view during generation
         setActiveTab('canvas'); // Ensure right panel is visible on mobile
 
         // Reset state
@@ -891,9 +1153,10 @@ ${spotInputs
                     const newSpot: SpotData = {
                         id: spot.spot_id,
                         name: spot.spot_name,
-                        address: '',
+                        address: spot.address || '',
                         lat: spot.lat,
                         lng: spot.lng,
+                        placeId: spot.place_id,
                         directions: spot.lore_card.player_handout,
                         storyText: spot.lore_card.short_story_text,
                         challengeText: spot.puzzle.prompt,
@@ -1008,9 +1271,10 @@ ${spotInputs
                     ? quest.spots.map((s, idx) => ({
                         id: s.spot_id || `spot-${idx}`,
                         name: s.spot_name,
-                        address: '',
+                        address: s.address || '',
                         lat: s.lat,
                         lng: s.lng,
+                        placeId: s.place_id,
                         directions: s.lore_card.player_handout,
                         storyText: s.lore_card.short_story_text,
                         challengeText: s.puzzle.prompt,
@@ -1057,6 +1321,351 @@ ${spotInputs
             setIsGenerating(false);
         }
     };
+
+    const routeMetrics = useMemo(() => {
+        if (spots.length < 2) {
+            return { totalKm: 0, totalMinutes: 0, segmentMinutes: [] as number[] };
+        }
+        let totalKm = 0;
+        const segmentMinutes: number[] = [];
+        for (let i = 0; i < spots.length - 1; i++) {
+            const a = spots[i];
+            const b = spots[i + 1];
+            const km = haversineKm({ lat: a.lat, lng: a.lng }, { lat: b.lat, lng: b.lng });
+            totalKm += km;
+            segmentMinutes.push(estimateWalkMinutes(km));
+        }
+        const totalMinutes = segmentMinutes.reduce((acc, v) => acc + v, 0);
+        return { totalKm, totalMinutes, segmentMinutes };
+    }, [spots]);
+
+    const climaxIndices = useMemo(() => {
+        const indices: number[] = [];
+        spots.forEach((s, idx) => {
+            const phase = getScenePhase(s.sceneRole);
+            if (phase === '転') indices.push(idx + 1);
+        });
+        return indices.slice(0, 3);
+    }, [spots]);
+
+    const journeyTitle = useMemo(() => {
+        if (playerPreviewData?.title?.trim()) return playerPreviewData.title.trim();
+        if (basicInfo?.title?.trim()) return basicInfo.title.trim();
+        if (prompt.trim()) return 'まだ名前のない旅';
+        return '旅の輪郭';
+    }, [playerPreviewData, basicInfo, prompt]);
+
+    const journeyTeaser = useMemo(() => {
+        const raw = (basicInfo?.description || playerPreviewData?.trailer || '').trim();
+        return raw;
+    }, [basicInfo, playerPreviewData]);
+
+    const shouldShowBasicDescriptionToggle = useMemo(() => {
+        const description = (basicInfo?.description || '').trim();
+        return description.length > 80 || description.includes('\n');
+    }, [basicInfo?.description]);
+
+    const shouldShowJourneyTeaserToggle = useMemo(() => {
+        return journeyTeaser.length > 80 || journeyTeaser.includes('\n');
+    }, [journeyTeaser]);
+
+    useEffect(() => {
+        setIsJourneyTeaserExpanded(false);
+    }, [journeyTeaser]);
+
+    useEffect(() => {
+        setIsBasicDescriptionExpanded(false);
+    }, [basicInfo?.description]);
+
+    const journeyBadges = useMemo(() => {
+        const badges: string[] = [];
+        badges.push(`⏱ ${constraints.duration}分`);
+        if (routeMetrics.totalKm > 0) badges.push(`🗺 ${routeMetrics.totalKm.toFixed(1)}km`);
+        badges.push(`🔥 ${constraints.difficulty === 'easy' ? '易' : constraints.difficulty === 'hard' ? '難' : '中'}`);
+        badges.push(`📍 ${spots.length || constraints.spotCount} spots`);
+        if (constraints.radiusKm) badges.push(`🧭 半径${constraints.radiusKm}km`);
+        if (genreSupport) {
+            const label = GENRE_SUPPORT_TAGS.find((g) => g.id === genreSupport)?.label;
+            if (label) badges.push(`🎭 ${label}`);
+        }
+        if (toneSupport) {
+            const label = TONE_SUPPORT_TAGS.find((t) => t.id === toneSupport)?.label;
+            if (label) badges.push(`🌤 ${label}`);
+        }
+        return badges;
+    }, [constraints, routeMetrics.totalKm, spots.length, genreSupport, toneSupport]);
+
+    const journeyIntent = useMemo(() => {
+        const items: string[] = [];
+        if (travelProfile.withWhom) items.push(`同行: ${travelProfile.withWhom}`);
+        if (travelProfile.purpose) items.push(`目的: ${travelProfile.purpose}`);
+        if (travelProfile.when) items.push(`時間帯: ${travelProfile.when}`);
+        const place = travelProfile.where || currentLocation?.address || basicInfo?.area;
+        if (place) items.push(`舞台: ${place}`);
+        return items;
+    }, [travelProfile, currentLocation, basicInfo]);
+
+    const isMapGenerating = isGenerating || Boolean(generationPhase);
+
+    const renderJourneyMap = ({
+        mapSpots,
+        containerClassName,
+        showGenerationOverlay,
+    }: {
+        mapSpots: SpotData[];
+        containerClassName: string;
+        showGenerationOverlay: boolean;
+    }) => (
+        <div className={`relative ${containerClassName} overflow-hidden bg-white`}>
+            <APIProvider apiKey={MAPS_API_KEY}>
+                <Map
+                    mapId="4f910f9227657629"
+                    defaultCenter={currentLocation ? { lat: currentLocation.lat, lng: currentLocation.lng } : { lat: 35.6764, lng: 139.6993 }}
+                    defaultZoom={currentLocation ? 15 : 13}
+                    gestureHandling={'greedy'}
+                    disableDefaultUI={true}
+                    className="absolute inset-0 w-full h-full"
+                >
+                        <RouteMapHandler
+                            spots={mapSpots}
+                            isGenerating={isMapGenerating}
+                            spoilerMode={spoilerMode}
+                            activeIndex={mapSpots.length > 0 ? selectedSpotIndex : null}
+                            litSpotId={litSpotId}
+                        />
+                </Map>
+            </APIProvider>
+
+            {!hasContent && !isMapGenerating && (
+                <div className="absolute inset-0 pointer-events-none flex items-center justify-center p-6">
+                    <div className="w-full max-w-2xl rounded-[28px] border border-stone-200/80 bg-white/90 shadow-[0_24px_80px_rgba(41,37,36,0.12)] overflow-hidden">
+                        <div className="px-6 py-5 bg-gradient-to-r from-stone-50 via-amber-50 to-stone-50 border-b border-stone-100">
+                            <div className="flex items-center justify-between gap-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-10 h-10 rounded-2xl bg-brand-gold/15 text-brand-gold flex items-center justify-center">
+                                        <Sparkles size={18} />
+                                    </div>
+                                    <div>
+                                        <div className="text-[10px] font-bold text-stone-500 uppercase tracking-widest">Quest Canvas</div>
+                                        <div className="text-lg font-extrabold text-brand-dark">旅の設計図は、ここから始まる</div>
+                                    </div>
+                                </div>
+                                <div className="rounded-full border border-stone-200 bg-white/80 px-3 py-1 text-[10px] font-bold text-stone-500">
+                                    生成前
+                                </div>
+                            </div>
+                        </div>
+                        <div className="px-6 py-5 text-sm text-stone-600">
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div className="space-y-4">
+                                    <p className="leading-relaxed text-stone-700">
+                                        左のフォームにアイデアを入れて「create」を押すだけ。
+                                        あなたのアイデアが「パーソナライズされた旅物語」へと設計されます。
+                                    </p>
+                                    <div className="flex flex-wrap gap-2 text-[11px] font-bold text-stone-600">
+                                        <span className="rounded-full border border-stone-200 bg-white/80 px-3 py-1">舞台の輪郭</span>
+                                        <span className="rounded-full border border-stone-200 bg-white/80 px-3 py-1">スポットの軌跡</span>
+                                        <span className="rounded-full border border-stone-200 bg-white/80 px-3 py-1">物語の緊張感</span>
+                                    </div>
+                                    <div className="inline-flex items-center gap-2 text-xs font-bold text-brand-gold">
+                                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand-gold/15">←</span>
+                                        <span>準備ができたら左の「Create」へ</span>
+                                    </div>
+                                </div>
+                                <div className="space-y-3">
+                                    <div className="rounded-2xl border border-stone-200/80 bg-white/90 px-4 py-3 shadow-sm">
+                                        <div className="flex items-center gap-2 text-[10px] font-bold text-stone-400">
+                                            <Compass size={12} className="text-brand-gold" />
+                                            旅の設計プレビュー
+                                        </div>
+                                        <div className="mt-1 text-sm font-extrabold text-brand-dark">タイトル + 補足説明</div>
+                                        <div className="mt-2 h-2 w-full rounded-full bg-stone-100">
+                                            <div className="h-2 w-1/3 rounded-full bg-brand-gold/40" />
+                                        </div>
+                                    </div>
+                                    <div className="rounded-2xl border border-stone-200/80 bg-white/90 px-4 py-3 shadow-sm">
+                                        <div className="flex items-center gap-2 text-[10px] font-bold text-stone-400">
+                                            <MapPin size={12} className="text-emerald-500" />
+                                            旅の流れ
+                                        </div>
+                                        <div className="mt-1 text-sm font-extrabold text-brand-dark">スポットカードが順に出現</div>
+                                        <div className="mt-2 flex items-center gap-1">
+                                            <span className="h-2 w-8 rounded-full bg-amber-200" />
+                                            <span className="h-2 w-5 rounded-full bg-amber-100" />
+                                            <span className="h-2 w-3 rounded-full bg-amber-50" />
+                                        </div>
+                                    </div>
+                                    <div className="rounded-2xl border border-stone-200/80 bg-white/90 px-4 py-3 shadow-sm">
+                                        <div className="flex items-center gap-2 text-[10px] font-bold text-stone-400">
+                                            <Wand2 size={12} className="text-amber-500" />
+                                            AI生成
+                                        </div>
+                                        <div className="mt-1 text-sm font-extrabold text-brand-dark">あなたの入力から即座に構築</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+            <div className="absolute inset-0 pointer-events-none">
+                <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-white/45" />
+                <div
+                    className="absolute inset-0"
+                    style={{ background: 'radial-gradient(circle at 20% 10%, rgba(255,255,255,0.6), transparent 50%)' }}
+                />
+            </div>
+
+            {/* Journey HUD */}
+            {hasContent && (
+                <div className="absolute top-12 left-6 right-6 md:left-8 md:right-8 pointer-events-none">
+                    <div className="pointer-events-auto max-w-[600px] bg-white/90 backdrop-blur-2xl border border-stone-200/80 rounded-3xl shadow-[0_14px_40px_rgba(28,25,23,0.12)] p-3 space-y-2">
+                        <div className="flex items-start gap-2">
+                            <div className="w-9 h-9 rounded-2xl bg-brand-gold/15 flex items-center justify-center text-brand-gold">
+                                <Compass size={20} />
+                            </div>
+                            <div className="min-w-0">
+                                <div className="text-[10px] font-bold text-stone-500 uppercase tracking-widest">旅の設計プレビュー</div>
+                                <div className="text-lg font-extrabold text-brand-dark">{journeyTitle}</div>
+                                {journeyTeaser ? (
+                                    <>
+                                        <p className={`text-[11px] text-stone-600 ${isJourneyTeaserExpanded ? 'whitespace-pre-wrap' : 'line-clamp-2'}`}>
+                                            {journeyTeaser}
+                                        </p>
+                                        {shouldShowJourneyTeaserToggle && (
+                                            <button
+                                                onClick={() => setIsJourneyTeaserExpanded((prev) => !prev)}
+                                                className="mt-1 text-[10px] font-bold text-brand-gold hover:text-amber-600 transition-colors"
+                                            >
+                                                {isJourneyTeaserExpanded ? '閉じる' : '全文を見る'}
+                                            </button>
+                                        )}
+                                    </>
+                                ) : isMapGenerating ? (
+                                    <p className="text-[11px] text-stone-400">補足説明を生成中...</p>
+                                ) : null}
+                            </div>
+                        </div>
+                        {journeyIntent.length > 0 && (
+                            <div className="flex flex-wrap items-center gap-2 text-[10px] font-bold text-stone-600">
+                                {journeyIntent.map((item) => (
+                                    <span key={item} className="px-2 py-1 rounded-full bg-white/70 border border-stone-200">
+                                        {item}
+                                    </span>
+                                ))}
+                            </div>
+                        )}
+                        <div className="flex flex-wrap items-center gap-2">
+                            {journeyBadges.map((badge) => (
+                                <span key={badge} className="px-2.5 py-1 rounded-lg bg-white/70 border border-stone-200 text-[10px] font-bold text-stone-700">
+                                    {badge}
+                                </span>
+                            ))}
+                            {climaxIndices.length > 0 && mapSpots.length > 0 && (
+                                <span className="px-2.5 py-1 rounded-lg bg-white/70 border border-stone-200 text-[10px] font-bold text-stone-700">
+                                    🔥山場: {climaxIndices.join(',')}
+                                </span>
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Journey Reel */}
+            {hasContent && (
+                <div className="absolute bottom-4 left-6 right-6 md:left-8 md:right-8 pointer-events-auto">
+                    <div className="bg-white/90 backdrop-blur-2xl border border-stone-200/80 rounded-3xl shadow-[0_14px_40px_rgba(28,25,23,0.12)] p-2">
+                        <div className="flex items-center justify-between">
+                            <div className="text-xs font-bold text-brand-dark">旅の流れ</div>
+                            {hasContent && !isGenerating && (
+                                <button
+                                    onClick={handleSaveAndGoProfile}
+                                    disabled={isSaving}
+                                    className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold transition-all ${
+                                        isSaving ? 'bg-stone-200 text-stone-400 cursor-wait' : 'bg-brand-dark text-white hover:bg-brand-gold'
+                                    }`}
+                                >
+                                    {isSaving ? (
+                                        <>
+                                            <Loader2 size={12} className="animate-spin" />
+                                            保存中...
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Save size={12} />
+                                            保存してプロフィールへ
+                                        </>
+                                    )}
+                                </button>
+                            )}
+                        </div>
+                        {mapSpots.length > 0 && (
+                            <div className="mt-2 flex gap-2 overflow-x-auto pb-0 scrollbar-hide">
+                                {mapSpots.map((spot, idx) => {
+                                    const xp = getSpotExperienceIcon(spot);
+                                    const mapUrl = spot.placeId
+                                        ? `https://www.google.com/maps/place/?q=place_id:${encodeURIComponent(spot.placeId)}`
+                                        : `https://www.google.com/maps/place/${encodeURIComponent([spot.name, spot.address, basicInfo?.area]
+                                            .filter(Boolean)
+                                            .join(' ')
+                                            .trim() || `Spot ${idx + 1}`)}`;
+                                    return (
+                                        <div
+                                            key={spot.id}
+                                            onMouseEnter={() => setSelectedSpotIndex(idx)}
+                                            onClick={() => setSelectedSpotIndex(idx)}
+                                            onKeyDown={(e) => {
+                                                if (e.key === 'Enter' || e.key === ' ') {
+                                                    e.preventDefault();
+                                                    setSelectedSpotIndex(idx);
+                                                }
+                                            }}
+                                            role="button"
+                                            tabIndex={0}
+                                            className={`flex-none min-w-[160px] w-max rounded-2xl border px-3 py-2 text-left transition-all ${
+                                                selectedSpotIndex === idx
+                                                    ? 'bg-brand-gold/10 border-brand-gold/40 shadow-sm'
+                                                    : 'bg-white border-stone-300 hover:border-brand-gold/40'
+                                            }`}
+                                        >
+                                            <div className="text-[10px] font-bold text-stone-400">Spot {idx + 1}</div>
+                                            <div className="text-xs font-extrabold text-brand-dark whitespace-nowrap">
+                                                {spot.name || `Spot ${idx + 1}`}
+                                            </div>
+                                            <div className="text-[10px] text-stone-500 mt-1">
+                                                {xp.emoji} {xp.label}
+                                            </div>
+                                            <div className="mt-2">
+                                                <a
+                                                    href={mapUrl}
+                                                    target="_blank"
+                                                    rel="noreferrer"
+                                                    onClick={(e) => e.stopPropagation()}
+                                                    className="inline-flex items-center gap-1 rounded-full border border-stone-200 bg-white/90 px-2 py-0.5 text-[10px] font-bold text-stone-600 hover:border-brand-gold/40 hover:text-brand-gold transition-colors"
+                                                >
+                                                    <MapPin size={10} />
+                                                    地図で開く
+                                                </a>
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+                        )}
+                    </div>
+                </div>
+            )}
+
+            {showGenerationOverlay && generationPhase && (
+                <div className="absolute top-12 right-4 pointer-events-none">
+                    <div className="bg-white/85 backdrop-blur-md border border-white/60 rounded-xl shadow-sm px-3 py-2 text-right">
+                        <div className="text-xs font-bold text-brand-dark">{generationPhase}</div>
+                        <div className="text-[10px] text-stone-500">旅を組み立て中…</div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
 
     const saveToDatabase = async (qId: string, result: any, mappedSpots: SpotData[]) => {
         try {
@@ -1325,6 +1934,13 @@ ${spotInputs
             return null;
         } finally {
             setIsSaving(false);
+        }
+    };
+
+    const handleSaveAndGoProfile = async () => {
+        const savedQuestId = await handleSaveQuest();
+        if (savedQuestId) {
+            navigate('/profile');
         }
     };
 
@@ -1745,89 +2361,85 @@ ${spotInputs
                     >
                         {/* Content area */}
                         <div className="p-4 md:p-6">
+                            <motion.div
+                                initial={{ opacity: 0, y: 12 }}
+                                animate={{ opacity: 1, y: 0 }}
+                            >
+                                {renderJourneyMap({
+                                    mapSpots: spots,
+                                    containerClassName: '-m-4 md:-m-6 h-[calc(100vh-8rem)] md:h-[calc(100vh-4rem)] min-h-[520px]',
+                                    showGenerationOverlay: Boolean(generationPhase),
+                                })}
+                            </motion.div>
+
                             {/* Player Preview Mode - shown after generation, no spoilers */}
-                            {viewMode === 'preview' && basicInfo ? (
-                                <PlayerPreview
-                                    basicInfo={basicInfo}
-                                    spots={spots.map((s, idx) => ({
-                                        id: s.id,
-                                        name: s.name,
-                                        lat: s.lat,
-                                        lng: s.lng,
-                                        isHighlight: idx < 3, // Mark first 3 spots as highlights
-                                        highlightDescription: idx < 3 ? `${s.name}では、${s.sceneRole || 'この場所ならではの'}謎解きが待っています。` : undefined
-                                    }))}
-                                    story={story || null}
-                                    estimatedDuration={constraints.duration}
-                                    isGenerating={isGenerating}
-                                    generationPhase={generationPhase}
-                                    playerPreviewData={playerPreviewData}
-                                    isGeneratingCover={isGeneratingCover}
-                                    routeMetadata={playerPreviewData?.route_meta ? {
-                                        distanceKm: parseFloat(playerPreviewData.route_meta.distance_km) || spots.length * 0.3,
-                                        walkingMinutes: parseInt(playerPreviewData.route_meta.estimated_time_min) || constraints.duration,
-                                        outdoorRatio: parseFloat(playerPreviewData.route_meta.outdoor_ratio_percent) / 100 || 0.7,
-                                        startPoint: playerPreviewData.route_meta.area_start,
-                                        endPoint: playerPreviewData.route_meta.area_end,
-                                    } : {
-                                        distanceKm: spots.length > 0 ? spots.length * 0.3 : undefined,
-                                        walkingMinutes: constraints.duration,
-                                        outdoorRatio: 0.7,
-                                        startPoint: spots[0]?.name,
-                                        endPoint: spots[spots.length - 1]?.name,
-                                    }}
-                                    difficultyExplanation={
-                                        playerPreviewData?.route_meta?.difficulty_reason ||
-                                        (constraints.difficulty === 'easy'
-                                            ? 'ひらめき型：ヒントあり、初心者でも楽しめます'
-                                            : constraints.difficulty === 'hard'
-                                                ? '推理型：3〜4回の詰まりポイントあり（上級者向け）'
-                                                : '探索＋推理：現地の情報を読み解くタイプ（ほど良い難易度）')
-                                    }
-                                    onPlay={async () => {
-                                        // Start play session - save first, then navigate to test run
-                                        const savedQuestId = await handleSaveQuest();
-                                        if (savedQuestId) {
-                                            onTestRun();
+                            {!isMapGenerating && viewMode === 'preview' && basicInfo ? (
+                                <div className="mt-6">
+                                    <PlayerPreview
+                                        basicInfo={basicInfo}
+                                        spots={spots.map((s, idx) => ({
+                                            id: s.id,
+                                            name: s.name,
+                                            lat: s.lat,
+                                            lng: s.lng,
+                                            isHighlight: idx < 3, // Mark first 3 spots as highlights
+                                            highlightDescription: idx < 3 ? `${s.name}では、${s.sceneRole || 'この場所ならではの'}謎解きが待っています。` : undefined
+                                        }))}
+                                        story={story || null}
+                                        estimatedDuration={constraints.duration}
+                                        isGenerating={isGenerating}
+                                        generationPhase={generationPhase}
+                                        playerPreviewData={playerPreviewData}
+                                        isGeneratingCover={isGeneratingCover}
+                                        routeMetadata={playerPreviewData?.route_meta ? {
+                                            distanceKm: parseFloat(playerPreviewData.route_meta.distance_km) || spots.length * 0.3,
+                                            walkingMinutes: parseInt(playerPreviewData.route_meta.estimated_time_min) || constraints.duration,
+                                            outdoorRatio: parseFloat(playerPreviewData.route_meta.outdoor_ratio_percent) / 100 || 0.7,
+                                            startPoint: playerPreviewData.route_meta.area_start,
+                                            endPoint: playerPreviewData.route_meta.area_end,
+                                        } : {
+                                            distanceKm: spots.length > 0 ? spots.length * 0.3 : undefined,
+                                            walkingMinutes: constraints.duration,
+                                            outdoorRatio: 0.7,
+                                            startPoint: spots[0]?.name,
+                                            endPoint: spots[spots.length - 1]?.name,
+                                        }}
+                                        difficultyExplanation={
+                                            playerPreviewData?.route_meta?.difficulty_reason ||
+                                            (constraints.difficulty === 'easy'
+                                                ? 'ひらめき型：ヒントあり、初心者でも楽しめます'
+                                                : constraints.difficulty === 'hard'
+                                                    ? '推理型：3〜4回の詰まりポイントあり（上級者向け）'
+                                                    : '探索＋推理：現地の情報を読み解くタイプ（ほど良い難易度）')
                                         }
-                                    }}
-                                    onEdit={() => {
-                                        // Switch to canvas (edit) mode - shows spoilers
-                                        setViewMode('canvas');
-                                        setActiveTab('canvas');
-                                    }}
-                                    onSaveDraft={async () => {
-                                        // Save and navigate to workspace for editing
-                                        const savedQuestId = await handleSaveQuest();
-                                        if (savedQuestId) {
-                                            // Navigate to workspace with the quest ID
-                                            navigate(`/creator/workspace/${savedQuestId}`);
-                                        } else {
-                                            // If save failed, go back to profile
-                                            onBack();
-                                        }
-                                    }}
-                                />
-                            ) : !hasContent && !isGenerating ? (
-                                /* Empty State */
-                                <motion.div
-                                    initial={{ opacity: 0, y: 20 }}
-                                    animate={{ opacity: 1, y: 0 }}
-                                    className="flex flex-col items-center justify-center h-[calc(100vh-8rem)]"
-                                >
-                                    <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-white flex items-center justify-center shadow-sm">
-                                        <Sparkles size={32} className="text-stone-300" />
-                                    </div>
-                                    <h3 className="text-lg font-bold text-stone-400 mb-2">
-                                        まだ何も生成されていません
-                                    </h3>
-                                    <p className="text-sm text-stone-400">
-                                        左パネルでプロンプトを入力して、クエストを生成しましょう
-                                    </p>
-                                </motion.div>
-                            ) : (
+                                        onPlay={async () => {
+                                            // Start play session - save first, then navigate to test run
+                                            const savedQuestId = await handleSaveQuest();
+                                            if (savedQuestId) {
+                                                onTestRun();
+                                            }
+                                        }}
+                                        onEdit={() => {
+                                            // Switch to canvas (edit) mode - shows spoilers
+                                            setViewMode('canvas');
+                                            setActiveTab('canvas');
+                                        }}
+                                        onSaveDraft={async () => {
+                                            // Save and navigate to workspace for editing
+                                            const savedQuestId = await handleSaveQuest();
+                                            if (savedQuestId) {
+                                                // Navigate to workspace with the quest ID
+                                                navigate(`/creator/workspace/${savedQuestId}`);
+                                            } else {
+                                                // If save failed, go back to profile
+                                                onBack();
+                                            }
+                                        }}
+                                    />
+                                </div>
+                            ) : !isMapGenerating && hasContent ? (
                                 /* Dashboard Content (Canvas Mode or Generating) */
-                                <div className="space-y-4">
+                                <div className="mt-6 space-y-4">
                                     {/* Generation Progress (when generating) */}
                                     {isGenerating && generationPhase && (
                                         <motion.div
@@ -1865,9 +2477,23 @@ ${spotInputs
                                             {/* Content */}
                                             <div className="p-5">
                                                 <div className="flex items-start justify-between mb-4">
-                                                    <div className="flex-1">
+                                                    <div className="flex-1 min-w-0">
                                                         <h2 className="text-xl font-bold text-brand-dark mb-2 group-hover:text-brand-gold transition-colors">{basicInfo.title}</h2>
-                                                        <p className="text-sm text-stone-600 leading-relaxed">{basicInfo.description}</p>
+                                                        {basicInfo.description && (
+                                                            <>
+                                                                <p className={`text-sm text-stone-600 leading-relaxed ${isBasicDescriptionExpanded ? 'whitespace-pre-wrap' : 'line-clamp-2'}`}>
+                                                                    {basicInfo.description}
+                                                                </p>
+                                                                {shouldShowBasicDescriptionToggle && (
+                                                                    <button
+                                                                        onClick={() => setIsBasicDescriptionExpanded((prev) => !prev)}
+                                                                        className="mt-1 text-xs font-bold text-brand-gold hover:text-amber-600 transition-colors"
+                                                                    >
+                                                                        {isBasicDescriptionExpanded ? '閉じる' : '全文を見る'}
+                                                                    </button>
+                                                                )}
+                                                            </>
+                                                        )}
                                                     </div>
                                                 </div>
                                                 {/* All stats and tags in one row */}
@@ -1934,89 +2560,22 @@ ${spotInputs
                                             {/* Tab Content */}
                                             <div className="p-0">
                                                 <AnimatePresence mode="wait">
-                                                    {/* Route Tab */}
-                                                    {contentTab === 'route' && spots.length > 0 && (
-                                                        <motion.div
-                                                            key="route"
-                                                            initial={{ opacity: 0 }}
-                                                            animate={{ opacity: 1 }}
-                                                            exit={{ opacity: 0 }}
-                                                            className="flex h-[calc(100vh-320px)] min-h-[450px]"
-                                                        >
-                                                            {/* Map */}
-                                                            <div className="flex-1 relative">
-                                                                <APIProvider apiKey={MAPS_API_KEY}>
-                                                                    <Map
-                                                                        mapId="4f910f9227657629"
-                                                                        defaultCenter={{ lat: 35.6764, lng: 139.6993 }}
-                                                                        defaultZoom={14}
-                                                                        gestureHandling={'greedy'}
-                                                                        disableDefaultUI={true}
-                                                                        className="w-full h-full"
-                                                                    >
-                                                                        <RouteMapHandler spots={spots} isGenerating={isGenerating} />
-                                                                    </Map>
-                                                                </APIProvider>
-                                                            </div>
-                                                            {/* Spot List */}
-                                                            <div className="w-80 border-l border-stone-100 overflow-y-auto">
-                                                                <div className="p-3 space-y-2">
-                                                                    {spots.map((spot, idx) => (
-                                                                        <motion.div
-                                                                            key={spot.id}
-                                                                            initial={{ opacity: 0, x: 20 }}
-                                                                            animate={{ opacity: 1, x: 0 }}
-                                                                            transition={{ delay: idx * 0.1 }}
-                                                                            onClick={() => setSelectedSpotIndex(selectedSpotIndex === idx ? null : idx)}
-                                                                            className={`p-3 rounded-xl cursor-pointer transition-all ${selectedSpotIndex === idx
-                                                                                ? 'bg-brand-gold/10 border border-brand-gold/30'
-                                                                                : 'bg-stone-50 border border-stone-100 hover:border-brand-gold/20'
-                                                                                }`}
-                                                                        >
-                                                                            <div className="flex items-start gap-2">
-                                                                                <div className="w-6 h-6 rounded-full bg-brand-gold text-white flex items-center justify-center text-xs font-bold flex-shrink-0">
-                                                                                    {idx + 1}
-                                                                                </div>
-                                                                                <div className="flex-1 min-w-0">
-                                                                                    <h5 className="font-bold text-xs text-brand-dark truncate">{spot.name}</h5>
-                                                                                    <p className="text-[10px] text-stone-500 truncate">{spot.address}</p>
-                                                                                </div>
-                                                                            </div>
-                                                                            {/* Expanded Details */}
-                                                                            <AnimatePresence>
-                                                                                {selectedSpotIndex === idx && (
-                                                                                    <motion.div
-                                                                                        initial={{ height: 0, opacity: 0 }}
-                                                                                        animate={{ height: 'auto', opacity: 1 }}
-                                                                                        exit={{ height: 0, opacity: 0 }}
-                                                                                        className="mt-3 pt-3 border-t border-stone-200 space-y-2"
-                                                                                    >
-                                                                                        <div>
-                                                                                            <p className="text-[10px] font-bold text-stone-400 uppercase mb-0.5">ストーリー</p>
-                                                                                            <p className="text-xs text-stone-600 line-clamp-2">{spot.storyText}</p>
-                                                                                        </div>
-                                                                                        <div>
-                                                                                            <p className="text-[10px] font-bold text-stone-400 uppercase mb-0.5">謎</p>
-                                                                                            <p className="text-xs text-brand-dark">{spot.challengeText}</p>
-                                                                                            <div className="mt-1 flex items-center gap-1 text-[10px] text-emerald-600">
-                                                                                                <CheckCircle size={8} />
-                                                                                                <span>正解: {spot.answer}</span>
-                                                                                            </div>
-                                                                                        </div>
-                                                                                        <div className="flex gap-1 pt-1">
-                                                                                            <button className="px-2 py-1 rounded bg-stone-100 text-[10px] font-bold text-stone-600 hover:bg-stone-200">編集</button>
-                                                                                            <button className="px-2 py-1 rounded bg-stone-100 text-[10px] font-bold text-stone-600 hover:bg-stone-200">再生成</button>
-                                                                                            <button className="px-2 py-1 rounded bg-brand-gold/10 text-[10px] font-bold text-brand-gold hover:bg-brand-gold/20">試走</button>
-                                                                                        </div>
-                                                                                    </motion.div>
-                                                                                )}
-                                                                            </AnimatePresence>
-                                                                        </motion.div>
-                                                                    ))}
-                                                                </div>
-                                                            </div>
-                                                        </motion.div>
-                                                    )}
+	                                                    {/* Route Tab */}
+	                                                    {contentTab === 'route' && spots.length > 0 && (
+	                                                        <motion.div
+	                                                            key="route"
+	                                                            initial={{ opacity: 0 }}
+	                                                            animate={{ opacity: 1 }}
+	                                                            exit={{ opacity: 0 }}
+	                                                        >
+	                                                            {renderJourneyMap({
+	                                                                mapSpots: spots,
+	                                                                containerClassName:
+	                                                                    '-m-4 md:-m-6 h-[calc(100vh-320px)] md:h-[calc(100vh-4rem)] min-h-[450px]',
+	                                                                showGenerationOverlay: false,
+	                                                            })}
+	                                                        </motion.div>
+	                                                    )}
 
                                                     {/* Story Tab */}
                                                     {contentTab === 'story' && story && (
@@ -2648,48 +3207,8 @@ ${spotInputs
                                         )}
                                     </AnimatePresence>
 
-                                    {/* Save Quest FAB - Always visible after generation */}
-                                    {hasContent && !isGenerating && (
-                                        <motion.div
-                                            initial={{ opacity: 0, scale: 0.9 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            className="fixed bottom-6 right-6 z-50 flex flex-col items-end gap-2"
-                                        >
-                                            {saveMessage && (
-                                                <motion.div
-                                                    initial={{ opacity: 0, y: 10 }}
-                                                    animate={{ opacity: 1, y: 0 }}
-                                                    exit={{ opacity: 0 }}
-                                                    className={`px-4 py-2 rounded-lg text-sm font-bold shadow-lg ${saveMessage.includes('失敗') ? 'bg-rose-500 text-white' : 'bg-emerald-500 text-white'
-                                                        }`}
-                                                >
-                                                    {saveMessage}
-                                                </motion.div>
-                                            )}
-                                            <button
-                                                onClick={handleSaveQuest}
-                                                disabled={isSaving}
-                                                className={`flex items-center gap-2 px-5 py-3 rounded-full font-bold shadow-lg transition-all hover:shadow-xl ${isSaving
-                                                    ? 'bg-stone-400 text-white cursor-wait'
-                                                    : 'bg-brand-dark text-white hover:bg-brand-gold'
-                                                    }`}
-                                            >
-                                                {isSaving ? (
-                                                    <>
-                                                        <Loader2 size={18} className="animate-spin" />
-                                                        保存中...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Save size={18} />
-                                                        クエスト保存
-                                                    </>
-                                                )}
-                                            </button>
-                                        </motion.div>
-                                    )}
                                 </div>
-                            )}
+                            ) : null}
                         </div>
                     </div>
                 </div>

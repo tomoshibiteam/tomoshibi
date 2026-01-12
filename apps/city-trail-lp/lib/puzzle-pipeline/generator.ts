@@ -12,6 +12,7 @@ import {
     EvidenceUsage,
 } from './types';
 import { getModelEndpoint } from '../ai/model-config';
+import { safeParseJson } from './json-utils';
 
 // =============================================================================
 // Prompt Templates
@@ -200,7 +201,7 @@ export async function generatePuzzle(
         // JSONを抽出
         const jsonMatch = responseText.match(/```json([\s\S]*?)```/);
         const jsonText = jsonMatch ? jsonMatch[1] : responseText;
-        const parsed = JSON.parse(jsonText.trim()) as PuzzleGenerationResult;
+        const parsed = safeParseJson(jsonText) as PuzzleGenerationResult;
 
         return parsed;
     } catch (error: any) {

@@ -24,6 +24,7 @@ import {
     Save,
     Lightbulb,
     Compass,
+    Crown,
 } from 'lucide-react';
 import { supabase } from './supabaseClient';
 import { useAuth } from './AuthProvider';
@@ -411,13 +412,12 @@ const RouteMapHandler = ({
                             initial={{ scale: 0, y: -16 }}
                             animate={{ scale: 1, y: 0 }}
                             transition={{ delay: idx * 0.15, type: 'spring', stiffness: 300 }}
-                            className={`relative flex items-center justify-center w-8 h-8 rounded-full text-[11px] font-bold shadow-lg border transition-transform ${
-                                isGenerating && !isLit
+                            className={`relative flex items-center justify-center w-8 h-8 rounded-full text-[11px] font-bold shadow-lg border transition-transform ${isGenerating && !isLit
                                     ? 'bg-white/95 text-brand-gold border-brand-gold/40'
                                     : isLit
                                         ? 'bg-gradient-to-br from-amber-300 via-amber-200 to-yellow-200 text-amber-900 border-white/90'
                                         : 'bg-gradient-to-br from-amber-500 via-amber-400 to-yellow-300 text-white border-white/80'
-                            } ${activeIndex === idx ? 'scale-110' : ''} ${isLit ? 'animate-[markerPulse_1.6s_ease-in-out_2]' : ''}`}
+                                } ${activeIndex === idx ? 'scale-110' : ''} ${isLit ? 'animate-[markerPulse_1.6s_ease-in-out_2]' : ''}`}
                         >
                             {isLit && (
                                 <>
@@ -696,13 +696,13 @@ ${castList.map((c) => `- ${c.name}（役割:${c.role || '未設定'} / トーン
 
 【スポット情報】
 ${spotInputs
-    .map((s) => `#${s.spot_index + 1} ${s.name}
+                .map((s) => `#${s.spot_index + 1} ${s.name}
   - scene_role: ${s.scene_role}
   - plot_key: ${s.plot_key}
   - puzzle_type: ${s.puzzle_type}
   - story_hint: ${s.story_hint}
   - puzzle_hint: ${s.puzzle_hint}`)
-    .join('\n')}
+                .join('\n')}
 
 【出力形式】
 {
@@ -1426,13 +1426,13 @@ ${spotInputs
                     disableDefaultUI={true}
                     className="absolute inset-0 w-full h-full"
                 >
-                        <RouteMapHandler
-                            spots={mapSpots}
-                            isGenerating={isMapGenerating}
-                            spoilerMode={spoilerMode}
-                            activeIndex={mapSpots.length > 0 ? selectedSpotIndex : null}
-                            litSpotId={litSpotId}
-                        />
+                    <RouteMapHandler
+                        spots={mapSpots}
+                        isGenerating={isMapGenerating}
+                        spoilerMode={spoilerMode}
+                        activeIndex={mapSpots.length > 0 ? selectedSpotIndex : null}
+                        litSpotId={litSpotId}
+                    />
                 </Map>
             </APIProvider>
 
@@ -1581,9 +1581,8 @@ ${spotInputs
                                 <button
                                     onClick={handleSaveAndGoProfile}
                                     disabled={isSaving}
-                                    className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold transition-all ${
-                                        isSaving ? 'bg-stone-200 text-stone-400 cursor-wait' : 'bg-brand-dark text-white hover:bg-brand-gold'
-                                    }`}
+                                    className={`flex items-center gap-1.5 rounded-full px-3 py-1 text-[10px] font-bold transition-all ${isSaving ? 'bg-stone-200 text-stone-400 cursor-wait' : 'bg-brand-dark text-white hover:bg-brand-gold'
+                                        }`}
                                 >
                                     {isSaving ? (
                                         <>
@@ -1622,11 +1621,10 @@ ${spotInputs
                                             }}
                                             role="button"
                                             tabIndex={0}
-                                            className={`flex-none min-w-[160px] w-max rounded-2xl border px-3 py-2 text-left transition-all ${
-                                                selectedSpotIndex === idx
+                                            className={`flex-none min-w-[160px] w-max rounded-2xl border px-3 py-2 text-left transition-all ${selectedSpotIndex === idx
                                                     ? 'bg-brand-gold/10 border-brand-gold/40 shadow-sm'
                                                     : 'bg-white border-stone-300 hover:border-brand-gold/40'
-                                            }`}
+                                                }`}
                                         >
                                             <div className="text-[10px] font-bold text-stone-400">Spot {idx + 1}</div>
                                             <div className="text-xs font-extrabold text-brand-dark whitespace-nowrap">
@@ -2013,7 +2011,7 @@ ${spotInputs
                             </div>
 
                             <AnimatePresence>
-                                    {showConstraints && (
+                                {showConstraints && (
                                     <motion.div
                                         initial={{ height: 0, opacity: 0 }}
                                         animate={{ height: 'auto', opacity: 1 }}
@@ -2298,7 +2296,7 @@ ${spotInputs
                                                     <Sparkles size={14} className="text-brand-gold" />
                                                     <span className="text-xs font-bold text-stone-600">AIへの入力サマリー</span>
                                                 </div>
-                        <div className="text-xs text-stone-600 space-y-1">
+                                                <div className="text-xs text-stone-600 space-y-1">
                                                     <div><span className="font-medium text-stone-700">メイン：</span>{prompt.slice(0, 50)}{prompt.length > 50 && '...'}</div>
                                                     {genreSupport && (
                                                         <div><span className="font-medium text-stone-700">ジャンル：</span>{GENRE_SUPPORT_TAGS.find(g => g.id === genreSupport)?.label}</div>
@@ -2560,22 +2558,22 @@ ${spotInputs
                                             {/* Tab Content */}
                                             <div className="p-0">
                                                 <AnimatePresence mode="wait">
-	                                                    {/* Route Tab */}
-	                                                    {contentTab === 'route' && spots.length > 0 && (
-	                                                        <motion.div
-	                                                            key="route"
-	                                                            initial={{ opacity: 0 }}
-	                                                            animate={{ opacity: 1 }}
-	                                                            exit={{ opacity: 0 }}
-	                                                        >
-	                                                            {renderJourneyMap({
-	                                                                mapSpots: spots,
-	                                                                containerClassName:
-	                                                                    '-m-4 md:-m-6 h-[calc(100vh-320px)] md:h-[calc(100vh-4rem)] min-h-[450px]',
-	                                                                showGenerationOverlay: false,
-	                                                            })}
-	                                                        </motion.div>
-	                                                    )}
+                                                    {/* Route Tab */}
+                                                    {contentTab === 'route' && spots.length > 0 && (
+                                                        <motion.div
+                                                            key="route"
+                                                            initial={{ opacity: 0 }}
+                                                            animate={{ opacity: 1 }}
+                                                            exit={{ opacity: 0 }}
+                                                        >
+                                                            {renderJourneyMap({
+                                                                mapSpots: spots,
+                                                                containerClassName:
+                                                                    '-m-4 md:-m-6 h-[calc(100vh-320px)] md:h-[calc(100vh-4rem)] min-h-[450px]',
+                                                                showGenerationOverlay: false,
+                                                            })}
+                                                        </motion.div>
+                                                    )}
 
                                                     {/* Story Tab */}
                                                     {contentTab === 'story' && story && (

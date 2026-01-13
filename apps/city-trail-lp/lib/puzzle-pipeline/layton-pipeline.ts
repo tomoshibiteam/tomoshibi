@@ -271,20 +271,24 @@ ${supportInfo.join('\n')}
 これは「徒歩で巡るウォーキングクエスト」です。
 
 ■ 距離の絶対ルール（破ったら無効）
-- スポット1→2、2→3...全ての隣接スポット間が500m以内であること
-- 例：浅草なら浅草寺周辺500m圏内、渋谷なら渋谷駅周辺500m圏内
+- スポット1→2、2→3...全ての隣接スポット間は「350m以上、500m以内」を厳守すること
+- 近すぎる（350m未満）と散歩にならない。遠すぎる（500m超）と疲れる。この範囲に収めること
 - 「浅草」と「上野」のように異なるエリアを混ぜるのは禁止
 
 ■ 具体的な選び方
 - まず中心となるエリア（例：浅草寺前）を決める
 - その半径500m以内にある実在スポットだけを選ぶ
-- 徒歩5分で次のスポットに着ける配置にする
-- Google Mapsで単独のスポットとして表示される固有名を使う（施設名/店名/駅名/公園名など）
+- 徒歩5〜8分で次のスポットに着ける配置にする
+- Google Mapsで検索した際に、ピンポイントでその場所が表示される正式名称を使うこと
+- ユーザーが地図を開いたときに確実にその場所にたどり着ける有名・確実なスポットを選ぶこと
 
 ■ 禁止事項
 - 電車・バス・車での移動が必要になる配置
 - 「〜区」「〜市」全体から広くスポットを選ぶこと
 - 1km以上離れたスポットを入れること
+- 350m未満の近すぎるスポット移動
+- 前半で通った道を戻るようなルートや、行ったり来たりする効率の悪いルート
+- 後半のスポットに行くために、前半のエリアを再び通過すること（一筆書きのようにスムーズに巡れるルートにする）
 - 曖昧な地名やエリア名だけでスポット名を作ること（例: 「渋谷周辺」「駅前一帯」）
 
 【文章の読みやすさ（重要）】
@@ -339,17 +343,30 @@ ${supportInfo.join('\n')}
         const parsed = safeParseJson(jsonText);
         const parsedSpots = Array.isArray(parsed) ? parsed.slice(0, desiredSpotCount) : [];
 
+        const radiusKm = request.radius_km || 1;
+        const centerLat = request.center_location?.lat;
+        const centerLng = request.center_location?.lng;
+
         // 追加の根拠収集 + Geocodingで正確な座標を取得（並行実行）
-        const spotsWithEvidence = await Promise.all(
+        const spotsWithEvidencePromise = Promise.all(
             parsedSpots.map(async (spot: any, idx: number) => {
                 try {
                     // スポット名から正確な座標を取得（Google Geocoding API）
-                    const geocoded = await geocodeSpotName(spot.spot_name);
-                    const accurateLat = geocoded?.lat || spot.lat || 35.6804;
-                    const accurateLng = geocoded?.lng || spot.lng || 139.769;
-                    const placeId = geocoded?.place_id;
-                    const formattedAddress = geocoded?.formatted_address;
+                    // 中心座標と半径を渡して、範囲外の同名スポット（例：金沢文庫と金沢）を排除
+                    const geocoded = await geocodeSpotName(spot.spot_name, centerLat, centerLng, radiusKm);
 
+                    // Geocoding失敗、または範囲外の場合はnullを返す（後でフィルタリング）
+                    if (!geocoded) {
+                        console.warn(`[Spot Skipped] Invalid location for: ${spot.spot_name}`);
+                        return null;
+                    }
+
+                    const accurateLat = geocoded.lat;
+                    const accurateLng = geocoded.lng;
+                    const placeId = geocoded.place_id;
+                    const formattedAddress = geocoded.formatted_address;
+
+                    // 証拠取集（Wiki, Places API）
                     const evidence = await retrieveEvidence(
                         `spot-${idx}`,
                         spot.spot_name,
@@ -372,22 +389,17 @@ ${supportInfo.join('\n')}
                         place_id: placeId,
                         address: formattedAddress || '',
                     } as SpotInput;
-                } catch {
-                    // フォールバック：Geocodingも失敗した場合
-                    const geocoded = await geocodeSpotName(spot.spot_name).catch(() => null);
-                    return {
-                        spot_name: spot.spot_name,
-                        spot_summary: spot.spot_summary || '',
-                        spot_facts: spot.spot_facts || [],
-                        spot_theme_tags: spot.spot_theme_tags || [],
-                        lat: geocoded?.lat || spot.lat || 35.6804,
-                        lng: geocoded?.lng || spot.lng || 139.769,
-                        place_id: geocoded?.place_id,
-                        address: geocoded?.formatted_address || '',
-                    } as SpotInput;
+                } catch (e) {
+                    console.error(`Error processing spot ${spot.spot_name}:`, e);
+                    return null;
                 }
             })
         );
+
+        const processedSpots = await spotsWithEvidencePromise;
+        const spotsWithEvidence = processedSpots.filter((s): s is SpotInput => s !== null);
+
+        console.log(`[ウォーキングクエスト] 有効なスポット数: ${spotsWithEvidence.length}/${parsedSpots.length}`);
 
         // 距離フィルタリング
         // 1. 現在地からの距離で絞り込み（設定されている場合）
@@ -443,37 +455,14 @@ function filterSpotsWithinWalkingDistance(
         }
     }
 
-    // 2. スポット間の距離で並べ替え（近い順にチェーン）
-    const result: SpotInput[] = [candidateSpots[0]];
-    const remaining = [...candidateSpots.slice(1)];
+    // 2. AIの提案順序を維持する
+    // 近傍探索（Greedy）を行うと、AIが設計した「一筆書きルート」や「ストーリー順序」が破壊されるため、
+    // 並べ替えを行わずにAIの出力順を信頼して返却する。
+    // プロンプト側で「隣接スポット間の距離」や「バックトラック禁止」を強く指示していることを前提とする。
 
-    while (remaining.length > 0 && result.length < candidateSpots.length) {
-        const lastSpot = result[result.length - 1];
+    console.log(`[ウォーキングクエスト] AI提案の順序を維持して${candidateSpots.length}件のスポットを採用`);
 
-        // 前のスポットから最も近いスポットを探す
-        let nearestIdx = -1;
-        let nearestDist = Infinity;
-
-        for (let i = 0; i < remaining.length; i++) {
-            const dist = calculateDistance(lastSpot.lat, lastSpot.lng, remaining[i].lat, remaining[i].lng);
-            if (dist < nearestDist) {
-                nearestDist = dist;
-                nearestIdx = i;
-            }
-        }
-
-        // スポット間距離以内であれば追加
-        if (nearestIdx >= 0 && nearestDist <= spotMaxDistanceMeters) {
-            result.push(remaining[nearestIdx]);
-            remaining.splice(nearestIdx, 1);
-        } else {
-            break;
-        }
-    }
-
-    console.log(`[ウォーキングクエスト] ${candidateSpots.length}件中${result.length}件のスポットを選択（スポット間${spotMaxDistanceMeters}m以内）`);
-
-    return result;
+    return candidateSpots;
 }
 
 /**

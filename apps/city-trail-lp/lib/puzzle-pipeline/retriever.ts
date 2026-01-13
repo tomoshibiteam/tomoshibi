@@ -154,7 +154,16 @@ function extractEvidencesFromText(
 /**
  * スポット名から正確な座標を取得（Google Geocoding API）
  */
-export async function geocodeSpotName(spotName: string): Promise<{ lat: number; lng: number; place_id?: string; formatted_address?: string } | null> {
+/**
+ * スポット名から正確な座標を取得（Google Geocoding API）
+ * boundsを使用するために検索範囲の中心座標(centerLat, centerLng)を受け取る
+ */
+export async function geocodeSpotName(
+    spotName: string,
+    centerLat?: number,
+    centerLng?: number,
+    radiusKm: number = 2
+): Promise<{ lat: number; lng: number; place_id?: string; formatted_address?: string } | null> {
     const apiKey = (import.meta as any).env?.VITE_GOOGLE_MAPS_API_KEY;
     if (!apiKey) {
         console.warn('Google Maps API key not found for geocoding');
@@ -163,8 +172,22 @@ export async function geocodeSpotName(spotName: string): Promise<{ lat: number; 
 
     try {
         // 日本のスポットとして検索
-        const query = encodeURIComponent(`${spotName} 日本`);
-        const url = `https://maps.googleapis.com/maps/api/geocode/json?address=${query}&language=ja&region=jp&key=${apiKey}`;
+        let query = encodeURIComponent(`${spotName} 日本`);
+        let url = `https://maps.googleapis.com/maps/api/geocode/json?address=${query}&language=ja&region=jp&key=${apiKey}`;
+
+        // 中心座標がある場合はboundsを指定して優先検索させる
+        if (centerLat && centerLng) {
+            // 半径から矩形範囲(bounds)を計算 (簡易的: 1度≒111km)
+            const latDelta = radiusKm / 111;
+            const lngDelta = radiusKm / (111 * Math.cos(centerLat * Math.PI / 180));
+
+            const south = centerLat - latDelta;
+            const north = centerLat + latDelta;
+            const west = centerLng - lngDelta;
+            const east = centerLng + lngDelta;
+
+            url += `&bounds=${south},${west}|${north},${east}`;
+        }
 
         const res = await fetch(url);
         if (!res.ok) {
@@ -177,6 +200,17 @@ export async function geocodeSpotName(spotName: string): Promise<{ lat: number; 
         if (data.status === 'OK' && data.results?.length > 0) {
             const result = data.results[0];
             const location = result.geometry?.location;
+
+            // bounds指定しても範囲外が出る場合があるので、クライアント側でも距離チェックする
+            if (location && centerLat && centerLng) {
+                const distKm = calculateDistanceKm(centerLat, centerLng, location.lat, location.lng);
+                // 指定範囲の2倍以上離れていたら警告して除外を検討（ここではnullを返して採用しない）
+                if (distKm > radiusKm * 2) {
+                    console.warn(`Geocoding result too far: ${spotName} is ${distKm.toFixed(1)}km away from center (limit: ${radiusKm}km)`);
+                    return null;
+                }
+            }
+
             if (location) {
                 return {
                     lat: location.lat,
@@ -193,6 +227,17 @@ export async function geocodeSpotName(spotName: string): Promise<{ lat: number; 
         console.error('Geocoding error:', error);
         return null;
     }
+}
+
+function calculateDistanceKm(lat1: number, lng1: number, lat2: number, lng2: number): number {
+    const R = 6371;
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLng = (lng2 - lng1) * Math.PI / 180;
+    const a = Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+        Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+        Math.sin(dLng / 2) * Math.sin(dLng / 2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+    return R * c;
 }
 
 // =============================================================================

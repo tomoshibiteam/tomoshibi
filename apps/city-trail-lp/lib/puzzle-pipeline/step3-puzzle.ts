@@ -197,7 +197,7 @@ ${motif.selected_facts.map(f => {
         // JSONを抽出
         const jsonMatch = responseText.match(/```json([\s\S]*?)```/);
         const jsonText = jsonMatch ? jsonMatch[1] : responseText;
-        const parsed = safeParseJson(jsonText);
+        const parsed = safeParseJson(jsonText) || {};
 
         return buildSpotScene(spotInput, motif, parsed);
     } catch (error: any) {
@@ -249,7 +249,7 @@ function buildSpotScene(
             rules: parsed.puzzle?.rules,
             answer: normalizeAnswer(parsed.puzzle?.answer),
             solution_steps: normalizeStringArray(parsed.puzzle?.solution_steps, []),
-            hints: normalizeStringArray(parsed.puzzle?.hints, ['ヒント1', 'ヒント2', '答えに近いヒント']),
+            hints: normalizeStringArray(parsed.puzzle?.hints, ['ヒント1', 'ヒント2', '答えに近いヒント']) as [string, string, string],
             difficulty: parsed.puzzle?.difficulty || 2,
         },
         reward: {

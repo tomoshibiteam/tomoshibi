@@ -248,13 +248,26 @@ async function generateInitialSpots(
 【メインリクエスト（最優先）】
 ${request.prompt}
 
-${request.center_location ? `【📍 エリア指定（必須）】
+${request.center_location ? `【🚨🚨🚨 エリア指定（絶対厳守）🚨🚨🚨】
 ユーザーの現在地：緯度${request.center_location.lat.toFixed(4)} / 経度${request.center_location.lng.toFixed(4)}
-この地点から半径${request.radius_km || 1}km以内にある実在のスポットだけを選んでください。
-この範囲外のスポットは絶対に含めないでください。
+
+⚠️ 絶対ルール：
+- この地点から半径${Math.min(request.radius_km || 1, 2)}km以内にある実在のスポットだけを選ぶこと
+- 緯度・経度は上記の現在地から大きく外れないこと（緯度は±0.02以内、経度は±0.025以内）
+- 同じ市区町村・同じエリア内のスポットだけを選ぶこと
+- 「九州大学」と指定されたら九州大学伊都キャンパス周辺だけ
+- 「渋谷」と指定されたら渋谷駅周辺500m以内だけ
+- 異なる都道府県、異なる市区町村のスポットを混ぜるのは絶対禁止!!!
+
+🚫 これは失格例：
+- 九州大学から東京のスポットを選ぶ
+- 下北沢から浅草のスポットを選ぶ
+- 渋谷から新宿のスポットを選ぶ
+- 1km以上離れたスポットを入れる
 ` : ''}
 【基本設定】
-- スポット数: ${desiredSpotCount}件
+- スポット数: ${Math.ceil(desiredSpotCount * 1.5)}件（検証で除外される可能性があるため多めに生成）
+- 最終的に必要な数: ${desiredSpotCount}件
 - 難易度: ${request.difficulty}
 
 ${supportInfo.length > 0 ? `【補助条件】
@@ -341,7 +354,8 @@ ${supportInfo.join('\n')}
         const jsonMatch = responseText.match(/```json([\s\S]*?)```/);
         const jsonText = jsonMatch ? jsonMatch[1] : responseText;
         const parsed = safeParseJson(jsonText);
-        const parsedSpots = Array.isArray(parsed) ? parsed.slice(0, desiredSpotCount) : [];
+        // 1.5倍多く候補を取得（検証で除外される分を考慮）
+        const parsedSpots = Array.isArray(parsed) ? parsed.slice(0, Math.ceil(desiredSpotCount * 1.5)) : [];
 
         const radiusKm = request.radius_km || 1;
         const centerLat = request.center_location?.lat;
@@ -413,14 +427,149 @@ ${supportInfo.join('\n')}
             searchRadiusMeters
         );
 
-        if (filteredSpots.length < desiredSpotCount) {
-            console.warn(`[ウォーキングクエスト] スポット数が不足: ${filteredSpots.length}件 → ${desiredSpotCount}件に補完`);
-            const usedKeys = new Set(filteredSpots.map((spot) => `${spot.spot_name}-${spot.lat}-${spot.lng}`));
-            const fallback = spotsWithEvidence.filter((spot) => !usedKeys.has(`${spot.spot_name}-${spot.lat}-${spot.lng}`));
-            filteredSpots = [...filteredSpots, ...fallback].slice(0, desiredSpotCount);
+        // 🚨 最終検証: スポット間距離をチェックし、異常な距離（2km以上）のスポットを除外
+        const MAX_SPOT_DISTANCE_METERS = 2000; // 2km以上離れたスポットは異常
+        let validatedSpots: SpotInput[] = [];
+        for (let i = 0; i < filteredSpots.length; i++) {
+            const spot = filteredSpots[i];
+            if (i === 0) {
+                validatedSpots.push(spot);
+                continue;
+            }
+            const prevSpot = validatedSpots[validatedSpots.length - 1];
+            const dist = calculateDistance(prevSpot.lat, prevSpot.lng, spot.lat, spot.lng);
+            if (dist > MAX_SPOT_DISTANCE_METERS) {
+                console.error(`[🚫 異常距離] ${prevSpot.spot_name} → ${spot.spot_name}: ${(dist / 1000).toFixed(1)}km - スキップします`);
+                continue; // このスポットを除外
+            }
+            validatedSpots.push(spot);
         }
 
-        return filteredSpots.slice(0, desiredSpotCount);
+        if (validatedSpots.length !== filteredSpots.length) {
+            console.warn(`[最終検証] スポット間距離チェック: ${filteredSpots.length}件 → ${validatedSpots.length}件`);
+        }
+
+        // 🔄 スポット数が不足している場合、追加生成をリトライ
+        let retryCount = 0;
+        const MAX_RETRIES = 2;
+        const usedSpotNames = new Set(validatedSpots.map(s => s.spot_name));
+
+        while (validatedSpots.length < desiredSpotCount && retryCount < MAX_RETRIES) {
+            retryCount++;
+            const shortage = desiredSpotCount - validatedSpots.length;
+            console.log(`[🔄 追加生成] ${shortage}件のスポットが不足 - リトライ ${retryCount}/${MAX_RETRIES}`);
+
+            // 追加のスポット候補を生成（既存のスポット名を除外指示）
+            const additionalPrompt = `
+あなたは位置連動ウォーキングクエストの設計者です。
+以下の範囲内で、追加の${shortage + 2}件のスポットを提案してください。
+
+【絶対条件】
+- 緯度: ${request.center_location?.lat?.toFixed(4) || '不明'} 付近（±0.01以内）
+- 経度: ${request.center_location?.lng?.toFixed(4) || '不明'} 付近（±0.015以内）
+- 半径${Math.min(request.radius_km || 1, 2)}km以内の実在スポットのみ
+- 徒歩圏内で訪問可能な場所
+
+【最後のスポット情報】
+${validatedSpots.length > 0 ? `最後のスポット: ${validatedSpots[validatedSpots.length - 1].spot_name}
+緯度: ${validatedSpots[validatedSpots.length - 1].lat}
+経度: ${validatedSpots[validatedSpots.length - 1].lng}
+このスポットから500m〜1km以内の場所を選んでください。` : ''}
+
+【除外リスト（既に選定済み）】
+${Array.from(usedSpotNames).join(', ')}
+
+【出力形式】
+[
+  {
+    "spot_name": "スポット名",
+    "spot_summary": "概要",
+    "spot_facts": ["事実1", "事実2"],
+    "spot_theme_tags": [],
+    "lat": 緯度,
+    "lng": 経度
+  }
+]
+`.trim();
+
+            try {
+                const additionalRes = await fetch(
+                    getModelEndpoint('general', apiKey),
+                    {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            contents: [{ parts: [{ text: additionalPrompt }] }],
+                        }),
+                    }
+                );
+
+                if (additionalRes.ok) {
+                    const additionalData = await additionalRes.json();
+                    const additionalText = additionalData?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+                    const additionalJsonMatch = additionalText.match(/```json([\s\S]*?)```/);
+                    const additionalJsonText = additionalJsonMatch ? additionalJsonMatch[1] : additionalText;
+                    const additionalParsed = safeParseJson(additionalJsonText);
+                    const additionalCandidates = Array.isArray(additionalParsed) ? additionalParsed : [];
+
+                    console.log(`[追加候補] ${additionalCandidates.length}件の候補を取得`);
+
+                    // 追加スポットをGeocoding + 検証
+                    for (const candidate of additionalCandidates) {
+                        if (usedSpotNames.has(candidate.spot_name)) continue;
+
+                        const geocoded = await geocodeSpotName(
+                            candidate.spot_name,
+                            request.center_location?.lat,
+                            request.center_location?.lng,
+                            request.radius_km || 1
+                        );
+
+                        if (!geocoded) {
+                            console.warn(`[追加スポット除外] Geocoding失敗: ${candidate.spot_name}`);
+                            continue;
+                        }
+
+                        // 最後のスポットからの距離チェック
+                        if (validatedSpots.length > 0) {
+                            const lastSpot = validatedSpots[validatedSpots.length - 1];
+                            const dist = calculateDistance(lastSpot.lat, lastSpot.lng, geocoded.lat, geocoded.lng);
+                            if (dist > MAX_SPOT_DISTANCE_METERS) {
+                                console.warn(`[追加スポット除外] 距離超過: ${candidate.spot_name} (${(dist / 1000).toFixed(1)}km)`);
+                                continue;
+                            }
+                        }
+
+                        // 有効なスポットを追加
+                        const newSpot: SpotInput = {
+                            spot_name: candidate.spot_name,
+                            spot_summary: candidate.spot_summary || '',
+                            spot_facts: candidate.spot_facts || [],
+                            spot_theme_tags: candidate.spot_theme_tags || [],
+                            lat: geocoded.lat,
+                            lng: geocoded.lng,
+                            place_id: geocoded.place_id,
+                            address: geocoded.formatted_address || '',
+                        };
+                        validatedSpots.push(newSpot);
+                        usedSpotNames.add(candidate.spot_name);
+                        console.log(`[✅ 追加スポット採用] ${candidate.spot_name}`);
+
+                        if (validatedSpots.length >= desiredSpotCount) break;
+                    }
+                }
+            } catch (e) {
+                console.error('[追加生成エラー]', e);
+            }
+        }
+
+        if (validatedSpots.length < desiredSpotCount) {
+            console.warn(`[ウォーキングクエスト] ⚠️ 最終スポット数: ${validatedSpots.length}件 / 希望${desiredSpotCount}件`);
+        } else {
+            console.log(`[✅ スポット生成完了] ${validatedSpots.length}件のスポットを確定`);
+        }
+
+        return validatedSpots.slice(0, desiredSpotCount);
     } catch (error: any) {
         console.error('Initial spots generation error:', error);
         throw error;
@@ -449,9 +598,12 @@ function filterSpotsWithinWalkingDistance(
         });
         console.log(`[エリアフィルタ] 現在地から${searchRadiusMeters}m以内: ${spots.length}件 → ${candidateSpots.length}件`);
 
+        // 🚨 重要: 範囲外スポットを使わない
+        // 以前は「候補0件なら元のスポットを使う」としていたが、
+        // それが4000km離れたスポット採用の原因だった
         if (candidateSpots.length === 0) {
-            console.warn('[警告] 現在地付近にスポットがありません。元のスポットを使用します。');
-            candidateSpots = spots;
+            console.error('[🚫 距離違反] 現在地付近にスポットがありません。スポット生成をやり直す必要があります。');
+            // 空配列を返す - 後で追加生成のトリガーになる
         }
     }
 

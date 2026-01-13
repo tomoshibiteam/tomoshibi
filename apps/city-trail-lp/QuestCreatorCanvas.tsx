@@ -642,6 +642,52 @@ export default function QuestCreatorCanvas({
     const [saveMessage, setSaveMessage] = useState<string | null>(null);
     const [draftQuestId, setDraftQuestId] = useState<string | null>(questId);
 
+    // Restore state from localStorage on mount
+    useEffect(() => {
+        const savedQuestId = localStorage.getItem('quest-id');
+        if (savedQuestId && !questId) {
+            const savedState = localStorage.getItem(`quest-state-${savedQuestId}`);
+            if (savedState) {
+                try {
+                    const state = JSON.parse(savedState);
+                    if (state.isGenerating) setIsGenerating(state.isGenerating);
+                    if (state.generationPhase) setGenerationPhase(state.generationPhase);
+                    if (state.basicInfo) setBasicInfo(state.basicInfo);
+                    if (state.spots) setSpots(state.spots);
+                    if (state.story) setStory(state.story);
+                    if (state.playerPreviewData) setPlayerPreviewData(state.playerPreviewData);
+                    if (state.coverImageUrl) setCoverImageUrl(state.coverImageUrl);
+                    if (state.prompt) setPrompt(state.prompt);
+                    if (state.constraints) setConstraints(state.constraints);
+                    setDraftQuestId(savedQuestId);
+                    console.log('[Canvas] Restored state from localStorage for quest:', savedQuestId);
+                } catch (e) {
+                    console.error('[Canvas] Failed to restore state:', e);
+                }
+            }
+        }
+    }, [questId]);
+
+    // Save state to localStorage whenever generation state changes
+    useEffect(() => {
+        const activeQuestId = draftQuestId || questId;
+        if (activeQuestId && (isGenerating || basicInfo || spots.length > 0)) {
+            const stateToSave = {
+                isGenerating,
+                generationPhase,
+                basicInfo,
+                spots,
+                story,
+                playerPreviewData,
+                coverImageUrl,
+                prompt,
+                constraints,
+                timestamp: Date.now(),
+            };
+            localStorage.setItem(`quest-state-${activeQuestId}`, JSON.stringify(stateToSave));
+        }
+    }, [isGenerating, generationPhase, basicInfo, spots, story, playerPreviewData, coverImageUrl, draftQuestId, questId, prompt, constraints]);
+
     const hasContent = basicInfo !== null || spots.length > 0 || story !== null;
 
     // Loading state for initial data fetch
@@ -1079,6 +1125,9 @@ ${spotInputs
         setSpotDialogues(null);
         spotDialoguesRef.current = null;
 
+        // Set initial phase immediately to show cinematic overlay
+        setGenerationPhase('motif_selection');
+
         try {
             let activeQuestId = draftQuestId || questId;
             if (!activeQuestId) {
@@ -1407,6 +1456,46 @@ ${spotInputs
 
     const isMapGenerating = isGenerating || Boolean(generationPhase);
 
+    // Check if we're in the early phases (before puzzle design)
+    const isEarlyPhase = Boolean(generationPhase) && (
+        generationPhase === 'motif_selection' ||
+        generationPhase === 'plot_creation' ||
+        generationPhase.includes('モチーフ') ||
+        generationPhase.includes('物語を構築') ||
+        generationPhase.includes('世界を書き換え')
+    );
+
+    // Phase-specific content for the cinematic overlay
+    const phaseContent = useMemo(() => {
+        if (generationPhase.includes('モチーフ') || generationPhase === 'motif_selection') {
+            return {
+                title: '共鳴する場所を検索中....',
+                sub: 'エリアの歴史や隠れた魅力を探索中',
+                icon: MapPin,
+                color: 'text-brand-gold',
+                bg: 'from-amber-500/20'
+            };
+        }
+        if (generationPhase.includes('物語を構築') || generationPhase === 'plot_creation') {
+            return {
+                title: '物語の骨格を構築中...',
+                sub: 'ドラマチックな展開と伏線を設計しています',
+                icon: BookOpen,
+                color: 'text-amber-400',
+                bg: 'from-amber-500/20'
+            };
+        }
+        return {
+            title: '世界を書き換えています...',
+            sub: 'あなたの想像を現実に変換中',
+            icon: Wand2,
+            color: 'text-brand-gold',
+            bg: 'from-brand-gold/20'
+        };
+    }, [generationPhase]);
+
+    const PhaseIcon = phaseContent.icon;
+
     const renderJourneyMap = ({
         mapSpots,
         containerClassName,
@@ -1417,24 +1506,130 @@ ${spotInputs
         showGenerationOverlay: boolean;
     }) => (
         <div className={`relative ${containerClassName} overflow-hidden bg-white`}>
-            <APIProvider apiKey={MAPS_API_KEY}>
-                <Map
-                    mapId="4f910f9227657629"
-                    defaultCenter={currentLocation ? { lat: currentLocation.lat, lng: currentLocation.lng } : { lat: 35.6764, lng: 139.6993 }}
-                    defaultZoom={currentLocation ? 15 : 13}
-                    gestureHandling={'greedy'}
-                    disableDefaultUI={true}
-                    className="absolute inset-0 w-full h-full"
-                >
-                    <RouteMapHandler
-                        spots={mapSpots}
-                        isGenerating={isMapGenerating}
-                        spoilerMode={spoilerMode}
-                        activeIndex={mapSpots.length > 0 ? selectedSpotIndex : null}
-                        litSpotId={litSpotId}
-                    />
-                </Map>
-            </APIProvider>
+            {/* Cinematic Generation Overlay */}
+            <AnimatePresence mode="wait">
+                {isMapGenerating && isEarlyPhase && (
+                    <motion.div
+                        key="cinematic-overlay"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{
+                            opacity: 0,
+                            scale: 0,
+                            borderRadius: '50%',
+                            transition: { duration: 1.2, ease: [0.32, 0, 0.67, 0] }
+                        }}
+                        className="absolute inset-0 z-30 flex items-center justify-center bg-stone-900/80 backdrop-blur-xl origin-center"
+                    >
+                        {/* Ambient Background */}
+                        <motion.div
+                            animate={{ scale: [1, 1.3, 1], opacity: [0.2, 0.4, 0.2] }}
+                            transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
+                            className={`absolute inset-0 bg-gradient-radial ${phaseContent.bg} via-transparent to-transparent`}
+                        />
+
+                        {/* Floating Particles */}
+                        {[...Array(12)].map((_, i) => (
+                            <motion.div
+                                key={i}
+                                initial={{ x: Math.random() * 600 - 300, y: Math.random() * 600 - 300, opacity: 0, scale: 0 }}
+                                animate={{
+                                    x: [null, Math.random() * 100 - 50],
+                                    y: [null, Math.random() * -150],
+                                    opacity: [0, 0.8, 0],
+                                    scale: [0, Math.random() * 2 + 1, 0]
+                                }}
+                                transition={{ duration: 2.5 + Math.random() * 2, repeat: Infinity, delay: Math.random() * 2, ease: "easeOut" }}
+                                className={`absolute w-2 h-2 rounded-full ${phaseContent.color.replace('text', 'bg')} blur-sm`}
+                            />
+                        ))}
+
+                        {/* Central Content */}
+                        <motion.div
+                            className="relative z-10 flex flex-col items-center text-center p-8 max-w-md"
+                            exit={{ scale: 0, opacity: 0, transition: { duration: 0.8, ease: "easeIn" } }}
+                        >
+                            <motion.div
+                                initial={{ scale: 0.5, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                transition={{ type: "spring", stiffness: 200, damping: 15, delay: 0.2 }}
+                                className="relative mb-8"
+                            >
+                                <motion.div
+                                    animate={{ rotate: 360 }}
+                                    transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                                    className={`absolute -inset-4 rounded-full border-2 border-dashed ${phaseContent.color} opacity-40`}
+                                />
+                                <motion.div
+                                    animate={{ scale: [1, 1.15, 1], opacity: [0.3, 0.6, 0.3] }}
+                                    transition={{ duration: 2, repeat: Infinity, ease: "easeInOut" }}
+                                    className={`absolute -inset-2 rounded-full ${phaseContent.color.replace('text', 'bg')} blur-xl opacity-50`}
+                                />
+                                <div className="w-24 h-24 rounded-full bg-gradient-to-br from-white/20 to-white/5 backdrop-blur-lg flex items-center justify-center border border-white/30 shadow-2xl">
+                                    <PhaseIcon size={40} className={phaseContent.color} strokeWidth={1.5} />
+                                </div>
+                            </motion.div>
+
+                            <motion.h3
+                                key={phaseContent.title}
+                                initial={{ opacity: 0, y: 20, filter: 'blur(10px)' }}
+                                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                                transition={{ duration: 0.6, ease: "easeOut" }}
+                                className="text-2xl md:text-3xl font-bold text-white mb-4 tracking-wide drop-shadow-2xl"
+                            >
+                                {phaseContent.title}
+                            </motion.h3>
+                            <motion.p
+                                key={phaseContent.sub}
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.3, duration: 0.5 }}
+                                className="text-base text-stone-300/90 font-medium max-w-xs"
+                            >
+                                {phaseContent.sub}
+                            </motion.p>
+
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.8 }}
+                                animate={{ opacity: 1, scale: 1 }}
+                                transition={{ delay: 0.5 }}
+                                className="mt-8 flex items-center gap-3"
+                            >
+                                <motion.div
+                                    animate={{ rotate: 360 }}
+                                    transition={{ duration: 2, repeat: Infinity, ease: "linear" }}
+                                    className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full"
+                                />
+                                <span className="text-xs text-white/60 font-medium tracking-wide">
+                                    {generationPhase === 'motif_selection' || generationPhase.includes('モチーフ') ? 'スポットを探索中...' : '物語を紡いでいます...'}
+                                </span>
+                            </motion.div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Map - Hidden during early phases, shown after overlay disappears */}
+            {(!isMapGenerating || !isEarlyPhase) && (
+                <APIProvider apiKey={MAPS_API_KEY}>
+                    <Map
+                        mapId="4f910f9227657629"
+                        defaultCenter={currentLocation ? { lat: currentLocation.lat, lng: currentLocation.lng } : { lat: 35.6764, lng: 139.6993 }}
+                        defaultZoom={currentLocation ? 15 : 13}
+                        gestureHandling={'greedy'}
+                        disableDefaultUI={true}
+                        className="absolute inset-0 w-full h-full"
+                    >
+                        <RouteMapHandler
+                            spots={mapSpots}
+                            isGenerating={isMapGenerating}
+                            spoilerMode={spoilerMode}
+                            activeIndex={mapSpots.length > 0 ? selectedSpotIndex : null}
+                            litSpotId={litSpotId}
+                        />
+                    </Map>
+                </APIProvider>
+            )}
 
             {!hasContent && !isMapGenerating && (
                 <div className="absolute inset-0 pointer-events-none flex items-center justify-center p-6">
@@ -1512,7 +1707,7 @@ ${spotInputs
 
             {/* Journey HUD */}
             {hasContent && (
-                <div className="absolute top-12 left-6 right-6 md:left-8 md:right-8 pointer-events-none">
+                <div className="absolute top-12 left-6 right-6 md:left-8 md:right-8 pointer-events-none z-20">
                     <div className="pointer-events-auto max-w-[600px] bg-white/90 backdrop-blur-2xl border border-stone-200/80 rounded-3xl shadow-[0_14px_40px_rgba(28,25,23,0.12)] p-3 space-y-2">
                         <div className="flex items-start gap-2">
                             <div className="w-9 h-9 rounded-2xl bg-brand-gold/15 flex items-center justify-center text-brand-gold">
@@ -1567,7 +1762,7 @@ ${spotInputs
 
             {/* Journey Reel */}
             {hasContent && (
-                <div className="absolute bottom-4 left-6 right-6 md:left-8 md:right-8 pointer-events-auto">
+                <div className="absolute bottom-4 left-6 right-6 md:left-8 md:right-8 pointer-events-auto z-10">
                     <div className="bg-white/90 backdrop-blur-2xl border border-stone-200/80 rounded-3xl shadow-[0_14px_40px_rgba(28,25,23,0.12)] p-2">
                         <div className="flex items-center justify-between">
                             <div className="text-xs font-bold text-brand-dark">旅の流れ</div>
@@ -2348,18 +2543,18 @@ ${spotInputs
 
                     {/* Right Panel - Dashboard Workspace */}
                     <div
-                        className={`flex-1 md:h-[calc(100vh-4rem)] md:min-h-0 md:overflow-y-auto bg-stone-50 ${activeTab === 'canvas' ? 'block' : 'hidden md:block'
+                        className={`flex-1 md:h-[calc(100vh-4rem)] md:min-h-0 md:overflow-hidden bg-stone-50 ${activeTab === 'canvas' ? 'block' : 'hidden md:block'
                             }`}
                     >
                         {/* Content area */}
-                        <div className="p-4 md:p-6">
+                        <div className="">
                             <motion.div
                                 initial={{ opacity: 0, y: 12 }}
                                 animate={{ opacity: 1, y: 0 }}
                             >
                                 {renderJourneyMap({
                                     mapSpots: spots,
-                                    containerClassName: '-m-4 md:-m-6 h-[calc(100vh-8rem)] md:h-[calc(100vh-4rem)] min-h-[520px]',
+                                    containerClassName: 'h-[calc(100vh-4rem)] min-h-[520px]',
                                     showGenerationOverlay: Boolean(generationPhase),
                                 })}
                             </motion.div>
@@ -2451,77 +2646,8 @@ ${spotInputs
                                         </motion.div>
                                     )}
 
-                                    {/* 1. Quest Highlight Card - Editable */}
-                                    {basicInfo && (
-                                        <motion.div
-                                            initial={{ opacity: 0, y: 20 }}
-                                            animate={{ opacity: 1, y: 0 }}
-                                            className="bg-white rounded-2xl shadow-sm border border-stone-200 overflow-hidden hover:border-brand-gold/50 hover:shadow-md transition-all cursor-pointer group"
-                                        >
-                                            {/* Editable Header */}
-                                            <div className="px-5 py-3 bg-gradient-to-r from-brand-gold/5 to-amber-50 border-b border-stone-100 flex items-center justify-between">
-                                                <div className="flex items-center gap-2">
-                                                    <Edit size={14} className="text-brand-gold" />
-                                                    <span className="text-xs font-bold text-brand-gold">クリックして編集</span>
-                                                </div>
-                                                <span className="text-[10px] text-stone-500">📍 {basicInfo.area}</span>
-                                            </div>
-                                            {/* Content */}
-                                            <div className="p-5">
-                                                <div className="flex items-start justify-between mb-4">
-                                                    <div className="flex-1 min-w-0">
-                                                        <h2 className="text-xl font-bold text-brand-dark mb-2 group-hover:text-brand-gold transition-colors">{basicInfo.title}</h2>
-                                                        {basicInfo.description && (
-                                                            <>
-                                                                <p className={`text-sm text-stone-600 leading-relaxed ${isBasicDescriptionExpanded ? 'whitespace-pre-wrap' : 'line-clamp-2'}`}>
-                                                                    {basicInfo.description}
-                                                                </p>
-                                                                {shouldShowBasicDescriptionToggle && (
-                                                                    <button
-                                                                        onClick={() => setIsBasicDescriptionExpanded((prev) => !prev)}
-                                                                        className="mt-1 text-xs font-bold text-brand-gold hover:text-amber-600 transition-colors"
-                                                                    >
-                                                                        {isBasicDescriptionExpanded ? '閉じる' : '全文を見る'}
-                                                                    </button>
-                                                                )}
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                                {/* All stats and tags in one row */}
-                                                <div className="flex flex-wrap items-center gap-2">
-                                                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-stone-100 rounded-lg">
-                                                        <Clock size={14} className="text-stone-500" />
-                                                        <span className="text-xs font-bold text-stone-700">60分</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-stone-100 rounded-lg">
-                                                        <MapPin size={14} className="text-emerald-500" />
-                                                        <span className="text-xs font-bold text-stone-700">{spots.length}スポット</span>
-                                                    </div>
-                                                    <div className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-100 rounded-lg">
-                                                        <Flame size={14} className="text-amber-600" />
-                                                        <span className="text-xs font-bold text-amber-700">{basicInfo.difficulty}</span>
-                                                    </div>
-                                                    {/* Location Tags */}
-                                                    {basicInfo.tags.slice(0, 3).map((tag) => (
-                                                        <span key={tag} className="px-2.5 py-1.5 bg-blue-50 rounded-lg text-xs font-bold text-blue-600">
-                                                            📍 {tag}
-                                                        </span>
-                                                    ))}
-                                                    {/* Category Tags */}
-                                                    {basicInfo.tags.slice(3).map((tag) => (
-                                                        <span key={tag} className="px-2.5 py-1.5 bg-brand-gold/10 rounded-lg text-xs font-bold text-brand-gold">
-                                                            {tag}
-                                                        </span>
-                                                    ))}
-                                                </div>
-                                            </div>
-                                        </motion.div>
-                                    )}
-
-
                                     {/* Content Tabs */}
-                                    {hasContent && (
+                                    {false && hasContent && (
                                         <motion.div
                                             initial={{ opacity: 0, y: 20 }}
                                             animate={{ opacity: 1, y: 0 }}

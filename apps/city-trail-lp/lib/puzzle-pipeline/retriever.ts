@@ -202,11 +202,12 @@ export async function geocodeSpotName(
             const location = result.geometry?.location;
 
             // bounds指定しても範囲外が出る場合があるので、クライアント側でも距離チェックする
+            // 🚨 厳格なチェック: 指定範囲の1.2倍を超えたら即座に除外（以前は2倍で緩すぎた）
             if (location && centerLat && centerLng) {
                 const distKm = calculateDistanceKm(centerLat, centerLng, location.lat, location.lng);
-                // 指定範囲の2倍以上離れていたら警告して除外を検討（ここではnullを返して採用しない）
-                if (distKm > radiusKm * 2) {
-                    console.warn(`Geocoding result too far: ${spotName} is ${distKm.toFixed(1)}km away from center (limit: ${radiusKm}km)`);
+                const maxAllowedKm = Math.max(radiusKm * 1.2, 2); // 最低2km、または半径の1.2倍
+                if (distKm > maxAllowedKm) {
+                    console.warn(`🚫 [距離違反] ${spotName} は中心から ${distKm.toFixed(1)}km 離れています（許容: ${maxAllowedKm.toFixed(1)}km）`);
                     return null;
                 }
             }

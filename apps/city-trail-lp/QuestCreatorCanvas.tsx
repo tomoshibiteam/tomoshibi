@@ -413,10 +413,10 @@ const RouteMapHandler = ({
                             animate={{ scale: 1, y: 0 }}
                             transition={{ delay: idx * 0.15, type: 'spring', stiffness: 300 }}
                             className={`relative flex items-center justify-center w-8 h-8 rounded-full text-[11px] font-bold shadow-lg border transition-transform ${isGenerating && !isLit
-                                    ? 'bg-white/95 text-brand-gold border-brand-gold/40'
-                                    : isLit
-                                        ? 'bg-gradient-to-br from-amber-300 via-amber-200 to-yellow-200 text-amber-900 border-white/90'
-                                        : 'bg-gradient-to-br from-amber-500 via-amber-400 to-yellow-300 text-white border-white/80'
+                                ? 'bg-white/95 text-brand-gold border-brand-gold/40'
+                                : isLit
+                                    ? 'bg-gradient-to-br from-amber-300 via-amber-200 to-yellow-200 text-amber-900 border-white/90'
+                                    : 'bg-gradient-to-br from-amber-500 via-amber-400 to-yellow-300 text-white border-white/80'
                                 } ${activeIndex === idx ? 'scale-110' : ''} ${isLit ? 'animate-[markerPulse_1.6s_ease-in-out_2]' : ''}`}
                         >
                             {isLit && (
@@ -1438,7 +1438,7 @@ ${spotInputs
 
             {!hasContent && !isMapGenerating && (
                 <div className="absolute inset-0 pointer-events-none flex items-center justify-center p-6">
-                    <div className="w-full max-w-2xl rounded-[28px] border border-stone-200/80 bg-white/90 shadow-[0_24px_80px_rgba(41,37,36,0.12)] overflow-hidden">
+                    <div className="w-full max-w-2xl rounded-[28px] border border-stone-200/80 bg-white shadow-[0_24px_80px_rgba(41,37,36,0.12)] overflow-hidden">
                         <div className="px-6 py-5 bg-gradient-to-r from-stone-50 via-amber-50 to-stone-50 border-b border-stone-100">
                             <div className="flex items-center justify-between gap-4">
                                 <div className="flex items-center gap-3">
@@ -1450,7 +1450,7 @@ ${spotInputs
                                         <div className="text-lg font-extrabold text-brand-dark">旅の設計図は、ここから始まる</div>
                                     </div>
                                 </div>
-                                <div className="rounded-full border border-stone-200 bg-white/80 px-3 py-1 text-[10px] font-bold text-stone-500">
+                                <div className="rounded-full border border-stone-200 bg-white px-3 py-1 text-[10px] font-bold text-stone-500">
                                     生成前
                                 </div>
                             </div>
@@ -1463,9 +1463,9 @@ ${spotInputs
                                         あなたのアイデアが「パーソナライズされた旅物語」へと設計されます。
                                     </p>
                                     <div className="flex flex-wrap gap-2 text-[11px] font-bold text-stone-600">
-                                        <span className="rounded-full border border-stone-200 bg-white/80 px-3 py-1">舞台の輪郭</span>
-                                        <span className="rounded-full border border-stone-200 bg-white/80 px-3 py-1">スポットの軌跡</span>
-                                        <span className="rounded-full border border-stone-200 bg-white/80 px-3 py-1">物語の緊張感</span>
+                                        <span className="rounded-full border border-stone-200 bg-white px-3 py-1">舞台の輪郭</span>
+                                        <span className="rounded-full border border-stone-200 bg-white px-3 py-1">スポットの軌跡</span>
+                                        <span className="rounded-full border border-stone-200 bg-white px-3 py-1">物語の緊張感</span>
                                     </div>
                                     <div className="inline-flex items-center gap-2 text-xs font-bold text-brand-gold">
                                         <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-brand-gold/15">←</span>
@@ -1473,7 +1473,7 @@ ${spotInputs
                                     </div>
                                 </div>
                                 <div className="space-y-3">
-                                    <div className="rounded-2xl border border-stone-200/80 bg-white/90 px-4 py-3 shadow-sm">
+                                    <div className="rounded-2xl border border-stone-200/80 bg-white px-4 py-3 shadow-sm">
                                         <div className="flex items-center gap-2 text-[10px] font-bold text-stone-400">
                                             <Compass size={12} className="text-brand-gold" />
                                             旅の設計プレビュー
@@ -1508,13 +1508,7 @@ ${spotInputs
                     </div>
                 </div>
             )}
-            <div className="absolute inset-0 pointer-events-none">
-                <div className="absolute inset-0 bg-gradient-to-b from-white/20 via-transparent to-white/45" />
-                <div
-                    className="absolute inset-0"
-                    style={{ background: 'radial-gradient(circle at 20% 10%, rgba(255,255,255,0.6), transparent 50%)' }}
-                />
-            </div>
+
 
             {/* Journey HUD */}
             {hasContent && (
@@ -1622,8 +1616,8 @@ ${spotInputs
                                             role="button"
                                             tabIndex={0}
                                             className={`flex-none min-w-[160px] w-max rounded-2xl border px-3 py-2 text-left transition-all ${selectedSpotIndex === idx
-                                                    ? 'bg-brand-gold/10 border-brand-gold/40 shadow-sm'
-                                                    : 'bg-white border-stone-300 hover:border-brand-gold/40'
+                                                ? 'bg-brand-gold/10 border-brand-gold/40 shadow-sm'
+                                                : 'bg-white border-stone-300 hover:border-brand-gold/40'
                                                 }`}
                                         >
                                             <div className="text-[10px] font-bold text-stone-400">Spot {idx + 1}</div>

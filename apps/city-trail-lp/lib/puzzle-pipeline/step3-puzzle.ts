@@ -214,6 +214,22 @@ function buildSpotScene(
     motif: SpotMotif,
     parsed: any
 ): SpotScene {
+    const normalizeStringArray = (value: any, fallback: string[]): string[] => {
+        if (Array.isArray(value)) {
+            return value.map((item) => (item == null ? '' : String(item))).filter((item) => item.length > 0);
+        }
+        if (typeof value === 'string') {
+            return value.trim() ? [value] : fallback;
+        }
+        if (value == null) return fallback;
+        return [String(value)];
+    };
+    const normalizeAnswer = (value: any): string => {
+        if (typeof value === 'string') return value;
+        if (Array.isArray(value)) return value.map((item) => String(item)).join(', ');
+        if (value == null) return '';
+        return String(value);
+    };
     return {
         spot_id: motif.spot_id,
         spot_name: motif.spot_name,
@@ -231,9 +247,9 @@ function buildSpotScene(
             type: motif.suggested_puzzle_type,
             prompt: parsed.puzzle?.prompt || '',
             rules: parsed.puzzle?.rules,
-            answer: parsed.puzzle?.answer || '',
-            solution_steps: parsed.puzzle?.solution_steps || [],
-            hints: parsed.puzzle?.hints || ['ヒント1', 'ヒント2', '答えに近いヒント'],
+            answer: normalizeAnswer(parsed.puzzle?.answer),
+            solution_steps: normalizeStringArray(parsed.puzzle?.solution_steps, []),
+            hints: normalizeStringArray(parsed.puzzle?.hints, ['ヒント1', 'ヒント2', '答えに近いヒント']),
             difficulty: parsed.puzzle?.difficulty || 2,
         },
         reward: {

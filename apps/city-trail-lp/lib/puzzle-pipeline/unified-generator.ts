@@ -90,12 +90,15 @@ async function generateWithDify(
     config: UnifiedGeneratorConfig,
     callbacks?: Partial<PipelineCallbacks>
 ): Promise<QuestDualOutput> {
-    if (!config.difyApiKey) {
-        throw new Error('Dify API key is required for Dify mode');
+    // 環境変数からAPIキーを取得（configになければ）
+    const apiKey = config.difyApiKey || (import.meta as any).env?.VITE_DIFY_API_KEY;
+
+    if (!apiKey) {
+        throw new Error('Dify API key is required for Dify mode. Set VITE_DIFY_API_KEY in .env');
     }
 
     const difyConfig: DifyConfig = {
-        apiKey: config.difyApiKey,
+        apiKey,
         endpoint: config.difyEndpoint || getDefaultDifyEndpoint(),
         timeout: config.timeout,
     };

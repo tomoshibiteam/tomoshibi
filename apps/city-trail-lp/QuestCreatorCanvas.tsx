@@ -44,7 +44,8 @@ import {
 } from './questCreatorTypes';
 import { TomoshibiLogo } from './TomoshibiLogo';
 import {
-    generateLaytonQuest,
+    generateQuest,
+    createConfigFromEnv,
     QuestGenerationRequest,
     QuestOutput,
     SpotScene,
@@ -1167,8 +1168,9 @@ ${spotInputs
                 radius_km: constraints.radiusKm,
             };
 
-            // Generate using Layton Pipeline
-            const dualOutput: QuestDualOutput = await generateLaytonQuest(request, apiKey, {
+            // Generate using Unified Generator (Dify or Gemini)
+            const config = createConfigFromEnv();
+            const dualOutput: QuestDualOutput = await generateQuest(request, config, {
                 onProgress: (state: PipelineState) => {
                     const stepNames: Record<string, string> = {
                         motif_selection: 'モチーフを選定中...',

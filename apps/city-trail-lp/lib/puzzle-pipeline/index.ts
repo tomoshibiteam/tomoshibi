@@ -61,3 +61,9 @@ export { createMainPlot, buildStoryContext } from './step2-plot';
 export { generateSpotPuzzle, generateMetaPuzzle } from './step3-puzzle';
 export { validateQuest, getRegenerationTargets } from './step4-validate';
 
+// Dify Integration (new)
+export { generateQuestWithDify, generateQuestWithDifyStreaming } from './dify-adapter';
+export type { DifyConfig } from './dify-adapter';
+export { generateQuest, createConfigFromEnv } from './unified-generator';
+export type { GenerationMode, UnifiedGeneratorConfig } from './unified-generator';
+

@@ -60,6 +60,7 @@ interface DifyStreamEvent {
 
 /**
  * Difyワークフローを使用してクエストを生成
+ * Supabase Edge Function経由で呼び出し（APIキーを安全に管理）
  * 
  * @param request クエスト生成リクエスト（入力変数）
  * @param config Dify設定
@@ -75,54 +76,42 @@ export async function generateQuestWithDify(
     const onError = callbacks?.onError || (() => { });
 
     try {
-        // 入力変数をDify形式に変換
-        const difyInputs = convertRequestToDifyInputs(request);
+        console.log('[Dify] Starting quest generation via Supabase Edge Function');
 
-        // Dify APIエンドポイント
-        const endpoint = config.endpoint || 'https://api.dify.ai/v1/workflows/run';
+        // Supabase Edge Functionのエンドポイント
+        const supabaseUrl = (import.meta as any).env?.VITE_SUPABASE_URL;
+        if (!supabaseUrl) {
+            throw new Error('VITE_SUPABASE_URL is not configured');
+        }
 
-        console.log('[Dify] Starting workflow with inputs:', {
-            prompt: request.prompt,
-            spot_count: request.spot_count,
-            difficulty: request.difficulty,
-        });
+        const edgeFunctionUrl = `${supabaseUrl}/functions/v1/generate-quest`;
 
-        // Dify APIを呼び出し（ブロッキングモード）
-        const response = await fetch(endpoint, {
+        console.log('[Dify] Calling Edge Function:', edgeFunctionUrl);
+
+        // Edge Function経由でDifyを呼び出し
+        const response = await fetch(edgeFunctionUrl, {
             method: 'POST',
             headers: {
-                'Authorization': `Bearer ${config.apiKey}`,
                 'Content-Type': 'application/json',
+                'Authorization': `Bearer ${(import.meta as any).env?.VITE_SUPABASE_ANON_KEY || ''}`,
             },
-            body: JSON.stringify({
-                inputs: difyInputs,
-                response_mode: 'blocking', // ストリーミングは後で実装
-                user: 'quest-creator',
-            }),
-            signal: AbortSignal.timeout(config.timeout || 300000), // デフォルト5分
+            body: JSON.stringify(request),
+            signal: AbortSignal.timeout(config.timeout || 300000),
         });
 
         if (!response.ok) {
             const errorText = await response.text();
-            throw new Error(`Dify API error (${response.status}): ${errorText}`);
+            throw new Error(`Edge Function error (${response.status}): ${errorText}`);
         }
 
-        const result: DifyWorkflowResponse = await response.json();
-
-        // エラーチェック
-        if (result.data.status === 'failed') {
-            throw new Error(`Dify workflow failed: ${result.data.error || 'Unknown error'}`);
-        }
+        const output: QuestDualOutput = await response.json();
 
         // 出力を検証
-        const output = result.data.outputs;
         validateDifyOutput(output);
 
-        console.log('[Dify] Workflow completed successfully:', {
-            workflow_run_id: result.workflow_run_id,
-            elapsed_time: result.data.elapsed_time,
-            total_tokens: result.data.total_tokens,
+        console.log('[Dify] Quest generation completed successfully:', {
             spots_count: output.creator_payload.spots.length,
+            title: output.creator_payload.quest_title,
         });
 
         // 完了通知
@@ -134,7 +123,7 @@ export async function generateQuestWithDify(
 
         return output;
     } catch (error: any) {
-        console.error('[Dify] Workflow error:', error);
+        console.error('[Dify] Quest generation error:', error);
         onError(error, {
             current_step: 1,
             step_name: 'motif_selection',

@@ -659,9 +659,7 @@ workflow:
           type: none
         headers: ''
         method: get
-        params: 'location:{{#1768558472266.center_lat#}},{{#1768558472266.center_lng#}}
-
-          radius:1000
+        params: 'query:{{#1768599287614.inferred_area#}} 観光スポット
 
           type:tourist_attraction
 
@@ -683,7 +681,7 @@ workflow:
           write: 10
         title: HTTP_実在スポット検索
         type: http-request
-        url: https://maps.googleapis.com/maps/api/place/nearbysearch/json
+        url: https://maps.googleapis.com/maps/api/place/textsearch/json
         variables: []
       height: 153
       id: '1768600394819'
@@ -699,19 +697,25 @@ workflow:
       type: custom
       width: 242
     - data:
-        code: "import json\n\ndef main(body: str) -> dict:\n    data = json.loads(body)\n\
-          \    spots = []\n    \n    for result in data.get(\"results\", []):\n  \
-          \      spot = {\n            \"name\": result.get(\"name\", \"\"),\n   \
-          \         \"lat\": result.get(\"geometry\", {}).get(\"location\", {}).get(\"\
-          lat\", 0),\n            \"lng\": result.get(\"geometry\", {}).get(\"location\"\
-          , {}).get(\"lng\", 0),\n            \"place_id\": result.get(\"place_id\"\
-          , \"\"),\n            \"rating\": result.get(\"rating\", 0),\n         \
-          \   \"reviews\": result.get(\"user_ratings_total\", 0),\n            \"\
-          types\": \", \".join(result.get(\"types\", [])),\n            \"address\"\
-          : result.get(\"vicinity\", \"\")\n        }\n        spots.append(spot)\n\
-          \    \n    # スポットの情報を個別変数として出力\n    spots_summary = \"\"\n    for i, s in\
-          \ enumerate(spots):\n        spots_summary += f\"{i+1}. {s['name']} (評価:\
-          \ {s['rating']}, {s['address']})\\n\"\n    \n    return {\n        \"spots_json\"\
+        code: "import json\nfrom urllib.parse import quote\n\ndef main(body: str) -> dict:\n    data = json.loads(body)\n\
+          \    spots = []\n    \n    for i, result in enumerate(data.get(\"results\", [])):\n  \
+          \      name = result.get(\"name\", \"\")\n        lat = result.get(\"geometry\", {}).get(\"location\", {}).get(\"lat\", 0)\n        \
+          lng = result.get(\"geometry\", {}).get(\"location\", {}).get(\"lng\", 0)\n        \
+          place_id = result.get(\"place_id\", \"\")\n        \n        # textsearchはformatted_address、nearbysearchはvicinity\n        \
+          address = result.get(\"formatted_address\", result.get(\"vicinity\", \"\"))\n        \n        \
+          # Google Maps URLを生成\n        if place_id:\n            \
+          google_maps_url = f'https://www.google.com/maps/search/?api=1&query={quote(name)}&query_place_id={place_id}'\n        \
+          else:\n            google_maps_url = f'https://www.google.com/maps/search/?api=1&query={lat},{lng}'\n        \n        \
+          spot = {\n            \"spot_id\": f\"S{i+1}\",\n            \"name\": name,\n            \
+          \"lat\": float(lat),\n            \"lng\": float(lng),\n            \
+          \"place_id\": place_id,\n            \"rating\": result.get(\"rating\", 0),\n            \
+          \"reviews\": result.get(\"user_ratings_total\", 0),\n            \
+          \"types\": \", \".join(result.get(\"types\", [])),\n            \"address\": address,\n            \
+          \"google_maps_url\": google_maps_url\n        }\n        spots.append(spot)\n\
+          \    \n    # スポットの情報を個別変数として出力（座標付き）\n    spots_summary = \"\"\n    for s in spots:\n        \
+          spots_summary += f\"{s['spot_id']}: {s['name']}\\n\"\n        spots_summary += f\"  住所: {s['address']}\\n\"\n        \
+          spots_summary += f\"  座標: {s['lat']}, {s['lng']}\\n\"\n        spots_summary += f\"  place_id: {s['place_id']}\\n\"\n        \
+          spots_summary += f\"  評価: {s['rating']} ({s['reviews']}件)\\n\\n\"\n    \n    return {\n        \"spots_json\"\
           : json.dumps(spots, ensure_ascii=False),\n        \"spots_count\": len(spots),\n\
           \        \"spots_summary\": spots_summary\n    }"
         code_language: python3
@@ -1583,16 +1587,21 @@ workflow:
         code: "import json\nfrom datetime import datetime\nfrom urllib.parse import quote\n\ndef main(\n    player_preview_json:\
           \ str,\n    quest_title: str,\n    premise: str,\n    goal: str,\n    mystery:\
           \ str,\n    final_reveal: str,\n    spot_scenes_json: str,\n    meta_puzzle_json:\
-          \ str,\n    optimized_spots_json: str,\n    validation_passed: bool,\n \
+          \ str,\n    optimized_spots_json: str,\n    original_spots_json: str,\n    validation_passed: bool,\n \
           \   quality_score: int\n) -> dict:\n    \n    # JSONパース\n    try:\n    \
           \    player_preview = json.loads(player_preview_json)\n        spot_scenes\
           \ = json.loads(spot_scenes_json)\n        meta_puzzle = json.loads(meta_puzzle_json)\n\
-          \        optimized_spots = json.loads(optimized_spots_json)\n    except:\n\
+          \        optimized_spots = json.loads(optimized_spots_json)\n        original_spots = json.loads(original_spots_json) if original_spots_json else []\n\
+          \    except:\n\
           \        return {\n            \"output_json\": \"{}\",\n            \"\
-          error\": \"JSONパースに失敗しました\"\n        }\n    \n    # optimized_spotsを複数キーでインデックス化\n    \
-          spots_by_id = {}\n    spots_by_name = {}\n    for i, spot in enumerate(optimized_spots):\n        \
+          error\": \"JSONパースに失敗しました\"\n        }\n    \n    # Google Mapsからの元データを複数キーでインデックス化（最優先）\n    \
+          spots_by_id = {}\n    spots_by_name = {}\n    \n    # まず元データでインデックス構築\n    for i, spot in enumerate(original_spots):\n        \
           sid = spot.get('spot_id', f'S{i+1}')\n        name = spot.get('name', '')\n        \
-          spots_by_id[sid] = spot\n        if name:\n            spots_by_name[name] = spot\n    \n    # スポットシーンに座標とGoogle Maps URLを追加\n    \
+          spots_by_id[sid] = spot\n        if name:\n            spots_by_name[name] = spot\n    \n    # optimized_spotsでも構築（元データにない場合のフォールバック）\n    \
+          for i, spot in enumerate(optimized_spots):\n        \
+          sid = spot.get('spot_id', f'S{i+1}')\n        name = spot.get('name', '')\n        \
+          if sid not in spots_by_id:\n            spots_by_id[sid] = spot\n        \
+          if name and name not in spots_by_name:\n            spots_by_name[name] = spot\n    \n    # スポットシーンに座標とGoogle Maps URLを追加\n    \
           matched_count = 0\n    for scene in spot_scenes:\n        spot_id = scene.get('spot_id', '')\n        \
           spot_name = scene.get('spot_name', '')\n        matched_spot = None\n        \n        \
           # 優先順位1: spot_idでマッチング\n        if spot_id in spots_by_id:\n            \
@@ -1600,10 +1609,12 @@ workflow:
           elif spot_name in spots_by_name:\n            matched_spot = spots_by_name[spot_name]\n        \n        \
           if matched_spot:\n            matched_count += 1\n            lat = matched_spot.get('lat', 0)\n            \
           lng = matched_spot.get('lng', 0)\n            place_id = matched_spot.get('place_id', '')\n            \
-          name = matched_spot.get('name', spot_name)\n            address = matched_spot.get('address', '')\n            \n            \
+          name = matched_spot.get('name', spot_name)\n            address = matched_spot.get('address', '')\n            \
+          google_maps_url = matched_spot.get('google_maps_url', '')\n            \n            \
           scene['lat'] = float(lat) if lat else 0.0\n            scene['lng'] = float(lng) if lng else 0.0\n            \
           scene['place_id'] = place_id\n            scene['address'] = address\n            \n            \
-          # Google Maps URLを生成\n            if place_id:\n                \
+          # Google Maps URL（元データにあればそれを使用）\n            if google_maps_url:\n                \
+          scene['google_maps_url'] = google_maps_url\n            elif place_id:\n                \
           scene['google_maps_url'] = f'https://www.google.com/maps/search/?api=1&query={quote(name)}&query_place_id={place_id}'\n            \
           elif lat and lng:\n                \
           scene['google_maps_url'] = f'https://www.google.com/maps/search/?api=1&query={lat},{lng}'\n            \
@@ -1620,8 +1631,9 @@ workflow:
           : final_reveal\n        },\n        \"spots\": spot_scenes,\n        \"\
           meta_puzzle\": meta_puzzle,\n        \"generation_metadata\": {\n      \
           \      \"generated_at\": datetime.now().isoformat(),\n            \"pipeline_version\"\
-          : \"2.3.0-dify\",\n            \"validation_passed\": validation_passed,\n\
+          : \"3.0.0-dify\",\n            \"validation_passed\": validation_passed,\n\
           \            \"quality_score\": quality_score,\n            \"spots_count\": len(spot_scenes),\n\
+          \            \"original_spots_count\": len(original_spots),\n\
           \            \"coords_matched\": matched_count,\n            \"coords_match_rate\": round(matched_count / len(spot_scenes) * 100, 1) if spot_scenes else 0\n\
           \        }\n    }\n    \n    # 最終出力\n    output = {\n        \"player_preview\": player_preview,\n\
           \        \"creator_payload\": creator_payload\n    }\n    \n    return {\n\
@@ -1681,6 +1693,11 @@ workflow:
           - optimized_spots_json
           value_type: string
           variable: optimized_spots_json
+        - value_selector:
+          - '1768601299799'
+          - spots_json
+          value_type: string
+          variable: original_spots_json
         - value_selector:
           - '1768603843069'
           - validation_passed

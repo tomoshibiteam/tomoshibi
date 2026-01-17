@@ -202,11 +202,22 @@ workflow:
     - data:
         isInLoop: false
         sourceType: knowledge-retrieval
-        targetType: llm
-      id: 1768700000003-source-1768599416646-target
+        targetType: code
+      id: 1768700000003-source-1768700000030-target
       source: '1768700000003'
       sourceHandle: source
-      target: '1768599416646'
+      target: '1768700000030'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: 1768700000030-source-1768601846740-target
+      source: '1768700000030'
+      sourceHandle: source
+      target: '1768601846740'
       targetHandle: target
       type: custom
       zIndex: 0
@@ -807,6 +818,44 @@ workflow:
       positionAbsolute:
         x: 2468.4759873404823
         y: 785.0329201554958
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        code: "import json\nimport re\n\ndef main(knowledge_result: str) -> dict:\n    \"\"\"\n    ナレッジ検索結果からスポット情報を抽出し、\n    CODE_実在スポット検索パースと同じ形式で出力する\n    \"\"\"\n    spots = []\n    \n    # ナレッジ結果をパース\n    # 期待形式: CSVまたはJSONのスポットリスト\n    lines = knowledge_result.strip().split('\\n')\n    \n    for i, line in enumerate(lines):\n        if not line.strip() or line.startswith('spot_name'):\n            continue  # ヘッダー行をスキップ\n        \n        # CSV形式を想定: spot_name,zone,category,lat,lng,...\n        parts = line.split(',')\n        if len(parts) >= 5:\n            try:\n                spot = {\n                    'spot_id': f'S{i}',\n                    'name': parts[0].strip(),\n                    'lat': float(parts[3].strip()) if parts[3].strip() else 33.5955,\n                    'lng': float(parts[4].strip()) if parts[4].strip() else 130.2186,\n                    'place_id': '',\n                    'rating': 4.0,\n                    'reviews': 0,\n                    'types': parts[2].strip() if len(parts) > 2 else 'point_of_interest',\n                    'address': f'九州大学伊都キャンパス {parts[1].strip()}' if len(parts) > 1 else '九州大学伊都キャンパス',\n                    'google_maps_url': f'https://www.google.com/maps/search/?api=1&query={parts[3].strip()},{parts[4].strip()}' if len(parts) > 4 else '',\n                    'observable_elements': parts[5].strip() if len(parts) > 5 else '',\n                    'puzzle_potential': parts[6].strip() if len(parts) > 6 else '',\n                    'trivia': parts[7].strip() if len(parts) > 7 else '',\n                    'history': parts[8].strip() if len(parts) > 8 else ''\n                }\n                spots.append(spot)\n            except (ValueError, IndexError):\n                continue\n    \n    # スポットサマリーを生成\n    spots_summary = ''\n    for s in spots:\n        spots_summary += f\"{s['spot_id']}: {s['name']}\\n\"\n        spots_summary += f\"  住所: {s['address']}\\n\"\n        spots_summary += f\"  座標: {s['lat']}, {s['lng']}\\n\"\n        if s.get('observable_elements'):\n            spots_summary += f\"  観察要素: {s['observable_elements']}\\n\"\n        if s.get('trivia'):\n            spots_summary += f\"  豆知識: {s['trivia']}\\n\"\n        spots_summary += '\\n'\n    \n    return {\n        'spots_json': json.dumps(spots, ensure_ascii=False),\n        'spots_count': len(spots),\n        'spots_summary': spots_summary,\n        'source': 'knowledge_base'\n    }\n"
+        code_language: python3
+        outputs:
+          spots_count:
+            children: null
+            type: number
+          spots_json:
+            children: null
+            type: string
+          spots_summary:
+            children: null
+            type: string
+          source:
+            children: null
+            type: string
+        selected: false
+        title: CODE_ナレッジスポット抽出
+        type: code
+        variables:
+        - value_selector:
+          - '1768700000003'
+          - result
+          value_type: string
+          variable: knowledge_result
+      height: 52
+      id: '1768700000030'
+      position:
+        x: 2750
+        y: 785
+      positionAbsolute:
+        x: 2750
+        y: 785
       selected: false
       sourcePosition: right
       targetPosition: left

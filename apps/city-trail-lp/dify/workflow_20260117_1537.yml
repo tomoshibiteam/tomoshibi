@@ -883,31 +883,64 @@ workflow:
           # Step 1: 上位スポットを取得\n    \
           target_count = int(spot_count)\n    \
           top_spots = spots[:target_count + 3]\n    \n    \
-          # Step 2: 全スポットの重心を計算\n    \
-          avg_lat = sum(s.get('lat', 0) for s in top_spots) / len(top_spots)\n    \
-          avg_lng = sum(s.get('lng', 0) for s in top_spots) / len(top_spots)\n    \n    \
-          # Step 3: ルート方向を決定（北→南 or 南→北）\n    \
-          # 北端と南端のスポットを特定\n    \
-          north_spot = max(top_spots, key=lambda s: s.get('lat', 0))\n    \
-          south_spot = min(top_spots, key=lambda s: s.get('lat', 0))\n    \n    \
-          # 北端が駅に近いか南端が近いかで方向決定\n    \
-          # center_latが設定されていれば使用、なければ重心\n    \
-          ref_lat = float(center_lat) if center_lat else avg_lat\n    \n    \
-          north_dist = abs(north_spot.get('lat', 0) - ref_lat)\n    \
-          south_dist = abs(south_spot.get('lat', 0) - ref_lat)\n    \n    \
-          # 近い方をスタートにする\n    \
-          if north_dist < south_dist:\n        \
-          direction = 'south'  # 北→南\n    \
+          # Step 2: スポットの分布を分析\n    \
+          lats = [s.get('lat', 0) for s in top_spots]\n    \
+          lngs = [s.get('lng', 0) for s in top_spots]\n    \
+          lat_range = max(lats) - min(lats)\n    \
+          lng_range = max(lngs) - min(lngs)\n    \n    \
+          # Step 3: 分布の広がりから方向を決定\n    \
+          # 緯度幅 > 経度幅 × 1.5 なら南北、それ以外は東西\n    \
+          if lat_range > lng_range * 1.5:\n        \
+          axis = 'lat'  # 南北方向\n    \
+          elif lng_range > lat_range * 1.5:\n        \
+          axis = 'lng'  # 東西方向\n    \
           else:\n        \
-          direction = 'north'  # 南→北\n    \n    \
-          # Step 4: 緯度でソート（一方向ルート）\n    \
-          if direction == 'south':\n        \
-          sorted_spots = sorted(top_spots, key=lambda s: -s.get('lat', 0))  # 北→南\n    \
+          # 同程度の場合、両方試して短い方を選択\n        \
+          axis = 'both'\n    \n    \
+          # Step 4: 基準点を設定\n    \
+          avg_lat = sum(lats) / len(lats)\n    \
+          avg_lng = sum(lngs) / len(lngs)\n    \
+          ref_lat = float(center_lat) if center_lat else avg_lat\n    \
+          ref_lng = float(center_lng) if center_lng else avg_lng\n    \n    \
+          # Step 5: 各軸でルートを生成\n    \
+          routes = {}\n    \n    \
+          # 北→南ルート\n    \
+          ns_route = sorted(top_spots, key=lambda s: -s.get('lat', 0))[:target_count]\n    \
+          routes['north_to_south'] = ns_route\n    \n    \
+          # 南→北ルート\n    \
+          sn_route = sorted(top_spots, key=lambda s: s.get('lat', 0))[:target_count]\n    \
+          routes['south_to_north'] = sn_route\n    \n    \
+          # 東→西ルート\n    \
+          ew_route = sorted(top_spots, key=lambda s: -s.get('lng', 0))[:target_count]\n    \
+          routes['east_to_west'] = ew_route\n    \n    \
+          # 西→東ルート\n    \
+          we_route = sorted(top_spots, key=lambda s: s.get('lng', 0))[:target_count]\n    \
+          routes['west_to_east'] = we_route\n    \n    \
+          # Step 6: 最適なルートを選択\n    \
+          if axis == 'lat':\n        \
+          # 南北方向：基準点に近い端をスタート\n        \
+          north_spot = max(top_spots, key=lambda s: s.get('lat', 0))\n        \
+          south_spot = min(top_spots, key=lambda s: s.get('lat', 0))\n        \
+          if abs(north_spot.get('lat', 0) - ref_lat) < abs(south_spot.get('lat', 0) - ref_lat):\n            \
+          best_key = 'north_to_south'\n        \
+          else:\n            \
+          best_key = 'south_to_north'\n    \
+          elif axis == 'lng':\n        \
+          # 東西方向：基準点に近い端をスタート\n        \
+          east_spot = max(top_spots, key=lambda s: s.get('lng', 0))\n        \
+          west_spot = min(top_spots, key=lambda s: s.get('lng', 0))\n        \
+          if abs(east_spot.get('lng', 0) - ref_lng) < abs(west_spot.get('lng', 0) - ref_lng):\n            \
+          best_key = 'east_to_west'\n        \
+          else:\n            \
+          best_key = 'west_to_east'\n    \
           else:\n        \
-          sorted_spots = sorted(top_spots, key=lambda s: s.get('lat', 0))  # 南→北\n    \n    \
-          # Step 5: 必要数に絞り込み\n    \
-          route = sorted_spots[:target_count]\n    \n    \
-          # Step 6: Greedy改善（隣接スワップで距離最小化）\n    \
+          # 両方試して距離が短い方を選択\n        \
+          distances = {}\n        \
+          for key, route in routes.items():\n            \
+          distances[key] = calculate_total_distance(route)\n        \
+          best_key = min(distances, key=distances.get)\n    \n    \
+          route = routes[best_key]\n    \n    \
+          # Step 7: 隣接スワップで局所最適化\n    \
           improved = True\n    \
           max_iter = 20\n    \
           iter_count = 0\n    \
@@ -915,16 +948,14 @@ workflow:
           improved = False\n        \
           iter_count += 1\n        \
           for i in range(len(route) - 1):\n            \
-          # 隣接要素をスワップして距離が短くなるか確認\n            \
           current_dist = calculate_total_distance(route)\n            \
           route[i], route[i+1] = route[i+1], route[i]\n            \
           new_dist = calculate_total_distance(route)\n            \
           if new_dist >= current_dist:\n                \
-          # 改善しなければ戻す\n                \
           route[i], route[i+1] = route[i+1], route[i]\n            \
           else:\n                \
           improved = True\n    \n    \
-          # Step 7: スポットID付与と距離計算\n    \
+          # Step 8: スポットID付与と距離計算\n    \
           total_distance = 0\n    \
           segment_info = []\n    \n    \
           for i, spot in enumerate(route):\n        \
@@ -937,9 +968,9 @@ workflow:
           )\n            \
           total_distance += dist\n            \
           spot['distance_from_prev_m'] = int(dist)\n            \
-          spot['walking_time_from_prev_min'] = round(dist / 67, 1)  # 67m/分\n            \
+          spot['walking_time_from_prev_min'] = round(dist / 67, 1)\n            \
           segment_info.append(int(dist))\n    \n    \
-          # Step 8: ルート品質評価\n    \
+          # Step 9: ルート品質評価\n    \
           max_segment = max(segment_info) if segment_info else 0\n    \
           if max_segment < 500 and total_distance < 3000:\n        \
           quality = '最適'\n    \
@@ -947,15 +978,24 @@ workflow:
           quality = '良好'\n    \
           else:\n        \
           quality = '要改善'\n    \n    \
-          # Step 9: 歩行時間計算\n    \
-          walking_time = total_distance / 67 + len(route) * 0.5  # 67m/分 + 各スポット30秒\n    \n    \
-          # Step 10: テキスト形式出力\n    \
+          # Step 10: 歩行時間計算\n    \
+          walking_time = total_distance / 67 + len(route) * 0.5\n    \n    \
+          # Step 11: 方向ラベル\n    \
+          direction_labels = {\n        \
+          'north_to_south': '北→南',\n        \
+          'south_to_north': '南→北',\n        \
+          'east_to_west': '東→西',\n        \
+          'west_to_east': '西→東'\n    \
+          }\n    \
+          direction_label = direction_labels.get(best_key, best_key)\n    \n    \
+          # Step 12: テキスト形式出力\n    \
           spots_text = '【ルート品質: ' + quality + '】\\n'\n    \
-          spots_text += '【方向: ' + ('北→南' if direction == 'south' else '南→北') + '】\\n\\n'\n    \
+          spots_text += '【方向: ' + direction_label + '】\\n'\n    \
+          spots_text += '【緯度幅: ' + str(round(lat_range * 111000)) + 'm, 経度幅: ' + str(round(lng_range * 111000 * 0.8)) + 'm】\\n\\n'\n    \
           for i, s in enumerate(route):\n        \
           spots_text += s['spot_id'] + ': ' + s['name'] + '\\n'\n        \
           spots_text += '   住所: ' + s.get('address', '') + '\\n'\n        \
-          spots_text += '   座標: ' + str(s.get('lat', 0)) + ', ' + str(s.get('lng', 0)) + '\\n'\n        \
+          spots_text += '   座標: ' + str(round(s.get('lat', 0), 6)) + ', ' + str(round(s.get('lng', 0), 6)) + '\\n'\n        \
           if i > 0:\n            \
           spots_text += '   ← 前スポットから ' + str(s.get('distance_from_prev_m', 0)) + 'm\\n'\n        \
           spots_text += '   選定理由: ' + s.get('selection_reason', '') + '\\n\\n'\n    \

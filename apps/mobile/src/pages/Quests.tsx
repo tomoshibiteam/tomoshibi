@@ -24,6 +24,14 @@ type Quest = {
 
 const areaFilters = ["すべて", "東京", "大阪", "京都", "その他"];
 
+// Area name mapping for English to Japanese
+const areaMapping: Record<string, string> = {
+    "tokyo": "東京",
+    "osaka": "大阪",
+    "kyoto": "京都",
+};
+
+
 const Quests = () => {
     const navigate = useNavigate();
     const { user } = useAuth();
@@ -83,13 +91,28 @@ const Quests = () => {
             if (keyword && !(q.title || "").toLowerCase().includes(keyword.toLowerCase())) {
                 return false;
             }
+
             // Area filter
             if (selectedArea !== "すべて") {
-                const area = q.area_name || "";
+                const area = (q.area_name || "").toLowerCase();
+
+                // Normalize area name (convert English to Japanese if needed)
+                const normalizedArea = areaMapping[area] || q.area_name || "";
+
                 if (selectedArea === "その他") {
-                    if (["東京", "大阪", "京都"].some(a => area.includes(a))) return false;
+                    // "その他" means not Tokyo, Osaka, or Kyoto
+                    const majorCities = ["東京", "大阪", "京都"];
+                    const isMajorCity = majorCities.some(city =>
+                        normalizedArea.includes(city) || area.includes(city.toLowerCase())
+                    );
+                    if (isMajorCity) return false;
                 } else {
-                    if (!area.includes(selectedArea)) return false;
+                    // Check if the area matches the selected filter
+                    const matchesJapanese = normalizedArea.includes(selectedArea);
+                    const matchesEnglish = Object.entries(areaMapping).some(
+                        ([eng, jpn]) => jpn === selectedArea && area.includes(eng)
+                    );
+                    if (!matchesJapanese && !matchesEnglish) return false;
                 }
             }
             return true;

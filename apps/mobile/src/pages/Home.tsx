@@ -95,7 +95,14 @@ const Home = () => {
   const recentQuests = displayQuests.slice(0, 6);
 
   const handleQuestClick = (id: string) => {
-    navigate(`/cases/${id}`);
+    // Check if quest is purchased
+    if (purchasedIds.has(id)) {
+      // Navigate to gameplay screen for purchased quests
+      navigate(`/gameplay/${id}`);
+    } else {
+      // Navigate to quest detail/purchase screen for unpurchased quests
+      navigate(`/quest/${id}`);
+    }
   };
 
 

@@ -407,7 +407,7 @@ const GamePlay = () => {
           {
             id: "prologue-1",
             speakerType: "narrator",
-            name: "任務ブリーフィング",
+            name: "物語のあらすじ",
             text: prologue,
             alignment: "left",
           },
@@ -416,8 +416,8 @@ const GamePlay = () => {
           {
             id: "prologue-1",
             speakerType: "narrator",
-            name: "任務ブリーフィング",
-            text: "任務を開始します。準備ができたら進めてください。",
+            name: "物語のあらすじ",
+            text: "物語を開始します。準備ができたら進めてください。",
             alignment: "left",
           },
         ];
@@ -426,7 +426,7 @@ const GamePlay = () => {
           {
             id: "epilogue-1",
             speakerType: "narrator",
-            name: "報告書",
+            name: "物語の結末",
             text: epilogue,
             alignment: "left",
           },
@@ -435,8 +435,8 @@ const GamePlay = () => {
           {
             id: "epilogue-1",
             speakerType: "narrator",
-            name: "報告書",
-            text: "エピローグは未設定です。ミッション完了お疲れさまでした。",
+            name: "物語の結末",
+            text: "エピローグは未設定です。冒険お疲れさまでした。",
             alignment: "left",
           },
         ];
@@ -761,11 +761,11 @@ const GamePlay = () => {
     {
       id: `story-${stage}-placeholder`,
       speakerType: "narrator",
-      name: stage === "pre" ? "調査ログ" : "報告ログ",
+      name: stage === "pre" ? "到着時の物語" : "クリア後の物語",
       text:
         stage === "pre"
-          ? "このスポットのストーリーはまだ設定されていません。準備ができたら謎に進みましょう。"
-          : "後日談は未設定です。次のスポットへ進みましょう。",
+          ? "このスポットの物語はまだ設定されていません。準備ができたら謎に進みましょう。"
+          : "クリア後の物語は未設定です。次のスポットへ進みましょう。",
       alignment: "left",
     },
   ];
@@ -1457,7 +1457,7 @@ const GamePlay = () => {
 
 
         {/* Menu button only */}
-        <div className="absolute top-3 left-3 pointer-events-none">
+        <div className="absolute top-3 right-3 pointer-events-none">
           <button
             onClick={() => setMenuOpen(true)}
             className="w-10 h-10 rounded-full bg-[#FEF9F3]/95 backdrop-blur-sm border-2 border-[#E8D5BE] flex items-center justify-center shadow-md hover:bg-[#F7E7D3] transition-colors pointer-events-auto"
@@ -1496,8 +1496,8 @@ const GamePlay = () => {
     return (
       <div className="absolute inset-0 z-40 flex items-center justify-center bg-white/90 backdrop-blur-sm px-4">
         <div className="w-full max-w-[420px] rounded-3xl bg-white shadow-2xl border border-[#eadfd0] p-5 space-y-4 text-center">
-          <div className="text-xs font-semibold text-[#c35f1f] uppercase tracking-wide">
-            Epilogue
+          <div className="text-xs font-semibold text-[#c35f1f] tracking-wide">
+            エピローグ
           </div>
           <div className="text-xl font-bold text-[#2f1d0f] leading-tight">
             {session.title}

@@ -168,7 +168,7 @@ const MapPage = () => {
     const mapCenter = userLocation || DEFAULT_CENTER;
 
     return (
-        <div className="relative h-[calc(100vh-140px)] -mx-4 -mt-4">
+        <div className="fixed top-[48px] bottom-[60px] left-0 right-0 md:relative md:top-0 md:bottom-0 md:h-[calc(100vh-60px)] md:-mx-4 md:-mt-4">
             {/* Map */}
             <APIProvider apiKey={API_KEY}>
                 <GoogleMap

@@ -79,8 +79,19 @@ export async function generateQuestWithDify(
         // 入力変数をDify形式に変換
         const difyInputs = convertRequestToDifyInputs(request);
 
-        // Dify APIエンドポイント
-        const endpoint = config.endpoint || 'https://api.dify.ai/v1/workflows/run';
+        // Dify APIエンドポイント（開発環境ではプロキシ経由）
+        let endpoint = config.endpoint || 'https://api.dify.ai/v1/workflows/run';
+
+        // 開発環境チェック（ブラウザ側で判定）
+        const isDev = typeof window !== 'undefined' &&
+            (window.location.hostname === 'localhost' ||
+                window.location.hostname === '127.0.0.1');
+
+        if (isDev && endpoint.includes('api.dify.ai')) {
+            // プロキシ経由に変換
+            endpoint = endpoint.replace('https://api.dify.ai', '/api/dify');
+            console.log('[Dify] Using proxy endpoint:', endpoint);
+        }
 
         console.log('[Dify] Starting workflow with inputs:', {
             prompt: request.prompt,
@@ -110,15 +121,51 @@ export async function generateQuestWithDify(
 
         const result: DifyWorkflowResponse = await response.json();
 
+        // デバッグ: Dify APIの生レスポンスを確認
+        console.log('[Dify] Raw API response:', JSON.stringify(result, null, 2).substring(0, 1000));
+
         // エラーチェック
         if (result.data.status === 'failed') {
             throw new Error(`Dify workflow failed: ${result.data.error || 'Unknown error'}`);
         }
 
-        // 出力を検証
-        const output = result.data.outputs;
-        validateDifyOutput(output);
+        // 出力を取得（JSON文字列の場合はパース）
+        let output = result.data.outputs;
 
+        // デバッグ: outputs の構造を確認
+        console.log('[Dify] Outputs structure:', {
+            type: typeof output,
+            keys: output ? Object.keys(output) : 'null',
+            hasResult: output && 'result' in output,
+        });
+
+        // Difyがresultキーで文字列を返す場合の処理
+        if (output && typeof output === 'object' && 'result' in output) {
+            const resultValue = (output as any).result;
+            console.log('[Dify] Result value type:', typeof resultValue);
+            console.log('[Dify] Result value preview:', String(resultValue).substring(0, 200));
+
+            if (typeof resultValue === 'string') {
+                try {
+                    output = JSON.parse(resultValue);
+                    console.log('[Dify] Parsed JSON string from result key');
+                } catch (e) {
+                    console.error('[Dify] Failed to parse result as JSON:', e);
+                }
+            } else if (typeof resultValue === 'object') {
+                // resultが既にオブジェクトの場合
+                output = resultValue;
+                console.log('[Dify] Result is already an object');
+            }
+        }
+
+        // デバッグ: パース後の構造
+        console.log('[Dify] Final output structure:', {
+            hasPlayerPreview: output && 'player_preview' in output,
+            hasCreatorPayload: output && 'creator_payload' in output,
+        });
+
+        validateDifyOutput(output);
         console.log('[Dify] Workflow completed successfully:', {
             workflow_run_id: result.workflow_run_id,
             elapsed_time: result.data.elapsed_time,

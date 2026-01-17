@@ -1341,6 +1341,13 @@ ${spotInputs
                         linkingRationale: s.linking_rationale,
                     }))
                     : spots;
+
+                // Difyモードの場合はここでspotsをセット
+                if (spotsForDialogue.length > 0 && quest.spots?.length) {
+                    setSpots(spotsForDialogue);
+                    console.log('[Canvas] Spots set from Dify output:', spotsForDialogue.length);
+                }
+
                 console.log('[Canvas] Dialogue generation inputs:', {
                     spots: spotsForDialogue.length,
                     cast: nextStory.characters?.length || 0,

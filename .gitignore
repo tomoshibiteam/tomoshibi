@@ -132,3 +132,4 @@ dist
 !*.example
 !.env.example
 !.env.shared.example
+dify/

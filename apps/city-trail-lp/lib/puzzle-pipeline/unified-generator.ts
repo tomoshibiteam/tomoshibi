@@ -134,8 +134,23 @@ async function generateWithGemini(
  * デフォルトのDifyエンドポイントを取得
  */
 function getDefaultDifyEndpoint(): string {
-    // 環境変数から取得、なければデフォルト
-    return (import.meta as any).env?.VITE_DIFY_ENDPOINT || 'https://api.dify.ai/v1/workflows/run';
+    const env = (import.meta as any).env;
+
+    // 環境変数から取得
+    if (env?.VITE_DIFY_ENDPOINT) {
+        // 開発環境ではプロキシ経由でアクセス
+        if (env.MODE === 'development' || env.DEV) {
+            // https://api.dify.ai/v1/workflows/run → /api/dify/v1/workflows/run
+            return env.VITE_DIFY_ENDPOINT.replace('https://api.dify.ai', '/api/dify');
+        }
+        return env.VITE_DIFY_ENDPOINT;
+    }
+
+    // デフォルト（開発環境ではプロキシ経由）
+    if (env?.DEV || env?.MODE === 'development') {
+        return '/api/dify/v1/workflows/run';
+    }
+    return 'https://api.dify.ai/v1/workflows/run';
 }
 
 /**

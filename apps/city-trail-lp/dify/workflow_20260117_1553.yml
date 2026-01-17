@@ -31,17 +31,6 @@ workflow:
       - local_file
       - remote_url
       enabled: false
-      fileUploadConfig:
-        attachment_image_file_size_limit: 2
-        audio_file_size_limit: 50
-        batch_count_limit: 5
-        file_size_limit: 15
-        file_upload_limit: 50
-        image_file_batch_limit: 10
-        image_file_size_limit: 10
-        single_chunk_attachment_limit: 10
-        video_file_size_limit: 100
-        workflow_file_upload_limit: 10
       image:
         enabled: false
         number_limits: 3
@@ -315,6 +304,78 @@ workflow:
       targetHandle: target
       type: custom
       zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: knowledge-retrieval
+      id: 1768604146459-source-1768674456422-target
+      source: '1768604146459'
+      sourceHandle: source
+      target: '1768674456422'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: if-else
+      id: 1768674456422-source-1768674600649-target
+      source: '1768674456422'
+      sourceHandle: source
+      target: '1768674600649'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: loop
+      id: 1768674456422-source-1768674607400-target
+      source: '1768674456422'
+      sourceHandle: source
+      target: '1768674607400'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: document-extractor
+      id: 1768674456422-source-1768674616816-target
+      source: '1768674456422'
+      sourceHandle: source
+      target: '1768674616816'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: list-operator
+      id: 1768674456422-source-1768674633577-target
+      source: '1768674456422'
+      sourceHandle: source
+      target: '1768674633577'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: agent
+      id: 1768674456422-source-1768674657246-target
+      source: '1768674456422'
+      sourceHandle: source
+      target: '1768674657246'
+      targetHandle: target
+      type: custom
+      zIndex: 0
     nodes:
     - data:
         selected: false
@@ -482,10 +543,43 @@ workflow:
         prompt_template:
         - id: 0f5a1135-ce08-449f-b126-d96707e6967b
           role: system
-          text: "あなたは街歩きクエストの設計者です。\n\n【大原則】子供から大人まで、誰でもすぐ理解できる言葉で書く\n- 難しい言葉や抽象的な職業名は使わない\n- 「何をする人か」を具体的な行動で表現する\n- 小学5年生が読んでも「なるほど！」と思える文章\n\n出力は必ずJSON形式で。"
+          text: 'あなたは周遊型体験設計の専門家です。
+
+
+            【北極星】街が主役、物語がレンズ、謎が動機
+
+            - 街（場所）＝主役。見上げさせる/歩かせる/気づかせる対象
+
+            - 物語＝街を見るためのレンズ。意味づけと感情を付与
+
+            - 謎/ミッション＝次の場所へ動く動機。歩行の推進力
+
+
+            ユーザーのリクエストから「歩く体験としての本質」を抽出してください。
+
+            出力は必ずJSON形式で。'
         - id: 46db2956-1745-4cd3-aa4a-bcd7c8fb97ca
           role: user
-          text: "以下のリクエストを分析し、街歩き体験の設計要素を抽出してください。\n\n\n【ユーザーリクエスト】\nメインプロンプト: {{#1768558472266.prompt#}}\n難易度: {{#1768558472266.difficulty#}}\nスポット数: {{#1768558472266.spot_count#}}\nジャンル: {{#1768558472266.genre_support#}}\nトーン: {{#1768558472266.tone_support#}}\nいつ: {{#1768558472266.when#}}\nどこで: {{#1768558472266.where#}}\n目的: {{#1768558472266.purpose#}}\n誰と: {{#1768558472266.with_whom#}}\n\n\n【抽出する要素】\n\n1. player_role（あなたは何をする人？）\n   ※「調査員」「編集者」など抽象的な職業名は禁止！\n   ※代わりに「何をする人か」を具体的に書く\n   \n   良い例：\n   - 「消えた宝物を探す人」\n   - 「昔の手紙を届ける人」\n   - 「街に残る不思議な印を集める人」\n   - 「忘れられた物語を見つける人」\n   \n   悪い例（使わない）：\n   - 「調査員」「編集者」「調停者」「探求者」\n\n2. experience_promise（最後に何がわかる？）\n   ※ネタバレしない程度に、ワクワクする約束\n   \n   良い例：\n   - 「最後に、この街の秘密がわかる」\n   - 「バラバラだった手がかりが、1つの答えにつながる」\n   - 「街の景色が、今までと違って見えるようになる」\n\n3. atmosphere_tone（どんな雰囲気？）\n   ワクワク/ドキドキ/しんみり/ほっこり/不思議/楽しい から3つまで\n\n4. effort_expectation（どのくらい大変？）\n   - walking_intensity: のんびり/ふつう/しっかり\n   - puzzle_difficulty: 見ればわかる/少し考える/じっくり考える\n   - time_estimate: 推定所要時間（分）\n\n\n【追加項目】\n- primary_themes: 歴史/アート/グルメ/自然/建築/文学/ミステリー から最大3つ\n- inferred_area: 推測されるエリア名（地名）\n- story_hook: 物語の始まり（1文で興味を引く）\n- forbidden_elements: 避けるべき要素\n\n\n【出力形式】JSON\n{\n  \"player_role\": \"〇〇を探す人\",\n  \"experience_promise\": \"最後に〇〇がわかる\",\n  \"atmosphere_tone\": [\"ワクワク\", \"不思議\"],\n  \"effort_expectation\": {\n    \"walking_intensity\": \"ふつう\",\n    \"puzzle_difficulty\": \"見ればわかる\",\n    \"time_estimate\": 90\n  },\n  \"primary_themes\": [\"歴史\", \"ミステリー\"],\n  \"inferred_area\": \"浅草\",\n  \"story_hook\": \"この街には、まだ誰も知らない秘密がある\",\n  \"forbidden_elements\": []\n}"
+          text: "以下のリクエストを分析し、街歩き体験としての設計要素を抽出してください。\n\n\n【ユーザーリクエスト】\nメインプロンプト:\
+            \ {{#1768558472266.prompt#}}\n難易度: {{#1768558472266.difficulty#}}\nスポット数:\
+            \ {{#1768558472266.spot_count#}}\nジャンル: {{#1768558472266.genre_support#}}\n\
+            トーン: {{#1768558472266.tone_support#}}\nいつ: {{#1768558472266.when#}}\n\
+            どこで: {{#1768558472266.where#}}\n目的: {{#1768558472266.purpose#}}\n誰と: {{#1768558472266.with_whom#}}\n\
+            \n\n【抽出する4つの核心要素（伝えるべきこと）】\n\n1. player_role（あなたは誰として歩くか）\n   例：街の記憶を回収する調査員／失われた手紙を届ける配達人／封印された謎を追う探求者\n\
+            \   ※具体的で没入できる役割。「観光客」は避ける\n\n2. experience_promise（何を達成すると気持ちいいか）\n \
+            \  例：最後に街の見え方が変わる／隠された物語が明らかになる／散らばった断片が1つに繋がる\n   ※ネタバレせず期待だけ置く「約束」\n\
+            \n3. atmosphere_tone（どんな空気の物語か）\n   静か/切ない/ノスタルジック/スリリング/軽やか/ミステリアス/温かい\
+            \ など3つまで\n\n4. effort_expectation（どれくらいの負荷か）\n   - walking_intensity:\
+            \ 軽め/普通/しっかり\n   - puzzle_difficulty: 観察メイン/考察も必要/本格謎解き\n   - time_estimate:\
+            \ 推定所要時間（分）\n\n\n【追加の分析項目】\n- primary_themes: 歴史/アート/グルメ/自然/建築/文学/ミステリー\
+            \ から最大3つ\n- inferred_area: 推測されるエリア名（地名）\n- story_hook: 物語の導入フック（30秒で掴む一行）\n\
+            - forbidden_elements: 絶対に避けるべき要素\n\n\n【出力形式】JSON\n{\n  \"player_role\"\
+            : \"あなたは〇〇として歩く\",\n  \"experience_promise\": \"最後に〇〇が明らかになる\",\n  \"\
+            atmosphere_tone\": [\"形容詞1\", \"形容詞2\", \"形容詞3\"],\n  \"effort_expectation\"\
+            : {\n    \"walking_intensity\": \"普通\",\n    \"puzzle_difficulty\": \"\
+            観察メイン\",\n    \"time_estimate\": 90\n  },\n  \"primary_themes\": [\"テーマ1\"\
+            , \"テーマ2\"],\n  \"inferred_area\": \"エリア名\",\n  \"story_hook\": \"掴みの一行\"\
+            ,\n  \"forbidden_elements\": [\"避けるもの\"]\n}"
         selected: false
         title: LLM_ユーザー意図分析
         type: llm
@@ -505,68 +599,56 @@ workflow:
       type: custom
       width: 242
     - data:
-        code: "import json\nimport re\n\ndef main(llm_output: str) -> dict:\n    \
-          json_match = re.search(r'\\{[\\s\\S]*\\}', llm_output)\n    \
-          if json_match:\n        \
-          try:\n            \
-          parsed = json.loads(json_match.group())\n            \
-          effort = parsed.get('effort_expectation', {})\n            \
-          return {\n                \
-          'player_role': parsed.get('player_role', 'あなたは謎を追う探求者として歩く'),\n                \
-          'experience_promise': parsed.get('experience_promise', '最後にこの街の見え方が変わる'),\n                \
-          'atmosphere_tone': ', '.join(parsed.get('atmosphere_tone', ['ミステリアス'])),\n                \
-          'walking_intensity': effort.get('walking_intensity', '普通'),\n                \
-          'puzzle_difficulty': effort.get('puzzle_difficulty', '観察メイン'),\n                \
-          'time_estimate': str(effort.get('time_estimate', 90)),\n                \
-          'primary_themes': ', '.join(parsed.get('primary_themes', ['歴史'])),\n                \
-          'inferred_area': parsed.get('inferred_area', ''),\n                \
-          'story_hook': parsed.get('story_hook', ''),\n                \
-          'forbidden_elements': ', '.join(parsed.get('forbidden_elements', []))\n            \
-          }\n        \
-          except:\n            \
-          pass\n    \
-          return {\n        \
-          'player_role': 'あなたは謎を追う探求者として歩く',\n        \
-          'experience_promise': '最後にこの街の見え方が変わる',\n        \
-          'atmosphere_tone': 'ミステリアス',\n        \
-          'walking_intensity': '普通',\n        \
-          'puzzle_difficulty': '観察メイン',\n        \
-          'time_estimate': '90',\n        \
-          'primary_themes': '歴史',\n        \
-          'inferred_area': '',\n        \
-          'story_hook': '',\n        \
-          'forbidden_elements': ''\n    \
-          }"
+        code: "import json\nimport re\n\ndef main(llm_output: str) -> dict:\n    json_match\
+          \ = re.search(r'\\{[\\s\\S]*\\}', llm_output)\n    if json_match:\n    \
+          \    try:\n            parsed = json.loads(json_match.group())\n       \
+          \     effort = parsed.get('effort_expectation', {})\n            return\
+          \ {\n                'player_role': parsed.get('player_role', 'あなたは謎を追う探求者として歩く'),\n\
+          \                'experience_promise': parsed.get('experience_promise',\
+          \ '最後にこの街の見え方が変わる'),\n                'atmosphere_tone': ', '.join(parsed.get('atmosphere_tone',\
+          \ ['ミステリアス'])),\n                'walking_intensity': effort.get('walking_intensity',\
+          \ '普通'),\n                'puzzle_difficulty': effort.get('puzzle_difficulty',\
+          \ '観察メイン'),\n                'time_estimate': str(effort.get('time_estimate',\
+          \ 90)),\n                'primary_themes': ', '.join(parsed.get('primary_themes',\
+          \ ['歴史'])),\n                'inferred_area': parsed.get('inferred_area',\
+          \ ''),\n                'story_hook': parsed.get('story_hook', ''),\n  \
+          \              'forbidden_elements': ', '.join(parsed.get('forbidden_elements',\
+          \ []))\n            }\n        except:\n            pass\n    return {\n\
+          \        'player_role': 'あなたは謎を追う探求者として歩く',\n        'experience_promise':\
+          \ '最後にこの街の見え方が変わる',\n        'atmosphere_tone': 'ミステリアス',\n        'walking_intensity':\
+          \ '普通',\n        'puzzle_difficulty': '観察メイン',\n        'time_estimate':\
+          \ '90',\n        'primary_themes': '歴史',\n        'inferred_area': '',\n\
+          \        'story_hook': '',\n        'forbidden_elements': ''\n    }"
         code_language: python3
         outputs:
-          player_role:
+          atmosphere_tone:
             children: null
             type: string
           experience_promise:
             children: null
             type: string
-          atmosphere_tone:
-            children: null
-            type: string
-          walking_intensity:
-            children: null
-            type: string
-          puzzle_difficulty:
-            children: null
-            type: string
-          time_estimate:
-            children: null
-            type: string
-          primary_themes:
+          forbidden_elements:
             children: null
             type: string
           inferred_area:
             children: null
             type: string
+          player_role:
+            children: null
+            type: string
+          primary_themes:
+            children: null
+            type: string
+          puzzle_difficulty:
+            children: null
+            type: string
           story_hook:
             children: null
             type: string
-          forbidden_elements:
+          time_estimate:
+            children: null
+            type: string
+          walking_intensity:
             children: null
             type: string
         selected: false
@@ -690,27 +772,32 @@ workflow:
       type: custom
       width: 242
     - data:
-        code: "import json\nfrom urllib.parse import quote\n\ndef main(body: str) -> dict:\n    data = json.loads(body)\n\
-          \    spots = []\n    \n    for i, result in enumerate(data.get(\"results\", [])):\n  \
-          \      name = result.get(\"name\", \"\")\n        lat = result.get(\"geometry\", {}).get(\"location\", {}).get(\"lat\", 0)\n        \
-          lng = result.get(\"geometry\", {}).get(\"location\", {}).get(\"lng\", 0)\n        \
-          place_id = result.get(\"place_id\", \"\")\n        \n        # textsearchはformatted_address、nearbysearchはvicinity\n        \
-          address = result.get(\"formatted_address\", result.get(\"vicinity\", \"\"))\n        \n        \
-          # Google Maps URLを生成\n        if place_id:\n            \
-          google_maps_url = f'https://www.google.com/maps/search/?api=1&query={quote(name)}&query_place_id={place_id}'\n        \
-          else:\n            google_maps_url = f'https://www.google.com/maps/search/?api=1&query={lat},{lng}'\n        \n        \
-          spot = {\n            \"spot_id\": f\"S{i+1}\",\n            \"name\": name,\n            \
-          \"lat\": float(lat),\n            \"lng\": float(lng),\n            \
-          \"place_id\": place_id,\n            \"rating\": result.get(\"rating\", 0),\n            \
-          \"reviews\": result.get(\"user_ratings_total\", 0),\n            \
-          \"types\": \", \".join(result.get(\"types\", [])),\n            \"address\": address,\n            \
-          \"google_maps_url\": google_maps_url\n        }\n        spots.append(spot)\n\
-          \    \n    # スポットの情報を個別変数として出力（座標付き）\n    spots_summary = \"\"\n    for s in spots:\n        \
-          spots_summary += f\"{s['spot_id']}: {s['name']}\\n\"\n        spots_summary += f\"  住所: {s['address']}\\n\"\n        \
-          spots_summary += f\"  座標: {s['lat']}, {s['lng']}\\n\"\n        spots_summary += f\"  place_id: {s['place_id']}\\n\"\n        \
-          spots_summary += f\"  評価: {s['rating']} ({s['reviews']}件)\\n\\n\"\n    \n    return {\n        \"spots_json\"\
-          : json.dumps(spots, ensure_ascii=False),\n        \"spots_count\": len(spots),\n\
-          \        \"spots_summary\": spots_summary\n    }"
+        code: "import json\nfrom urllib.parse import quote\n\ndef main(body: str)\
+          \ -> dict:\n    data = json.loads(body)\n    spots = []\n    \n    for i,\
+          \ result in enumerate(data.get(\"results\", [])):\n        name = result.get(\"\
+          name\", \"\")\n        lat = result.get(\"geometry\", {}).get(\"location\"\
+          , {}).get(\"lat\", 0)\n        lng = result.get(\"geometry\", {}).get(\"\
+          location\", {}).get(\"lng\", 0)\n        place_id = result.get(\"place_id\"\
+          , \"\")\n        \n        # textsearchはformatted_address、nearbysearchはvicinity\n\
+          \        address = result.get(\"formatted_address\", result.get(\"vicinity\"\
+          , \"\"))\n        \n        # Google Maps URLを生成\n        if place_id:\n\
+          \            google_maps_url = f'https://www.google.com/maps/search/?api=1&query={quote(name)}&query_place_id={place_id}'\n\
+          \        else:\n            google_maps_url = f'https://www.google.com/maps/search/?api=1&query={lat},{lng}'\n\
+          \        \n        spot = {\n            \"spot_id\": f\"S{i+1}\",\n   \
+          \         \"name\": name,\n            \"lat\": float(lat),\n          \
+          \  \"lng\": float(lng),\n            \"place_id\": place_id,\n         \
+          \   \"rating\": result.get(\"rating\", 0),\n            \"reviews\": result.get(\"\
+          user_ratings_total\", 0),\n            \"types\": \", \".join(result.get(\"\
+          types\", [])),\n            \"address\": address,\n            \"google_maps_url\"\
+          : google_maps_url\n        }\n        spots.append(spot)\n    \n    # スポットの情報を個別変数として出力（座標付き）\n\
+          \    spots_summary = \"\"\n    for s in spots:\n        spots_summary +=\
+          \ f\"{s['spot_id']}: {s['name']}\\n\"\n        spots_summary += f\"  住所:\
+          \ {s['address']}\\n\"\n        spots_summary += f\"  座標: {s['lat']}, {s['lng']}\\\
+          n\"\n        spots_summary += f\"  place_id: {s['place_id']}\\n\"\n    \
+          \    spots_summary += f\"  評価: {s['rating']} ({s['reviews']}件)\\n\\n\"\n\
+          \    \n    return {\n        \"spots_json\": json.dumps(spots, ensure_ascii=False),\n\
+          \        \"spots_count\": len(spots),\n        \"spots_summary\": spots_summary\n\
+          \    }"
         code_language: python3
         outputs:
           spots_count:
@@ -759,10 +846,52 @@ workflow:
         prompt_template:
         - id: 9056441e-e9cf-4194-a354-32cb56ec70fa
           role: system
-          text: "あなたは周遊型クエストのスポット選定専門家です。\n\n【北極星】街が主役、物語がレンズ、謎が動機\n\n【スポット選定の7条件（強いスポットの条件）】\n1. 同定性：一目で「ここだ」と分かる\n2. 安全性：到達しやすく危険が少ない\n3. 物語必然性：そこに行く理由が作れる\n4. 観察素材：見るべきディテールがある（紋章/数/銘板/形状/方角）\n5. 時間帯耐性：夜/雨/閉館でも成立する\n6. 滞在性：立ち止まれる/混雑で詰まらない\n7. 連続性：次への移動が気持ちいい\n\n出力は必ずJSON形式で。"
+          text: 'あなたは周遊型クエストのスポット選定専門家です。
+
+
+            【北極星】街が主役、物語がレンズ、謎が動機
+
+
+            【スポット選定の7条件（強いスポットの条件）】
+
+            1. 同定性：一目で「ここだ」と分かる
+
+            2. 安全性：到達しやすく危険が少ない
+
+            3. 物語必然性：そこに行く理由が作れる
+
+            4. 観察素材：見るべきディテールがある（紋章/数/銘板/形状/方角）
+
+            5. 時間帯耐性：夜/雨/閉館でも成立する
+
+            6. 滞在性：立ち止まれる/混雑で詰まらない
+
+            7. 連続性：次への移動が気持ちいい
+
+
+            出力は必ずJSON形式で。'
         - id: 3739734d-7858-49c7-bfc2-7f6e8908a2e5
           role: user
-          text: "【プレイヤーの役割】\n{{#1768599287614.player_role#}}\n\n【体験の約束】\n{{#1768599287614.experience_promise#}}\n\n【雰囲気】\n{{#1768599287614.atmosphere_tone#}}\n\n【テーマ】\n{{#1768599287614.primary_themes#}}\n\n【エリア情報】\n{{#1768599416646.text#}}\n\n【スポット候補】\n{{#1768601299799.spots_summary#}}\n\n【必要なスポット数】\n{{#1768558472266.spot_count#}}件\n\n\n【スコアリング基準（各0-100点）】\n\n1. observation_material（観察素材）\n   現地で見て発見できるものがあるか？\n   - 紋章/刻印/銘板/碑文\n   - 数えられるもの（柱/石段/灯籠）\n   - 方角/配置/形状の特徴\n   - 100点＝見るべき具体的ディテールが複数ある\n\n2. heads_up_potential（ヘッズアップ度）\n   スマホを見ずに楽しめるか？\n   - 「正面の○○を見て」と言える明確な対象があるか\n   - 見上げる/見渡す/探す動作が自然にできるか\n   - 100点＝完全に現地を見て体験できる\n\n3. story_anchor（物語アンカー度）\n   物語上の役割を1つ明確に割り当てられるか？\n   役割例：証拠発見/目撃地点/暗号隠匿/記憶の揺らぎ/嘘の露呈/真実の確認\n   - 100点＝物語上の必然がある\n\n4. walkability（ルート適性）\n   位置関係/アクセス/安全性\n   - 100点＝迷いにくく安全で気持ちいい動線\n\n5. resilience（時間帯耐性）\n   夜/雨/混雑/閉館でも成立するか？\n   - 100点＝いつ行っても成立する\n\n\n【各スポットに必ず含めるもの】\n- look_at_direction：「○○の方を見て」（見るべき具体的方向）\n- observable_details：現地で確認できる具体的ディテール（3つ以上）\n- story_role_candidate：このスポットに適した物語上の役割（1つ）\n\n\n【出力形式】JSON配列（必要数+予備3件）\n[\n  {\n    \"name\": \"スポット名\",\n    \"lat\": 緯度,\n    \"lng\": 経度,\n    \"place_id\": \"place_id\",\n    \"address\": \"住所\",\n    \"observation_material\": 点数,\n    \"heads_up_potential\": 点数,\n    \"story_anchor\": 点数,\n    \"walkability\": 点数,\n    \"resilience\": 点数,\n    \"total\": 合計点,\n    \"look_at_direction\": \"正面の石碑の上部に注目\",\n    \"observable_details\": [\"屋根の形状\", \"柱の本数\", \"入口の紋章\"],\n    \"story_role_candidate\": \"証拠発見地点\",\n    \"selection_reason\": \"選んだ理由（1文）\"\n  }\n]\n\ntotalが高い順に並べてください。"
+          text: "【プレイヤーの役割】\n{{#1768599287614.player_role#}}\n\n【体験の約束】\n{{#1768599287614.experience_promise#}}\n\
+            \n【雰囲気】\n{{#1768599287614.atmosphere_tone#}}\n\n【テーマ】\n{{#1768599287614.primary_themes#}}\n\
+            \n【エリア情報】\n{{#1768599416646.text#}}\n\n【スポット候補】\n{{#1768601299799.spots_summary#}}\n\
+            \n【必要なスポット数】\n{{#1768558472266.spot_count#}}件\n\n\n【スコアリング基準（各0-100点）】\n\
+            \n1. observation_material（観察素材）\n   現地で見て発見できるものがあるか？\n   - 紋章/刻印/銘板/碑文\n\
+            \   - 数えられるもの（柱/石段/灯籠）\n   - 方角/配置/形状の特徴\n   - 100点＝見るべき具体的ディテールが複数ある\n\
+            \n2. heads_up_potential（ヘッズアップ度）\n   スマホを見ずに楽しめるか？\n   - 「正面の○○を見て」と言える明確な対象があるか\n\
+            \   - 見上げる/見渡す/探す動作が自然にできるか\n   - 100点＝完全に現地を見て体験できる\n\n3. story_anchor（物語アンカー度）\n\
+            \   物語上の役割を1つ明確に割り当てられるか？\n   役割例：証拠発見/目撃地点/暗号隠匿/記憶の揺らぎ/嘘の露呈/真実の確認\n \
+            \  - 100点＝物語上の必然がある\n\n4. walkability（ルート適性）\n   位置関係/アクセス/安全性\n   - 100点＝迷いにくく安全で気持ちいい動線\n\
+            \n5. resilience（時間帯耐性）\n   夜/雨/混雑/閉館でも成立するか？\n   - 100点＝いつ行っても成立する\n\n\
+            \n【各スポットに必ず含めるもの】\n- look_at_direction：「○○の方を見て」（見るべき具体的方向）\n- observable_details：現地で確認できる具体的ディテール（3つ以上）\n\
+            - story_role_candidate：このスポットに適した物語上の役割（1つ）\n\n\n【出力形式】JSON配列（必要数+予備3件）\n\
+            [\n  {\n    \"name\": \"スポット名\",\n    \"lat\": 緯度,\n    \"lng\": 経度,\n\
+            \    \"place_id\": \"place_id\",\n    \"address\": \"住所\",\n    \"observation_material\"\
+            : 点数,\n    \"heads_up_potential\": 点数,\n    \"story_anchor\": 点数,\n  \
+            \  \"walkability\": 点数,\n    \"resilience\": 点数,\n    \"total\": 合計点,\n\
+            \    \"look_at_direction\": \"正面の石碑の上部に注目\",\n    \"observable_details\"\
+            : [\"屋根の形状\", \"柱の本数\", \"入口の紋章\"],\n    \"story_role_candidate\": \"\
+            証拠発見地点\",\n    \"selection_reason\": \"選んだ理由（1文）\"\n  }\n]\n\ntotalが高い順に並べてください。"
         selected: false
         title: LLM_テーマスコアリング
         type: llm
@@ -827,161 +956,95 @@ workflow:
       type: custom
       width: 242
     - data:
-        code: "import json\nimport math\n\n# ============= 距離計算 =============\n\
-          def haversine_distance(lat1, lng1, lat2, lng2):\n    \
-          R = 6371000\n    \
-          phi1, phi2 = math.radians(float(lat1)), math.radians(float(lat2))\n    \
-          delta_phi = math.radians(float(lat2) - float(lat1))\n    \
-          delta_lambda = math.radians(float(lng2) - float(lng1))\n    \
-          a = math.sin(delta_phi/2)**2 + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda/2)**2\n    \
-          return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))\n\n\
-          def calculate_total_distance(route):\n    \
-          total = 0\n    \
-          for i in range(1, len(route)):\n        \
-          total += haversine_distance(\n            \
-          route[i-1].get('lat', 0), route[i-1].get('lng', 0),\n            \
-          route[i].get('lat', 0), route[i].get('lng', 0)\n        \
-          )\n    \
-          return total\n\n\
-          # ============= メイン関数 =============\n\
-          def main(scored_spots_json, spot_count, center_lat, center_lng):\n    \
-          spots = json.loads(scored_spots_json)\n    \n    \
-          if not spots:\n        \
-          return {\n            \
-          'optimized_spots_json': '[]',\n            \
-          'optimized_spots_text': 'スポットがありません',\n            \
-          'total_distance_m': 0,\n            \
-          'walking_time_min': 0,\n            \
-          'route_quality': 'N/A'\n        \
-          }\n    \n    \
-          # Step 1: 上位スポットを取得\n    \
-          target_count = int(spot_count)\n    \
-          top_spots = spots[:target_count + 3]\n    \n    \
-          # Step 2: スポットの分布を分析\n    \
-          lats = [s.get('lat', 0) for s in top_spots]\n    \
-          lngs = [s.get('lng', 0) for s in top_spots]\n    \
-          lat_range = max(lats) - min(lats)\n    \
-          lng_range = max(lngs) - min(lngs)\n    \n    \
-          # Step 3: 分布の広がりから方向を決定\n    \
-          # 緯度幅 > 経度幅 × 1.5 なら南北、それ以外は東西\n    \
-          if lat_range > lng_range * 1.5:\n        \
-          axis = 'lat'  # 南北方向\n    \
-          elif lng_range > lat_range * 1.5:\n        \
-          axis = 'lng'  # 東西方向\n    \
-          else:\n        \
-          # 同程度の場合、両方試して短い方を選択\n        \
-          axis = 'both'\n    \n    \
-          # Step 4: 基準点を設定\n    \
-          avg_lat = sum(lats) / len(lats)\n    \
-          avg_lng = sum(lngs) / len(lngs)\n    \
-          ref_lat = float(center_lat) if center_lat else avg_lat\n    \
-          ref_lng = float(center_lng) if center_lng else avg_lng\n    \n    \
-          # Step 5: 各軸でルートを生成\n    \
-          routes = {}\n    \n    \
-          # 北→南ルート\n    \
-          ns_route = sorted(top_spots, key=lambda s: -s.get('lat', 0))[:target_count]\n    \
-          routes['north_to_south'] = ns_route\n    \n    \
-          # 南→北ルート\n    \
-          sn_route = sorted(top_spots, key=lambda s: s.get('lat', 0))[:target_count]\n    \
-          routes['south_to_north'] = sn_route\n    \n    \
-          # 東→西ルート\n    \
-          ew_route = sorted(top_spots, key=lambda s: -s.get('lng', 0))[:target_count]\n    \
-          routes['east_to_west'] = ew_route\n    \n    \
-          # 西→東ルート\n    \
-          we_route = sorted(top_spots, key=lambda s: s.get('lng', 0))[:target_count]\n    \
-          routes['west_to_east'] = we_route\n    \n    \
-          # Step 6: 最適なルートを選択\n    \
-          if axis == 'lat':\n        \
-          # 南北方向：基準点に近い端をスタート\n        \
-          north_spot = max(top_spots, key=lambda s: s.get('lat', 0))\n        \
-          south_spot = min(top_spots, key=lambda s: s.get('lat', 0))\n        \
-          if abs(north_spot.get('lat', 0) - ref_lat) < abs(south_spot.get('lat', 0) - ref_lat):\n            \
-          best_key = 'north_to_south'\n        \
-          else:\n            \
-          best_key = 'south_to_north'\n    \
-          elif axis == 'lng':\n        \
-          # 東西方向：基準点に近い端をスタート\n        \
-          east_spot = max(top_spots, key=lambda s: s.get('lng', 0))\n        \
-          west_spot = min(top_spots, key=lambda s: s.get('lng', 0))\n        \
-          if abs(east_spot.get('lng', 0) - ref_lng) < abs(west_spot.get('lng', 0) - ref_lng):\n            \
-          best_key = 'east_to_west'\n        \
-          else:\n            \
-          best_key = 'west_to_east'\n    \
-          else:\n        \
-          # 両方試して距離が短い方を選択\n        \
-          distances = {}\n        \
-          for key, route in routes.items():\n            \
-          distances[key] = calculate_total_distance(route)\n        \
-          best_key = min(distances, key=distances.get)\n    \n    \
-          route = routes[best_key]\n    \n    \
-          # Step 7: 隣接スワップで局所最適化\n    \
-          improved = True\n    \
-          max_iter = 20\n    \
-          iter_count = 0\n    \
-          while improved and iter_count < max_iter:\n        \
-          improved = False\n        \
-          iter_count += 1\n        \
-          for i in range(len(route) - 1):\n            \
-          current_dist = calculate_total_distance(route)\n            \
-          route[i], route[i+1] = route[i+1], route[i]\n            \
-          new_dist = calculate_total_distance(route)\n            \
-          if new_dist >= current_dist:\n                \
-          route[i], route[i+1] = route[i+1], route[i]\n            \
-          else:\n                \
-          improved = True\n    \n    \
-          # Step 8: スポットID付与と距離計算\n    \
-          total_distance = 0\n    \
-          segment_info = []\n    \n    \
-          for i, spot in enumerate(route):\n        \
-          spot['spot_index'] = i + 1\n        \
-          spot['spot_id'] = 'S' + str(i + 1)\n        \n        \
-          if i > 0:\n            \
-          dist = haversine_distance(\n                \
-          route[i-1].get('lat', 0), route[i-1].get('lng', 0),\n                \
-          spot.get('lat', 0), spot.get('lng', 0)\n            \
-          )\n            \
-          total_distance += dist\n            \
-          spot['distance_from_prev_m'] = int(dist)\n            \
-          spot['walking_time_from_prev_min'] = round(dist / 67, 1)\n            \
-          segment_info.append(int(dist))\n    \n    \
-          # Step 9: ルート品質評価\n    \
-          max_segment = max(segment_info) if segment_info else 0\n    \
-          if max_segment < 500 and total_distance < 3000:\n        \
-          quality = '最適'\n    \
-          elif max_segment < 800 and total_distance < 5000:\n        \
-          quality = '良好'\n    \
-          else:\n        \
-          quality = '要改善'\n    \n    \
-          # Step 10: 歩行時間計算\n    \
-          walking_time = total_distance / 67 + len(route) * 0.5\n    \n    \
-          # Step 11: 方向ラベル\n    \
-          direction_labels = {\n        \
-          'north_to_south': '北→南',\n        \
-          'south_to_north': '南→北',\n        \
-          'east_to_west': '東→西',\n        \
-          'west_to_east': '西→東'\n    \
-          }\n    \
-          direction_label = direction_labels.get(best_key, best_key)\n    \n    \
-          # Step 12: テキスト形式出力\n    \
-          spots_text = '【ルート品質: ' + quality + '】\\n'\n    \
-          spots_text += '【方向: ' + direction_label + '】\\n'\n    \
-          spots_text += '【緯度幅: ' + str(round(lat_range * 111000)) + 'm, 経度幅: ' + str(round(lng_range * 111000 * 0.8)) + 'm】\\n\\n'\n    \
-          for i, s in enumerate(route):\n        \
-          spots_text += s['spot_id'] + ': ' + s['name'] + '\\n'\n        \
-          spots_text += '   住所: ' + s.get('address', '') + '\\n'\n        \
-          spots_text += '   座標: ' + str(round(s.get('lat', 0), 6)) + ', ' + str(round(s.get('lng', 0), 6)) + '\\n'\n        \
-          if i > 0:\n            \
-          spots_text += '   ← 前スポットから ' + str(s.get('distance_from_prev_m', 0)) + 'm\\n'\n        \
-          spots_text += '   選定理由: ' + s.get('selection_reason', '') + '\\n\\n'\n    \
-          spots_text += '【総距離】' + str(int(total_distance)) + 'm\\n'\n    \
-          spots_text += '【推定歩行時間】' + str(int(walking_time)) + '分\\n'\n    \n    \
-          return {\n        \
-          'optimized_spots_json': json.dumps(route, ensure_ascii=False),\n        \
-          'optimized_spots_text': spots_text,\n        \
-          'total_distance_m': int(total_distance),\n        \
-          'walking_time_min': int(walking_time),\n        \
-          'route_quality': quality\n    \
-          }"
+        code: "import json\nimport math\n\n# ============= 距離計算 =============\ndef\
+          \ haversine_distance(lat1, lng1, lat2, lng2):\n    R = 6371000\n    phi1,\
+          \ phi2 = math.radians(float(lat1)), math.radians(float(lat2))\n    delta_phi\
+          \ = math.radians(float(lat2) - float(lat1))\n    delta_lambda = math.radians(float(lng2)\
+          \ - float(lng1))\n    a = math.sin(delta_phi/2)**2 + math.cos(phi1) * math.cos(phi2)\
+          \ * math.sin(delta_lambda/2)**2\n    return R * 2 * math.atan2(math.sqrt(a),\
+          \ math.sqrt(1-a))\n\ndef calculate_total_distance(route):\n    total = 0\n\
+          \    for i in range(1, len(route)):\n        total += haversine_distance(\n\
+          \            route[i-1].get('lat', 0), route[i-1].get('lng', 0),\n     \
+          \       route[i].get('lat', 0), route[i].get('lng', 0)\n        )\n    return\
+          \ total\n\n# ============= メイン関数 =============\ndef main(scored_spots_json,\
+          \ spot_count, center_lat, center_lng):\n    spots = json.loads(scored_spots_json)\n\
+          \    \n    if not spots:\n        return {\n            'optimized_spots_json':\
+          \ '[]',\n            'optimized_spots_text': 'スポットがありません',\n           \
+          \ 'total_distance_m': 0,\n            'walking_time_min': 0,\n         \
+          \   'route_quality': 'N/A'\n        }\n    \n    # Step 1: 上位スポットを取得\n \
+          \   target_count = int(spot_count)\n    top_spots = spots[:target_count\
+          \ + 3]\n    \n    # Step 2: スポットの分布を分析\n    lats = [s.get('lat', 0) for\
+          \ s in top_spots]\n    lngs = [s.get('lng', 0) for s in top_spots]\n   \
+          \ lat_range = max(lats) - min(lats)\n    lng_range = max(lngs) - min(lngs)\n\
+          \    \n    # Step 3: 分布の広がりから方向を決定\n    # 緯度幅 > 経度幅 × 1.5 なら南北、それ以外は東西\n\
+          \    if lat_range > lng_range * 1.5:\n        axis = 'lat'  # 南北方向\n   \
+          \ elif lng_range > lat_range * 1.5:\n        axis = 'lng'  # 東西方向\n    else:\n\
+          \        # 同程度の場合、両方試して短い方を選択\n        axis = 'both'\n    \n    # Step 4:\
+          \ 基準点を設定\n    avg_lat = sum(lats) / len(lats)\n    avg_lng = sum(lngs) /\
+          \ len(lngs)\n    ref_lat = float(center_lat) if center_lat else avg_lat\n\
+          \    ref_lng = float(center_lng) if center_lng else avg_lng\n    \n    #\
+          \ Step 5: 各軸でルートを生成\n    routes = {}\n    \n    # 北→南ルート\n    ns_route =\
+          \ sorted(top_spots, key=lambda s: -s.get('lat', 0))[:target_count]\n   \
+          \ routes['north_to_south'] = ns_route\n    \n    # 南→北ルート\n    sn_route\
+          \ = sorted(top_spots, key=lambda s: s.get('lat', 0))[:target_count]\n  \
+          \  routes['south_to_north'] = sn_route\n    \n    # 東→西ルート\n    ew_route\
+          \ = sorted(top_spots, key=lambda s: -s.get('lng', 0))[:target_count]\n \
+          \   routes['east_to_west'] = ew_route\n    \n    # 西→東ルート\n    we_route\
+          \ = sorted(top_spots, key=lambda s: s.get('lng', 0))[:target_count]\n  \
+          \  routes['west_to_east'] = we_route\n    \n    # Step 6: 最適なルートを選択\n  \
+          \  if axis == 'lat':\n        # 南北方向：基準点に近い端をスタート\n        north_spot =\
+          \ max(top_spots, key=lambda s: s.get('lat', 0))\n        south_spot = min(top_spots,\
+          \ key=lambda s: s.get('lat', 0))\n        if abs(north_spot.get('lat', 0)\
+          \ - ref_lat) < abs(south_spot.get('lat', 0) - ref_lat):\n            best_key\
+          \ = 'north_to_south'\n        else:\n            best_key = 'south_to_north'\n\
+          \    elif axis == 'lng':\n        # 東西方向：基準点に近い端をスタート\n        east_spot\
+          \ = max(top_spots, key=lambda s: s.get('lng', 0))\n        west_spot = min(top_spots,\
+          \ key=lambda s: s.get('lng', 0))\n        if abs(east_spot.get('lng', 0)\
+          \ - ref_lng) < abs(west_spot.get('lng', 0) - ref_lng):\n            best_key\
+          \ = 'east_to_west'\n        else:\n            best_key = 'west_to_east'\n\
+          \    else:\n        # 両方試して距離が短い方を選択\n        distances = {}\n        for\
+          \ key, route in routes.items():\n            distances[key] = calculate_total_distance(route)\n\
+          \        best_key = min(distances, key=distances.get)\n    \n    route =\
+          \ routes[best_key]\n    \n    # Step 7: 隣接スワップで局所最適化\n    improved = True\n\
+          \    max_iter = 20\n    iter_count = 0\n    while improved and iter_count\
+          \ < max_iter:\n        improved = False\n        iter_count += 1\n     \
+          \   for i in range(len(route) - 1):\n            current_dist = calculate_total_distance(route)\n\
+          \            route[i], route[i+1] = route[i+1], route[i]\n            new_dist\
+          \ = calculate_total_distance(route)\n            if new_dist >= current_dist:\n\
+          \                route[i], route[i+1] = route[i+1], route[i]\n         \
+          \   else:\n                improved = True\n    \n    # Step 8: スポットID付与と距離計算\n\
+          \    total_distance = 0\n    segment_info = []\n    \n    for i, spot in\
+          \ enumerate(route):\n        spot['spot_index'] = i + 1\n        spot['spot_id']\
+          \ = 'S' + str(i + 1)\n        \n        if i > 0:\n            dist = haversine_distance(\n\
+          \                route[i-1].get('lat', 0), route[i-1].get('lng', 0),\n \
+          \               spot.get('lat', 0), spot.get('lng', 0)\n            )\n\
+          \            total_distance += dist\n            spot['distance_from_prev_m']\
+          \ = int(dist)\n            spot['walking_time_from_prev_min'] = round(dist\
+          \ / 67, 1)\n            segment_info.append(int(dist))\n    \n    # Step\
+          \ 9: ルート品質評価\n    max_segment = max(segment_info) if segment_info else 0\n\
+          \    if max_segment < 500 and total_distance < 3000:\n        quality =\
+          \ '最適'\n    elif max_segment < 800 and total_distance < 5000:\n        quality\
+          \ = '良好'\n    else:\n        quality = '要改善'\n    \n    # Step 10: 歩行時間計算\n\
+          \    walking_time = total_distance / 67 + len(route) * 0.5\n    \n    #\
+          \ Step 11: 方向ラベル\n    direction_labels = {\n        'north_to_south': '北→南',\n\
+          \        'south_to_north': '南→北',\n        'east_to_west': '東→西',\n    \
+          \    'west_to_east': '西→東'\n    }\n    direction_label = direction_labels.get(best_key,\
+          \ best_key)\n    \n    # Step 12: テキスト形式出力\n    spots_text = '【ルート品質: '\
+          \ + quality + '】\\n'\n    spots_text += '【方向: ' + direction_label + '】\\\
+          n'\n    spots_text += '【緯度幅: ' + str(round(lat_range * 111000)) + 'm, 経度幅:\
+          \ ' + str(round(lng_range * 111000 * 0.8)) + 'm】\\n\\n'\n    for i, s in\
+          \ enumerate(route):\n        spots_text += s['spot_id'] + ': ' + s['name']\
+          \ + '\\n'\n        spots_text += '   住所: ' + s.get('address', '') + '\\\
+          n'\n        spots_text += '   座標: ' + str(round(s.get('lat', 0), 6)) + ',\
+          \ ' + str(round(s.get('lng', 0), 6)) + '\\n'\n        if i > 0:\n      \
+          \      spots_text += '   ← 前スポットから ' + str(s.get('distance_from_prev_m',\
+          \ 0)) + 'm\\n'\n        spots_text += '   選定理由: ' + s.get('selection_reason',\
+          \ '') + '\\n\\n'\n    spots_text += '【総距離】' + str(int(total_distance)) +\
+          \ 'm\\n'\n    spots_text += '【推定歩行時間】' + str(int(walking_time)) + '分\\n'\n\
+          \    \n    return {\n        'optimized_spots_json': json.dumps(route, ensure_ascii=False),\n\
+          \        'optimized_spots_text': spots_text,\n        'total_distance_m':\
+          \ int(total_distance),\n        'walking_time_min': int(walking_time),\n\
+          \        'route_quality': quality\n    }"
         code_language: python3
         outputs:
           optimized_spots_json:
@@ -990,15 +1053,15 @@ workflow:
           optimized_spots_text:
             children: null
             type: string
+          route_quality:
+            children: null
+            type: string
           total_distance_m:
             children: null
             type: number
           walking_time_min:
             children: null
             type: number
-          route_quality:
-            children: null
-            type: string
         selected: false
         title: CODE_ルート最適化
         type: code
@@ -1051,10 +1114,60 @@ workflow:
         prompt_template:
         - id: 3c994e36-28b1-420b-911c-6b112e4c2ef4
           role: system
-          text: "あなたは周遊型物語×謎解きのストーリーアーキテクトです。\n\n【北極星】街が主役、物語がレンズ、謎が動機\n\n【ケースファイル型の物語構造】\n周遊型の物語は「起承転結」より「連続する発見」が重要です。\n\n1. Hook（導入）：事件/依頼/違和感。30秒で掴む\n2. Trail（探索）：スポットごとに「証拠」を1つ追加。短い達成を積む\n3. Shift（転換）：中盤で視点が変わる情報を投入。面白さが跳ねる\n4. Reveal（解決）：「街の意味が更新される」着地\n\n【アンカー（物語の杭）】\n各スポットには物語上の役割を1つだけ割り当てます（複数NG）。\n役割がブレるとスポットが弱く感じます。\n\n出力は必ずJSON形式で。"
+          text: 'あなたは周遊型物語×謎解きのストーリーアーキテクトです。
+
+
+            【北極星】街が主役、物語がレンズ、謎が動機
+
+
+            【ケースファイル型の物語構造】
+
+            周遊型の物語は「起承転結」より「連続する発見」が重要です。
+
+
+            1. Hook（導入）：事件/依頼/違和感。30秒で掴む
+
+            2. Trail（探索）：スポットごとに「証拠」を1つ追加。短い達成を積む
+
+            3. Shift（転換）：中盤で視点が変わる情報を投入。面白さが跳ねる
+
+            4. Reveal（解決）：「街の意味が更新される」着地
+
+
+            【アンカー（物語の杭）】
+
+            各スポットには物語上の役割を1つだけ割り当てます（複数NG）。
+
+            役割がブレるとスポットが弱く感じます。
+
+
+            出力は必ずJSON形式で。'
         - id: c097160a-c146-4b61-aab6-00ff1309abdb
           role: user
-          text: "【プレイヤーの役割】\n{{#1768599287614.player_role#}}\n\n【体験の約束】\n{{#1768599287614.experience_promise#}}\n\n【雰囲気】\n{{#1768599287614.atmosphere_tone#}}\n\n【物語の導入フック】\n{{#1768599287614.story_hook#}}\n\n【テーマ】\n{{#1768599287614.primary_themes#}}\n\n【エリア情報】\n{{#1768599416646.text#}}\n\n【最適化されたスポット一覧】\n{{#1768602131448.optimized_spots_text#}}\n\n\n【各スポットに割り当てる物語役割（story_anchor）】\n必ず1つだけ選ぶこと。\n\n- hook: 事件発生/依頼受諾（必ず最初のスポット）\n- evidence: 証拠が見つかる場所\n- witness: 目撃者/証言がいた場所\n- cipher: 暗号/符号が隠された場所\n- memory: 記憶が揺れる/過去が蘇る場所\n- contradiction: 矛盾/嘘が露呈する場所\n- shift: 視点が変わる転換点（中盤に1つ）\n- truth: 真実に近づく場所\n- reveal: 全てが明らかになる場所（必ず最後のスポット）\n\n【謎のタイプ（puzzle_type）】\n強い順（現地依存度順）\n\n- observation: 現地を見て解く（数/形/方角/紋章）最強\n- comparison: 地図や写真と現地を照らし合わせる\n- testimony: 証言の矛盾を見抜く（選択式）\n- cipher_light: 現地の文字/銘板を使う軽い暗号\n- logic: 情報を整理して推理（移動中向け）\n\n【出力形式】JSON\n{\n  \"narrative_structure\": {\n    \"case_title\": \"事件/謎の名前（魅力的に）\",\n    \"case_premise\": \"この事件/謎は何か（2-3文）\",\n    \"evidence_chain\": \"証拠がどう繋がるか（2文）\",\n    \"shift_moment\": \"どこで視点が変わるか（1文）\",\n    \"final_revelation\": \"最後に何が分かるか（ネタバレなし、曖昧に）\"\n  },\n  \"spots\": [\n    {\n      \"spot_id\": \"S1\",\n      \"spot_name\": \"スポット名\",\n      \"story_anchor\": \"hook\",\n      \"puzzle_type\": \"observation\",\n      \"what_player_finds\": \"ここで見つかる証拠/情報（具体的に）\",\n      \"look_at_instruction\": \"正面の○○を見て（ヘッズアップ指示）\",\n      \"emotional_beat\": \"この地点でプレイヤーが感じること\",\n      \"small_reward\": \"解けたときに得られる小報酬（情報/アイテム名）\",\n      \"next_push\": \"次のスポットへの動機付け（1文）\"\n    }\n  ],\n  \"reward_structure\": {\n    \"small_rewards\": \"各スポットで得る小報酬のリスト\",\n    \"medium_reward_spot\": \"中報酬がある転換点のスポットID\",\n    \"final_reward\": \"最後に得られる大報酬（街の意味の更新）\"\n  }\n}\n\n【重要ルール】\n- 最初のスポット＝必ず「hook」\n- 最後のスポット＝必ず「reveal」\n- 中盤に「shift」を1つ配置\n- 各スポットの役割は重複させない"
+          text: "【プレイヤーの役割】\n{{#1768599287614.player_role#}}\n\n【体験の約束】\n{{#1768599287614.experience_promise#}}\n\
+            \n【雰囲気】\n{{#1768599287614.atmosphere_tone#}}\n\n【物語の導入フック】\n{{#1768599287614.story_hook#}}\n\
+            \n【テーマ】\n{{#1768599287614.primary_themes#}}\n\n【エリア情報】\n{{#1768599416646.text#}}\n\
+            \n【最適化されたスポット一覧】\n{{#1768602131448.optimized_spots_text#}}\n\n\n【各スポットに割り当てる物語役割（story_anchor）】\n\
+            必ず1つだけ選ぶこと。\n\n- hook: 事件発生/依頼受諾（必ず最初のスポット）\n- evidence: 証拠が見つかる場所\n-\
+            \ witness: 目撃者/証言がいた場所\n- cipher: 暗号/符号が隠された場所\n- memory: 記憶が揺れる/過去が蘇る場所\n\
+            - contradiction: 矛盾/嘘が露呈する場所\n- shift: 視点が変わる転換点（中盤に1つ）\n- truth: 真実に近づく場所\n\
+            - reveal: 全てが明らかになる場所（必ず最後のスポット）\n\n【謎のタイプ（puzzle_type）】\n強い順（現地依存度順）\n\
+            \n- observation: 現地を見て解く（数/形/方角/紋章）最強\n- comparison: 地図や写真と現地を照らし合わせる\n\
+            - testimony: 証言の矛盾を見抜く（選択式）\n- cipher_light: 現地の文字/銘板を使う軽い暗号\n- logic:\
+            \ 情報を整理して推理（移動中向け）\n\n【出力形式】JSON\n{\n  \"narrative_structure\": {\n  \
+            \  \"case_title\": \"事件/謎の名前（魅力的に）\",\n    \"case_premise\": \"この事件/謎は何か（2-3文）\"\
+            ,\n    \"evidence_chain\": \"証拠がどう繋がるか（2文）\",\n    \"shift_moment\": \"\
+            どこで視点が変わるか（1文）\",\n    \"final_revelation\": \"最後に何が分かるか（ネタバレなし、曖昧に）\"\
+            \n  },\n  \"spots\": [\n    {\n      \"spot_id\": \"S1\",\n      \"spot_name\"\
+            : \"スポット名\",\n      \"story_anchor\": \"hook\",\n      \"puzzle_type\"\
+            : \"observation\",\n      \"what_player_finds\": \"ここで見つかる証拠/情報（具体的に）\"\
+            ,\n      \"look_at_instruction\": \"正面の○○を見て（ヘッズアップ指示）\",\n      \"emotional_beat\"\
+            : \"この地点でプレイヤーが感じること\",\n      \"small_reward\": \"解けたときに得られる小報酬（情報/アイテム名）\"\
+            ,\n      \"next_push\": \"次のスポットへの動機付け（1文）\"\n    }\n  ],\n  \"reward_structure\"\
+            : {\n    \"small_rewards\": \"各スポットで得る小報酬のリスト\",\n    \"medium_reward_spot\"\
+            : \"中報酬がある転換点のスポットID\",\n    \"final_reward\": \"最後に得られる大報酬（街の意味の更新）\"\
+            \n  }\n}\n\n【重要ルール】\n- 最初のスポット＝必ず「hook」\n- 最後のスポット＝必ず「reveal」\n- 中盤に「shift」を1つ配置\n\
+            - 各スポットの役割は重複させない"
         selected: false
         title: LLMモチーフ選定
         type: llm
@@ -1148,10 +1261,55 @@ workflow:
         prompt_template:
         - id: 7659cb48-ffe5-4179-8f71-b2216b5825db
           role: system
-          text: "あなたは街歩きクエストの物語を書く人です。\n\n【大原則】子供から大人まで、誰でもすぐ理解できる言葉で書く\n- 難しい言葉は使わない（「調停」「編纂」「痕跡」など禁止）\n- 短い文で、テンポよく\n- 「何が起きているか」「何をすればいいか」がすぐわかる\n- 小学5年生が読んでも「面白そう！やってみたい！」と思える\n\n【物語の構造】\n1. つかみ（最初の1文で興味を引く）\n2. あなたは何をする人？（役割の説明）\n3. 何が起きている？（事件・謎の説明）\n4. 何をすればいい？（行動の説明）\n\n出力は必ずJSON形式で。"
+          text: 'あなたは周遊型物語の脚本家です。
+
+
+            【北極星】街が主役、物語がレンズ、謎が動機
+
+
+            【ケースファイル型の物語構造】
+
+            1. Hook（導入）：事件/依頼/違和感。30秒で掴む
+
+            2. Trail（探索）：スポットごとに「証拠」を1つ追加
+
+            3. Shift（転換）：中盤で視点が変わる
+
+            4. Reveal（解決）：街の意味が更新される
+
+
+            【ローカル事実は「ドラマの燃料」にする】
+
+            観光ガイドの説明をそのまま入れると体験が止まる。
+
+            事実はこう変換する：
+
+            - 情報 → 緊張（なぜ隠された？）
+
+            - 情報 → 選択（信じる？疑う？）
+
+            - 情報 → 視点（同じ景色が違って見える）
+
+
+            出力は必ずJSON形式で。'
         - id: 31be4b35-8c27-45ae-bcbe-995b273aba67
           role: user
-          text: "【プレイヤーの役割】\n{{#1768599287614.player_role#}}\n\n【体験の約束】\n{{#1768599287614.experience_promise#}}\n\n【雰囲気】\n{{#1768599287614.atmosphere_tone#}}\n\n【テーマ】\n{{#1768599287614.primary_themes#}}\n\n【スポットとモチーフ】\n{{#1768602505042.motifs_text#}}\n\n【事件/謎の構造】\n{{#1768602505042.overall_narrative#}}\n\n【エリアの歴史】\n{{#1768599416646.text#}}\n\n\n【premise（物語の説明）のルール】\n\n※絶対守ること：\n- 200〜300字、3〜4段落\n- 「あなた」で話しかける\n- 1文は40字以内（短く！）\n- 最後は「さあ、〇〇しよう」で締める\n\n※禁止ワード：\n「調停」「編纂」「痕跡」「探求者」「調査員」「異変」「違和感」「示唆」「暗示」など難しい言葉\n\n※使っていい言葉：\n「探す」「見つける」「集める」「謎」「秘密」「隠された」「不思議」「手がかり」\n\n\n【良いpremiseの例】\n\n「この街には、まだ誰も知らない秘密がある。\n\nあなたは、その秘密を探す人。街のあちこちに残された不思議な印を見つけ、集めていく。\n\n5つの印を全部集めると、この街の本当の姿がわかる。でも、日が暮れる前に見つけないと、印は消えてしまう。\n\nさあ、最初の印を探しに行こう。」\n\n\n【出力形式】JSON\n{\n  \"main_plot\": {\n    \"premise\": \"200〜300字の導入文（上の例のように、短い文で、わかりやすく）\",\n    \"goal\": \"やること（1文、シンプルに）\",\n    \"antagonist_or_mystery\": \"謎や問題（1文、シンプルに）\",\n    \"final_reveal_outline\": \"最後にわかること（ネタバレなし）\"\n  },\n  \"spot_story_beats\": [\n    {\n      \"spot_id\": \"S1\",\n      \"story_beat\": \"ここで何が起きるか（1文）\",\n      \"emotional_arc\": \"どんな気持ち（ワクワク/ドキドキ/ほっこり等）\",\n      \"key_discovery\": \"ここで見つかるもの\"\n    }\n  ],\n  \"reward_design\": {\n    \"small_rewards\": \"各スポットでもらえるもの\",\n    \"medium_reward_description\": \"途中でわかる大事なこと\",\n    \"final_reward_description\": \"最後にわかる一番大事なこと\"\n  }\n}"
+          text: "【プレイヤーの役割】\n{{#1768599287614.player_role#}}\n\n【体験の約束】\n{{#1768599287614.experience_promise#}}\n\
+            \n【雰囲気】\n{{#1768599287614.atmosphere_tone#}}\n\n【テーマ】\n{{#1768599287614.primary_themes#}}\n\
+            \n【スポットとモチーフ】\n{{#1768602505042.motifs_text#}}\n\n【事件/謎の構造】\n{{#1768602505042.overall_narrative#}}\n\
+            \n【エリアの歴史】\n{{#1768599416646.text#}}\n\n\n【premise（前提説明）の必須ルール】\n- 300〜500字、3〜4段落\n\
+            - 二人称（あなた）中心、現在形\n- 最後の1文は問いかけで締める\n- ネタバレ禁止（答え、犯人、どんでん返しは書かない）\n- 歴史的事実から逸脱しない\n\
+            \n【premiseに必ず含める8要素】\n1. 雰囲気の一撃目（映画のオープニング感）\n2. プレイヤーの役割（なりきり）\n3. 舞台の描写（具体的な場所）\n\
+            4. 事件・異変（導入フック）\n5. 痕跡（シンボル/暗号/伝承/手がかり）\n6. 賭け金（タイムリミット/危機/失敗示唆）\n7. 体験の約束（ただの散歩ではない）\n\
+            8. CTA（問いかけで締め）\n\n\n【出力形式】JSON\n{\n  \"main_plot\": {\n    \"premise\"\
+            : \"300〜500字の導入文\",\n    \"goal\": \"主人公の目的（1文）\",\n    \"antagonist_or_mystery\"\
+            : \"対立要素または中心の謎（1文）\",\n    \"final_reveal_outline\": \"最後に街の見え方がどう変わるか（ネタバレなし、曖昧に）\"\
+            \n  },\n  \"spot_story_beats\": [\n    {\n      \"spot_id\": \"S1\",\n\
+            \      \"story_beat\": \"この地点で起こる物語上の出来事（1文）\",\n      \"emotional_arc\"\
+            : \"この地点でプレイヤーが感じること（1語）\",\n      \"key_discovery\": \"この地点で発見する証拠/情報（具体的に）\"\
+            \n    }\n  ],\n  \"reward_design\": {\n    \"small_rewards\": \"各スポットで得る小報酬の種類\"\
+            ,\n    \"medium_reward_description\": \"中盤で得る中報酬（視点の変化）\",\n    \"final_reward_description\"\
+            : \"最後に得る大報酬（街の意味の更新）\"\n  }\n}"
         selected: false
         title: LLM_物語骨格生成
         type: llm
@@ -1247,11 +1405,70 @@ workflow:
         prompt_template:
         - id: 06727bcd-26e0-4eae-bf9c-095f88e2b36e
           role: system
-          text: "あなたは街歩きクエストの謎を作る人です。\n\n【大原則】子供から大人まで、誰でもすぐ理解できる\n- 難しい言葉は使わない\n- 「何をすればいいか」がすぐわかる\n- 謎は「その場所を見ればわかる」ものにする\n- スマホをずっと見なくていい謎にする\n\n【謎のパターン（使っていいもの）】\n1. 数える系：「〇〇はいくつある？」\n2. 探す系：「〇〇を見つけて」\n3. 比べる系：「〇〇と△△、どっちが大きい？」\n4. 見つける系：「〇〇の中に隠れている文字は？」\n\n出力は必ずJSON形式で。"
+          text: 'あなたは周遊型謎解きの設計士です。
+
+
+            【北極星】街が主役、物語がレンズ、謎が動機
+
+
+            【謎の正解条件：ストーリー上の行為になっている】
+
+            - 探偵なら「観察」「照合」「推理」
+
+            - 旅人なら「発見」「収集」「記録」
+
+            - 調査員なら「確認」「比較」「報告」
+
+
+            「パズルだから解く」ではなく「物語の行為だから解く」に変える。
+
+
+            【現地依存の謎の型（強い順）】
+
+            1. 観察型：数/紋章/配置/方角/形状（最強。街が主役になる）
+
+            2. 照合型：地図と現地を照らす、写真と同じ構図を探す
+
+            3. 選択型：目撃証言の矛盾を見抜いて選ぶ（低負荷でドラマ強い）
+
+            4. 軽暗号型：現地の文字・銘板を材料に（完全な画面完結は避ける）
+
+
+            【絶対ルール】
+
+            - 同じ場所でスマホ注視が長くなる謎は避ける
+
+            - 「顔を上げて街を見る」体験を守る
+
+
+            出力は必ずJSON形式で。'
         - id: f6252950-9da1-4e16-877d-43ad42f02e1d
           role: user
-          text: "【プレイヤーは何をする人？】\n{{#1768599287614.player_role#}}\n\n【物語の説明】\n{{#1768602757091.premise#}}\n\n【スポット情報】\n{{#1768602505042.motifs_text#}}\n\n【各スポットで起きること】\n{{#1768602757091.spot_beats_text#}}\n\n\n【謎を作るときのルール】\n\n1. その場所を見れば答えがわかる（調べなくていい）\n2. 「〇〇を見て」と具体的に伝える\n3. 答えは1つだけ\n4. 解けたら「へぇ！」と思える\n\n【ダメな謎】\n- 「〇〇を作ったのは誰？」（調べないとわからない）\n- 難しすぎる暗号\n- スマホをずっと見ないといけない謎\n\n\n【各スポットで書くこと】\n\n1. 到着したとき（2〜3文、短く）\n   - arrival_text: 「ここが〇〇です。〇〇を見てみましょう」\n   - look_up_instruction: 「正面の〇〇を見て」\n\n2. 謎（シンプルに！）\n   - observation_target: 何を見るか\n   - action_verb: 何をするか（数える/探す/見つける/比べる）\n   - puzzle_prompt: 謎の問題文（40字以内、シンプルに）\n   - answer: 答え\n   - difficulty: 難易度（1〜3）\n\n3. ヒント（3段階）\n   - hint_1: ちょっとしたヒント\n   - hint_2: もう少し具体的なヒント\n   - hint_3: ほぼ答え\n\n4. 正解したら\n   - solved_reveal: 答えの意味や豆知識（2〜3文、面白く）\n   - evidence_item: 手に入るもの（手がかり/印/メモなど）\n   - plot_key: キーワード（1〜5文字）\n   - next_push: 次の場所への案内（1文）\n\n\n【出力形式】JSON配列\n[\n  {\n    \"spot_id\": \"S1\",\n    \"spot_name\": \"スポット名\",\n    「story_anchor\": \"hook\",\n    \"arrival\": {\n      \"arrival_text\": \"着いた！ここが〇〇だ。〇〇を見てみよう\",\n      \"look_up_instruction\": \"正面の〇〇を見て\"\n    },\n    \"mission\": {\n      \"observation_target\": \"見るもの\",\n      \"action_verb\": \"数える\",\n      \"puzzle_prompt\": \"〇〇はいくつある？（40字以内）\",\n      \"answer\": \"答え\",\n      \"difficulty\": 2\n    },\n    \"hints\": {\n      \"hint_1\": \"ヒント1\",\n      \"hint_2\": \"ヒント2\",\n      \"hint_3\": \"ほぼ答え\"\n    },\n    \"reward\": {\n      \"solved_reveal\": \"答えの意味（面白い豆知識）\",\n      \"evidence_item\": \"手に入るもの\",\n      \"plot_key\": \"キーワード\",\n      \"next_push\": \"次は〇〇へ行こう\"\n    }\n  }\n]\n\n全スポット分を作ってください。"
-        selected: true
+          text: "【プレイヤーの役割】\n{{#1768599287614.player_role#}}\n\n【物語の前提（premise）】\n\
+            {{#1768602757091.premise#}}\n\n【スポットと役割】\n{{#1768602505042.motifs_text#}}\n\
+            \n【各スポットのストーリービート】\n{{#1768602757091.spot_beats_text#}}\n\n\n【謎設計の絶対ルール】\n\
+            \n1. 現地を見れば解ける（外部知識不要）\n2. 「顔を上げる指示」を必ず含める\n3. 答えは明確で1つだけ\n4. 解いた瞬間に「へぇ！」と学びがある\n\
+            5. 謎がプレイヤーの役割に合った行為である\n\n【禁止事項】\n- 「○○を建てたのは誰？」系の暗記クイズ\n- スポットと関係ない一般パズル\n\
+            - 答えが複数通りある曖昧な問題\n- 長文をスマホで読ませる謎\n\n\n【各スポットの謎設計フォーマット】\n\n1. 到着時導入（30〜60秒）\n\
+            \   - arrival_text: 到着時に表示する短い文（2-3文）\n   - look_up_instruction: 「○○の方を見て」（顔を上げる具体的指示）\n\
+            \n2. 観察ミッション（1〜3分）\n   - observation_target: 何を見るか（具体的に）\n   - puzzle_prompt:\
+            \ 謎の出題文（50-80字、美しく謎めいた語り口）\n   - answer: 答え（明確に1つ）\n   - action_verb:\
+            \ プレイヤーがやること（数える/探す/見つける/比べる）\n\n3. 3段階ヒント\n   - hint_1: 方向性（何を見る？）\n\
+            \   - hint_2: 具体的（どこを見る？）\n   - hint_3: 救済（ほぼ答え）\n\n4. 報酬（30〜60秒）\n  \
+            \ - solved_reveal: 解けたら分かる豆知識/背景（2-3文）\n   - evidence_item: 手に入る証拠/アイテムの名前\n\
+            \   - next_push: 次のスポットへの動機（1文）\n\n\n【出力形式】JSON配列\n[\n  {\n    \"spot_id\"\
+            : \"S1\",\n    \"spot_name\": \"スポット名\",\n    \"story_anchor\": \"hook\"\
+            ,\n    \"arrival\": {\n      \"arrival_text\": \"到着時の状況説明（2-3文、現在形）\"\
+            ,\n      \"look_up_instruction\": \"正面の○○を見上げて\"\n    },\n    \"mission\"\
+            : {\n      \"observation_target\": \"屋根の上の○○\",\n      \"action_verb\"\
+            : \"数える\",\n      \"puzzle_prompt\": \"美しく謎めいた出題文（50-80字）\",\n      \"\
+            answer\": \"答え\",\n      \"difficulty\": 2\n    },\n    \"hints\": {\n\
+            \      \"hint_1\": \"方向性のヒント\",\n      \"hint_2\": \"具体的なヒント\",\n    \
+            \  \"hint_3\": \"救済のヒント（ほぼ答え）\"\n    },\n    \"reward\": {\n      \"solved_reveal\"\
+            : \"解けたら分かる背景/豆知識（2-3文）\",\n      \"evidence_item\": \"手に入る証拠の名前\",\n\
+            \      \"plot_key\": \"物語の鍵（1-5文字）\",\n      \"next_push\": \"次のスポットへの動機付け（1文）\"\
+            \n    }\n  }\n]\n\n全スポット分を生成してください。"
+        selected: false
         title: LLM_謎設計ループ
         type: llm
         vision:
@@ -1264,108 +1481,71 @@ workflow:
       positionAbsolute:
         x: 4012.7143112894146
         y: 302.04736200195606
-      selected: true
+      selected: false
       sourcePosition: right
       targetPosition: left
       type: custom
       width: 242
     - data:
-        code: "import json\nimport re\n\ndef main(llm_output: str) -> dict:\n    \
-          json_match = re.search(r'\\[[\\s\\S]*\\]', llm_output)\n    \
-          if json_match:\n        \
-          try:\n            \
-          spots = json.loads(json_match.group())\n            \
-          plot_keys = []\n            \
-          spots_summary = ''\n            \
-          converted_spots = []\n            \n            \
-          for s in spots:\n                \
-          spot_id = s.get('spot_id', '')\n                \
-          spot_name = s.get('spot_name', '')\n                \
-          story_anchor = s.get('story_anchor', '')\n                \n                \
-          # 新形式から旧形式への変換\n                \
-          arrival = s.get('arrival', {})\n                \
-          mission = s.get('mission', {})\n                \
-          hints = s.get('hints', {})\n                \
-          reward = s.get('reward', {})\n                \n                \
-          # lore_cardの構築\n                \
-          lore_card = {\n                    \
-          'short_story_text': arrival.get('arrival_text', ''),\n                    \
-          'player_handout': arrival.get('look_up_instruction', '') + ' ' + mission.get('observation_target', '')\n                \
-          }\n                \n                \
-          # puzzleの構築\n                \
-          puzzle = {\n                    \
-          'type': 'observation',\n                    \
-          'prompt': mission.get('puzzle_prompt', ''),\n                    \
-          'answer': mission.get('answer', ''),\n                    \
-          'difficulty': mission.get('difficulty', 2),\n                    \
-          'hints': [\n                        \
-          hints.get('hint_1', ''),\n                        \
-          hints.get('hint_2', ''),\n                        \
-          hints.get('hint_3', '')\n                    \
-          ],\n                    \
-          'solution_steps': [\n                        \
-          f\"ステップ1: {arrival.get('look_up_instruction', '')}\",\n                        \
-          f\"ステップ2: {mission.get('observation_target', '')}を{mission.get('action_verb', '確認する')}\",\n                        \
-          f\"ステップ3: 答えを導き出す\"\n                    \
-          ]\n                \
-          }\n                \n                \
-          # rewardの構築\n                \
-          reward_obj = {\n                    \
-          'lore_reveal': reward.get('solved_reveal', ''),\n                    \
-          'plot_key': reward.get('plot_key', ''),\n                    \
-          'next_hook': reward.get('next_push', '')\n                \
-          }\n                \n                \
-          # scene_roleのマッピング（story_anchor → scene_role）\n                \
-          scene_role_map = {\n                    \
-          'hook': '導入',\n                    \
-          'evidence': '展開',\n                    \
-          'witness': '展開',\n                    \
-          'cipher': '展開',\n                    \
-          'memory': '転換',\n                    \
-          'contradiction': '転換',\n                    \
-          'shift': '転換',\n                    \
-          'truth': '真相接近',\n                    \
-          'reveal': '結末'\n                \
-          }\n                \
-          scene_role = scene_role_map.get(story_anchor, '展開')\n                \n                \
-          # 変換済みスポット\n                \
-          converted = {\n                    \
-          'spot_id': spot_id,\n                    \
-          'spot_name': spot_name,\n                    \
-          'scene_role': scene_role,\n                    \
-          'story_anchor': story_anchor,\n                    \
-          'lore_card': lore_card,\n                    \
-          'puzzle': puzzle,\n                    \
-          'reward': reward_obj,\n                    \
-          'arrival': arrival,\n                    \
-          'mission': mission,\n                    \
-          'hints': hints\n                \
-          }\n                \
-          converted_spots.append(converted)\n                \n                \
-          # サマリー作成\n                \
-          plot_key = reward.get('plot_key', '')\n                \
-          puzzle_prompt = mission.get('puzzle_prompt', '')\n                \
-          answer = mission.get('answer', '')\n                \n                \
-          plot_keys.append(f'{spot_id}: {plot_key}')\n                \
-          spots_summary += f'{spot_id} ({spot_name})\\n'\n                \
-          spots_summary += f'  役割: {scene_role}\\n'\n                \
-          spots_summary += f'  謎: {puzzle_prompt}\\n'\n                \
-          spots_summary += f'  答え: {answer}\\n'\n                \
-          spots_summary += f'  鍵: {plot_key}\\n\\n'\n            \n            \
-          return {\n                \
-          'spot_scenes_json': json.dumps(converted_spots, ensure_ascii=False),\n                \
-          'spot_scenes_count': len(converted_spots),\n                \
-          'plot_keys_text': '\\n'.join(plot_keys),\n                \
-          'spots_summary': spots_summary\n            \
-          }\n        \
-          except:\n            \
-          pass\n    \n    \
-          return {\n        \
-          'spot_scenes_json': '[]',\n        \
-          'spot_scenes_count': 0,\n        \
-          'plot_keys_text': 'パースに失敗しました',\n        \
-          'spots_summary': ''\n    \
-          }\n"
+        code: "import json\nimport re\n\ndef main(llm_output: str) -> dict:\n    json_match\
+          \ = re.search(r'\\[[\\s\\S]*\\]', llm_output)\n    if json_match:\n    \
+          \    try:\n            spots = json.loads(json_match.group())\n        \
+          \    plot_keys = []\n            spots_summary = ''\n            converted_spots\
+          \ = []\n            \n            for s in spots:\n                spot_id\
+          \ = s.get('spot_id', '')\n                spot_name = s.get('spot_name',\
+          \ '')\n                story_anchor = s.get('story_anchor', '')\n      \
+          \          \n                # 新形式から旧形式への変換\n                arrival = s.get('arrival',\
+          \ {})\n                mission = s.get('mission', {})\n                hints\
+          \ = s.get('hints', {})\n                reward = s.get('reward', {})\n \
+          \               \n                # lore_cardの構築\n                lore_card\
+          \ = {\n                    'short_story_text': arrival.get('arrival_text',\
+          \ ''),\n                    'player_handout': arrival.get('look_up_instruction',\
+          \ '') + ' ' + mission.get('observation_target', '')\n                }\n\
+          \                \n                # puzzleの構築\n                puzzle =\
+          \ {\n                    'type': 'observation',\n                    'prompt':\
+          \ mission.get('puzzle_prompt', ''),\n                    'answer': mission.get('answer',\
+          \ ''),\n                    'difficulty': mission.get('difficulty', 2),\n\
+          \                    'hints': [\n                        hints.get('hint_1',\
+          \ ''),\n                        hints.get('hint_2', ''),\n             \
+          \           hints.get('hint_3', '')\n                    ],\n          \
+          \          'solution_steps': [\n                        f\"ステップ1: {arrival.get('look_up_instruction',\
+          \ '')}\",\n                        f\"ステップ2: {mission.get('observation_target',\
+          \ '')}を{mission.get('action_verb', '確認する')}\",\n                       \
+          \ f\"ステップ3: 答えを導き出す\"\n                    ]\n                }\n      \
+          \          \n                # rewardの構築\n                reward_obj = {\n\
+          \                    'lore_reveal': reward.get('solved_reveal', ''),\n \
+          \                   'plot_key': reward.get('plot_key', ''),\n          \
+          \          'next_hook': reward.get('next_push', '')\n                }\n\
+          \                \n                # scene_roleのマッピング（story_anchor → scene_role）\n\
+          \                scene_role_map = {\n                    'hook': '導入',\n\
+          \                    'evidence': '展開',\n                    'witness': '展開',\n\
+          \                    'cipher': '展開',\n                    'memory': '転換',\n\
+          \                    'contradiction': '転換',\n                    'shift':\
+          \ '転換',\n                    'truth': '真相接近',\n                    'reveal':\
+          \ '結末'\n                }\n                scene_role = scene_role_map.get(story_anchor,\
+          \ '展開')\n                \n                # 変換済みスポット\n                converted\
+          \ = {\n                    'spot_id': spot_id,\n                    'spot_name':\
+          \ spot_name,\n                    'scene_role': scene_role,\n          \
+          \          'story_anchor': story_anchor,\n                    'lore_card':\
+          \ lore_card,\n                    'puzzle': puzzle,\n                  \
+          \  'reward': reward_obj,\n                    'arrival': arrival,\n    \
+          \                'mission': mission,\n                    'hints': hints\n\
+          \                }\n                converted_spots.append(converted)\n\
+          \                \n                # サマリー作成\n                plot_key =\
+          \ reward.get('plot_key', '')\n                puzzle_prompt = mission.get('puzzle_prompt',\
+          \ '')\n                answer = mission.get('answer', '')\n            \
+          \    \n                plot_keys.append(f'{spot_id}: {plot_key}')\n    \
+          \            spots_summary += f'{spot_id} ({spot_name})\\n'\n          \
+          \      spots_summary += f'  役割: {scene_role}\\n'\n                spots_summary\
+          \ += f'  謎: {puzzle_prompt}\\n'\n                spots_summary += f'  答え:\
+          \ {answer}\\n'\n                spots_summary += f'  鍵: {plot_key}\\n\\\
+          n'\n            \n            return {\n                'spot_scenes_json':\
+          \ json.dumps(converted_spots, ensure_ascii=False),\n                'spot_scenes_count':\
+          \ len(converted_spots),\n                'plot_keys_text': '\\n'.join(plot_keys),\n\
+          \                'spots_summary': spots_summary\n            }\n       \
+          \ except:\n            pass\n    \n    return {\n        'spot_scenes_json':\
+          \ '[]',\n        'spot_scenes_count': 0,\n        'plot_keys_text': 'パースに失敗しました',\n\
+          \        'spots_summary': ''\n    }\n"
         code_language: python3
         outputs:
           plot_keys_text:
@@ -1582,10 +1762,58 @@ workflow:
         prompt_template:
         - id: 957b4dd1-bae4-4b16-bab2-8583c9e68797
           role: system
-          text: "あなたは街歩きクエストの紹介文を書く人です。\n\n【大原則】子供から大人まで、誰でもすぐ理解できる\n- 難しい言葉は使わない\n- 短い文で、ワクワクさせる\n- 「やってみたい！」と思わせる\n\n【伝えること】\n1. 何をするの？（役割）\n2. 最後に何がわかるの？（ご褒美）\n3. どんな雰囲気？（楽しい/ドキドキ/不思議など）\n4. どのくらいかかる？（時間/距離）\n\n出力は必ずJSON形式で。"
+          text: 'あなたは周遊型クエストの紹介文ライターです。
+
+
+            【北極星】街が主役、物語がレンズ、謎が動機
+
+
+            【伝えるべきは4つだけ】
+
+            1. あなたは誰として歩くか（役割）
+
+            2. 何を達成すると気持ちいいか（報酬）
+
+            3. どんな空気の物語か（トーン）
+
+            4. どれくらいの負荷か（時間/距離/難易度）
+
+
+            【絶対に言わない方がいいもの】
+
+            - どこで何が起きるか（転換点の場所）
+
+            - 犯人/真相の示唆
+
+            - 驚きポイントの列挙
+
+
+            代わりに「約束（Promise）」だけ置く。
+
+            例：「最後にこの像の意味が更新される」
+
+
+            出力は必ずJSON形式で。'
         - id: 7e53383b-10a8-4410-9bd8-72d951a5c735
           role: user
-          text: "【プレイヤーは何をする人？】\n{{#1768599287614.player_role#}}\n\n【最後に何がわかる？】\n{{#1768599287614.experience_promise#}}\n\n【雰囲気】\n{{#1768599287614.atmosphere_tone#}}\n\n【物語の説明】\n{{#1768602757091.premise#}}\n\n【スポット情報】\n{{#1768603594197.spots_summary#}}\n\n【ルート情報】\n総距離: {{#1768602131448.total_distance_m#}}m\n歩行時間: {{#1768602131448.walking_time_min#}}分\nスポット数: {{#1768558472266.spot_count#}}箇所\n難易度: {{#1768558472266.difficulty#}}\n\n\n【出力形式】JSON\n{\n  \"title\": \"タイトル（8字以内、キャッチーに）\",\n  \"subtitle\": \"サブタイトル（15字以内）\",\n  \"one_liner\": \"キャッチコピー（30字以内、ワクワクする文）\",\n  \"premise_short\": \"あらすじ（80〜100字、シンプルに）\",\n  \n  \"four_things\": {\n    \"role\": \"あなたは〇〇を探す（1文、シンプルに）\",\n    \"reward\": \"最後に〇〇がわかる（1文、シンプルに）\",\n    \"tone\": \"雰囲気（ワクワク/ドキドキ/ほっこりなど2〜3語）\",\n    \"effort\": {\n      \"time\": \"約〇〇分\",\n      \"distance\": \"約〇〇km\",\n      \"difficulty\": \"かんたん/ふつう/ちょっと難しい\",\n      \"safety_note\": \"注意（あれば）\"\n    }\n  },\n  \n  \"teasers\": [\n    \"気になる一言1\",\n    \"気になる一言2\",\n    \"気になる一言3\"\n  ],\n  \n  \"route_meta\": {\n    \"area_name\": \"エリア名\",\n    \"distance_km\": \"距離\",\n    \"estimated_time_min\": 時間（数字）,\n    \"spots_count\": スポット数（数字）,\n    \"difficulty_label\": \"難易度\"\n  },\n  \n  \"tags\": [\"タグ1\", \"タグ2\", \"タグ3\"],\n  \n  \"cta_copy\": {\n    \"primary\": \"さあ、始めよう！\",\n    \"secondary\": \"くわしく見る\"\n  }\n}"
+          text: "【プレイヤーの役割】\n{{#1768599287614.player_role#}}\n\n【体験の約束】\n{{#1768599287614.experience_promise#}}\n\
+            \n【雰囲気】\n{{#1768599287614.atmosphere_tone#}}\n\n【物語の導入】\n{{#1768602757091.premise#}}\n\
+            \n【スポット情報】\n{{#1768603594197.spots_summary#}}\n\n【ルート情報】\n総距離: {{#1768602131448.total_distance_m#}}m\n\
+            歩行時間: {{#1768602131448.walking_time_min#}}分\nスポット数: {{#1768558472266.spot_count#}}箇所\n\
+            難易度: {{#1768558472266.difficulty#}}\n\n\n【出力形式】JSON\n{\n  \"title\": \"\
+            クエストタイトル（10字以内、魅力的に）\",\n  \"subtitle\": \"サブタイトル（20字以内）\",\n  \"one_liner\"\
+            : \"30〜45文字のキャッチコピー（約束を含める）\",\n  \"premise_short\": \"100〜150字のあらすじ（ネタバレなし、期待だけ）\"\
+            ,\n  \n  \"four_things\": {\n    \"role\": \"あなたは〇〇として歩く（1文）\",\n    \"\
+            reward\": \"最後に〇〇が明らかになる（1文）\",\n    \"tone\": \"この物語の空気を表す言葉（3語）\",\n\
+            \    \"effort\": {\n      \"time\": \"推定所要時間（〇〇分）\",\n      \"distance\"\
+            : \"距離（〇〇km）\",\n      \"difficulty\": \"難易度（初心者向け/普通/本格派）\",\n      \"\
+            safety_note\": \"注意事項（1文、あれば）\"\n    }\n  },\n  \n  \"teasers\": [\n \
+            \   \"期待を高める1文目（場所名なし）\",\n    \"期待を高める2文目（場所名なし）\",\n    \"期待を高める3文目（場所名なし）\"\
+            \n  ],\n  \n  \"route_meta\": {\n    \"area_name\": \"エリア名\",\n    \"\
+            distance_km\": \"距離km\",\n    \"estimated_time_min\": 所要時間（数字）,\n    \"\
+            spots_count\": スポット数（数字）,\n    \"difficulty_label\": \"難易度ラベル\"\n  },\n\
+            \  \n  \"tags\": [\"タグ1\", \"タグ2\", \"タグ3\"],\n  \n  \"cta_copy\": {\n\
+            \    \"primary\": \"冒険を始める\",\n    \"secondary\": \"詳しく見る\"\n  }\n}"
         selected: false
         title: LLM_プレビュー生成
         type: llm
@@ -1675,62 +1903,69 @@ workflow:
       type: custom
       width: 242
     - data:
-        code: "import json\nfrom datetime import datetime\nfrom urllib.parse import quote\n\ndef main(\n    player_preview_json:\
-          \ str,\n    quest_title: str,\n    premise: str,\n    goal: str,\n    mystery:\
-          \ str,\n    final_reveal: str,\n    spot_scenes_json: str,\n    meta_puzzle_json:\
-          \ str,\n    optimized_spots_json: str,\n    original_spots_json: str,\n    validation_passed: bool,\n \
-          \   quality_score: int\n) -> dict:\n    \n    # JSONパース\n    try:\n    \
-          \    player_preview = json.loads(player_preview_json)\n        spot_scenes\
+        code: "import json\nfrom datetime import datetime\nfrom urllib.parse import\
+          \ quote\n\ndef main(\n    player_preview_json: str,\n    quest_title: str,\n\
+          \    premise: str,\n    goal: str,\n    mystery: str,\n    final_reveal:\
+          \ str,\n    spot_scenes_json: str,\n    meta_puzzle_json: str,\n    optimized_spots_json:\
+          \ str,\n    original_spots_json: str,\n    validation_passed: bool,\n  \
+          \  quality_score: int\n) -> dict:\n    \n    # JSONパース\n    try:\n     \
+          \   player_preview = json.loads(player_preview_json)\n        spot_scenes\
           \ = json.loads(spot_scenes_json)\n        meta_puzzle = json.loads(meta_puzzle_json)\n\
-          \        optimized_spots = json.loads(optimized_spots_json)\n        original_spots = json.loads(original_spots_json) if original_spots_json else []\n\
-          \    except:\n\
-          \        return {\n            \"output_json\": \"{}\",\n            \"\
-          error\": \"JSONパースに失敗しました\"\n        }\n    \n    # Google Mapsからの元データを複数キーでインデックス化（最優先）\n    \
-          spots_by_id = {}\n    spots_by_name = {}\n    \n    # まず元データでインデックス構築\n    for i, spot in enumerate(original_spots):\n        \
-          sid = spot.get('spot_id', f'S{i+1}')\n        name = spot.get('name', '')\n        \
-          spots_by_id[sid] = spot\n        if name:\n            spots_by_name[name] = spot\n    \n    # optimized_spotsでも構築（元データにない場合のフォールバック）\n    \
-          for i, spot in enumerate(optimized_spots):\n        \
-          sid = spot.get('spot_id', f'S{i+1}')\n        name = spot.get('name', '')\n        \
-          if sid not in spots_by_id:\n            spots_by_id[sid] = spot\n        \
-          if name and name not in spots_by_name:\n            spots_by_name[name] = spot\n    \n    # スポットシーンに座標とGoogle Maps URLを追加\n    \
-          matched_count = 0\n    for scene in spot_scenes:\n        spot_id = scene.get('spot_id', '')\n        \
-          spot_name = scene.get('spot_name', '')\n        matched_spot = None\n        \n        \
-          # 優先順位1: spot_idでマッチング\n        if spot_id in spots_by_id:\n            \
-          matched_spot = spots_by_id[spot_id]\n        # 優先順位2: spot_nameでマッチング\n        \
-          elif spot_name in spots_by_name:\n            matched_spot = spots_by_name[spot_name]\n        \n        \
-          if matched_spot:\n            matched_count += 1\n            lat = matched_spot.get('lat', 0)\n            \
-          lng = matched_spot.get('lng', 0)\n            place_id = matched_spot.get('place_id', '')\n            \
-          original_name = matched_spot.get('name', spot_name)\n            address = matched_spot.get('address', '')\n            \
-          google_maps_url = matched_spot.get('google_maps_url', '')\n            \n            \
-          scene['lat'] = float(lat) if lat else 0.0\n            scene['lng'] = float(lng) if lng else 0.0\n            \
-          scene['place_id'] = place_id\n            scene['address'] = address\n            \
-          scene['name'] = original_name\n            scene['spot_name'] = original_name\n            \n            \
-          # Google Maps URL（元データにあればそれを使用）\n            if google_maps_url:\n                \
-          scene['google_maps_url'] = google_maps_url\n            elif place_id:\n                \
-          scene['google_maps_url'] = f'https://www.google.com/maps/search/?api=1&query={quote(original_name)}&query_place_id={place_id}'\n            \
-          elif lat and lng:\n                \
-          scene['google_maps_url'] = f'https://www.google.com/maps/search/?api=1&query={lat},{lng}'\n            \
-          else:\n                \
-          scene['google_maps_url'] = f'https://www.google.com/maps/search/?api=1&query={quote(spot_name)}'\n        \
-          else:\n            \
-          # フォールバック：座標がない場合\n            scene['lat'] = float(scene.get('lat', 0)) if scene.get('lat') else 0.0\n            \
-          scene['lng'] = float(scene.get('lng', 0)) if scene.get('lng') else 0.0\n            \
-          scene['google_maps_url'] = f'https://www.google.com/maps/search/?api=1&query={quote(spot_name)}'\n    \n    # creator_payload構築\n    creator_payload =\
-          \ {\n        \"quest_id\": f\"quest-{int(datetime.now().timestamp())}\"\
-          ,\n        \"quest_title\": quest_title,\n        \"main_plot\": {\n   \
-          \         \"premise\": premise,\n            \"goal\": goal,\n         \
-          \   \"antagonist_or_mystery\": mystery,\n            \"final_reveal_outline\"\
-          : final_reveal\n        },\n        \"spots\": spot_scenes,\n        \"\
-          meta_puzzle\": meta_puzzle,\n        \"generation_metadata\": {\n      \
-          \      \"generated_at\": datetime.now().isoformat(),\n            \"pipeline_version\"\
-          : \"3.0.0-dify\",\n            \"validation_passed\": validation_passed,\n\
-          \            \"quality_score\": quality_score,\n            \"spots_count\": len(spot_scenes),\n\
-          \            \"original_spots_count\": len(original_spots),\n\
-          \            \"coords_matched\": matched_count,\n            \"coords_match_rate\": round(matched_count / len(spot_scenes) * 100, 1) if spot_scenes else 0\n\
-          \        }\n    }\n    \n    # 最終出力\n    output = {\n        \"player_preview\": player_preview,\n\
-          \        \"creator_payload\": creator_payload\n    }\n    \n    return {\n\
-          \        \"output_json\": json.dumps(output, ensure_ascii=False, indent=2)\n\
-          \    }"
+          \        optimized_spots = json.loads(optimized_spots_json)\n        original_spots\
+          \ = json.loads(original_spots_json) if original_spots_json else []\n   \
+          \ except:\n        return {\n            \"output_json\": \"{}\",\n    \
+          \        \"error\": \"JSONパースに失敗しました\"\n        }\n    \n    # Google Mapsからの元データを複数キーでインデックス化（最優先）\n\
+          \    spots_by_id = {}\n    spots_by_name = {}\n    \n    # まず元データでインデックス構築\n\
+          \    for i, spot in enumerate(original_spots):\n        sid = spot.get('spot_id',\
+          \ f'S{i+1}')\n        name = spot.get('name', '')\n        spots_by_id[sid]\
+          \ = spot\n        if name:\n            spots_by_name[name] = spot\n   \
+          \ \n    # optimized_spotsでも構築（元データにない場合のフォールバック）\n    for i, spot in enumerate(optimized_spots):\n\
+          \        sid = spot.get('spot_id', f'S{i+1}')\n        name = spot.get('name',\
+          \ '')\n        if sid not in spots_by_id:\n            spots_by_id[sid]\
+          \ = spot\n        if name and name not in spots_by_name:\n            spots_by_name[name]\
+          \ = spot\n    \n    # スポットシーンに座標とGoogle Maps URLを追加\n    matched_count =\
+          \ 0\n    for scene in spot_scenes:\n        spot_id = scene.get('spot_id',\
+          \ '')\n        spot_name = scene.get('spot_name', '')\n        matched_spot\
+          \ = None\n        \n        # 優先順位1: spot_idでマッチング\n        if spot_id in\
+          \ spots_by_id:\n            matched_spot = spots_by_id[spot_id]\n      \
+          \  # 優先順位2: spot_nameでマッチング\n        elif spot_name in spots_by_name:\n\
+          \            matched_spot = spots_by_name[spot_name]\n        \n       \
+          \ if matched_spot:\n            matched_count += 1\n            lat = matched_spot.get('lat',\
+          \ 0)\n            lng = matched_spot.get('lng', 0)\n            place_id\
+          \ = matched_spot.get('place_id', '')\n            original_name = matched_spot.get('name',\
+          \ spot_name)\n            address = matched_spot.get('address', '')\n  \
+          \          google_maps_url = matched_spot.get('google_maps_url', '')\n \
+          \           \n            scene['lat'] = float(lat) if lat else 0.0\n  \
+          \          scene['lng'] = float(lng) if lng else 0.0\n            scene['place_id']\
+          \ = place_id\n            scene['address'] = address\n            scene['name']\
+          \ = original_name\n            scene['spot_name'] = original_name\n    \
+          \        \n            # Google Maps URL（元データにあればそれを使用）\n            if\
+          \ google_maps_url:\n                scene['google_maps_url'] = google_maps_url\n\
+          \            elif place_id:\n                scene['google_maps_url'] =\
+          \ f'https://www.google.com/maps/search/?api=1&query={quote(original_name)}&query_place_id={place_id}'\n\
+          \            elif lat and lng:\n                scene['google_maps_url']\
+          \ = f'https://www.google.com/maps/search/?api=1&query={lat},{lng}'\n   \
+          \         else:\n                scene['google_maps_url'] = f'https://www.google.com/maps/search/?api=1&query={quote(spot_name)}'\n\
+          \        else:\n            # フォールバック：座標がない場合\n            scene['lat']\
+          \ = float(scene.get('lat', 0)) if scene.get('lat') else 0.0\n          \
+          \  scene['lng'] = float(scene.get('lng', 0)) if scene.get('lng') else 0.0\n\
+          \            scene['google_maps_url'] = f'https://www.google.com/maps/search/?api=1&query={quote(spot_name)}'\n\
+          \    \n    # creator_payload構築\n    creator_payload = {\n        \"quest_id\"\
+          : f\"quest-{int(datetime.now().timestamp())}\",\n        \"quest_title\"\
+          : quest_title,\n        \"main_plot\": {\n            \"premise\": premise,\n\
+          \            \"goal\": goal,\n            \"antagonist_or_mystery\": mystery,\n\
+          \            \"final_reveal_outline\": final_reveal\n        },\n      \
+          \  \"spots\": spot_scenes,\n        \"meta_puzzle\": meta_puzzle,\n    \
+          \    \"generation_metadata\": {\n            \"generated_at\": datetime.now().isoformat(),\n\
+          \            \"pipeline_version\": \"3.0.0-dify\",\n            \"validation_passed\"\
+          : validation_passed,\n            \"quality_score\": quality_score,\n  \
+          \          \"spots_count\": len(spot_scenes),\n            \"original_spots_count\"\
+          : len(original_spots),\n            \"coords_matched\": matched_count,\n\
+          \            \"coords_match_rate\": round(matched_count / len(spot_scenes)\
+          \ * 100, 1) if spot_scenes else 0\n        }\n    }\n    \n    # 最終出力\n\
+          \    output = {\n        \"player_preview\": player_preview,\n        \"\
+          creator_payload\": creator_payload\n    }\n    \n    return {\n        \"\
+          output_json\": json.dumps(output, ensure_ascii=False, indent=2)\n    }"
         code_language: python3
         outputs:
           output_json:
@@ -1813,8 +2048,161 @@ workflow:
       targetPosition: left
       type: custom
       width: 242
+    - data:
+        dataset_ids: []
+        multiple_retrieval_config:
+          reranking_enable: false
+          top_k: 4
+        query_attachment_selector: []
+        query_variable_selector: []
+        retrieval_mode: multiple
+        selected: false
+        title: 知識検索
+        type: knowledge-retrieval
+      height: 52
+      id: '1768674456422'
+      position:
+        x: 6142.948042252686
+        y: 414.78314255473913
+      positionAbsolute:
+        x: 6142.948042252686
+        y: 414.78314255473913
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        cases:
+        - case_id: 'true'
+          conditions: []
+          id: 'true'
+          logical_operator: and
+        selected: false
+        title: IF/ELSE
+        type: if-else
+      height: 100
+      id: '1768674600649'
+      position:
+        x: 6444.948042252686
+        y: 414.78314255473913
+      positionAbsolute:
+        x: 6444.948042252686
+        y: 414.78314255473913
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        break_conditions: []
+        logical_operator: and
+        loop_count: 10
+        selected: false
+        start_node_id: 1768674607400start
+        title: ループ
+        type: loop
+      height: 146
+      id: '1768674607400'
+      position:
+        x: 6444.948042252686
+        y: 553.7831425547391
+      positionAbsolute:
+        x: 6444.948042252686
+        y: 553.7831425547391
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 252
+      zIndex: 1
+    - data:
+        desc: ''
+        isInLoop: true
+        selected: false
+        title: ''
+        type: loop-start
+      draggable: false
+      height: 48
+      id: 1768674607400start
+      parentId: '1768674607400'
+      position:
+        x: 24
+        y: 68
+      positionAbsolute:
+        x: 6468.948042252686
+        y: 621.7831425547391
+      selectable: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom-loop-start
+      width: 44
+      zIndex: 1002
+    - data:
+        is_array_file: false
+        selected: false
+        title: テキスト抽出
+        type: document-extractor
+        variable_selector: []
+      height: 52
+      id: '1768674616816'
+      position:
+        x: 6444.948042252686
+        y: 738.7831425547391
+      positionAbsolute:
+        x: 6444.948042252686
+        y: 738.7831425547391
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        extract_by:
+          enabled: false
+          serial: '1'
+        filter_by:
+          conditions: []
+          enabled: false
+        limit:
+          enabled: false
+          size: 10
+        order_by:
+          enabled: false
+          key: ''
+          value: asc
+        selected: false
+        title: リスト処理
+        type: list-operator
+        variable: []
+      height: 52
+      id: '1768674633577'
+      position:
+        x: 6444.948042252686
+        y: 829.7831425547391
+      positionAbsolute:
+        x: 6444.948042252686
+        y: 829.7831425547391
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        selected: true
+        title: エージェント
+        tool_node_version: '2'
+        type: agent
+      height: 80
+      id: '1768674657246'
+      position:
+        x: 6444.948042252686
+        y: 920.7831425547391
+      positionAbsolute:
+        x: 6444.948042252686
+        y: 920.7831425547391
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
     viewport:
-      x: -4332.174545427862
-      y: 85.76988903914202
-      zoom: 0.7361134310840899
+      x: -2539.357674215158
+      y: 16.455325797457135
+      zoom: 0.455421006248625
   rag_pipeline_variables: []

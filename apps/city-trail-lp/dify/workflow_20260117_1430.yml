@@ -1609,13 +1609,14 @@ workflow:
           elif spot_name in spots_by_name:\n            matched_spot = spots_by_name[spot_name]\n        \n        \
           if matched_spot:\n            matched_count += 1\n            lat = matched_spot.get('lat', 0)\n            \
           lng = matched_spot.get('lng', 0)\n            place_id = matched_spot.get('place_id', '')\n            \
-          name = matched_spot.get('name', spot_name)\n            address = matched_spot.get('address', '')\n            \
+          original_name = matched_spot.get('name', spot_name)\n            address = matched_spot.get('address', '')\n            \
           google_maps_url = matched_spot.get('google_maps_url', '')\n            \n            \
           scene['lat'] = float(lat) if lat else 0.0\n            scene['lng'] = float(lng) if lng else 0.0\n            \
-          scene['place_id'] = place_id\n            scene['address'] = address\n            \n            \
+          scene['place_id'] = place_id\n            scene['address'] = address\n            \
+          scene['name'] = original_name\n            scene['spot_name'] = original_name\n            \n            \
           # Google Maps URL（元データにあればそれを使用）\n            if google_maps_url:\n                \
           scene['google_maps_url'] = google_maps_url\n            elif place_id:\n                \
-          scene['google_maps_url'] = f'https://www.google.com/maps/search/?api=1&query={quote(name)}&query_place_id={place_id}'\n            \
+          scene['google_maps_url'] = f'https://www.google.com/maps/search/?api=1&query={quote(original_name)}&query_place_id={place_id}'\n            \
           elif lat and lng:\n                \
           scene['google_maps_url'] = f'https://www.google.com/maps/search/?api=1&query={lat},{lng}'\n            \
           else:\n                \

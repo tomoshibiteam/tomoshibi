@@ -31,17 +31,6 @@ workflow:
       - local_file
       - remote_url
       enabled: false
-      fileUploadConfig:
-        attachment_image_file_size_limit: 2
-        audio_file_size_limit: 50
-        batch_count_limit: 5
-        file_size_limit: 15
-        file_upload_limit: 20
-        image_file_batch_limit: 10
-        image_file_size_limit: 10
-        single_chunk_attachment_limit: 10
-        video_file_size_limit: 100
-        workflow_file_upload_limit: 10
       image:
         enabled: false
         number_limits: 3
@@ -212,17 +201,6 @@ workflow:
       zIndex: 0
     - data:
         isInLoop: false
-        sourceType: code
-        targetType: llm
-      id: 1768700000030-source-1768601846740-target
-      source: '1768700000030'
-      sourceHandle: source
-      target: '1768601846740'
-      targetHandle: target
-      type: custom
-      zIndex: 0
-    - data:
-        isInLoop: false
         sourceType: llm
         targetType: http-request
       id: 1768599416646-source-1768600394819-target
@@ -240,17 +218,6 @@ workflow:
       source: '1768600394819'
       sourceHandle: source
       target: '1768601299799'
-      targetHandle: target
-      type: custom
-      zIndex: 0
-    - data:
-        isInLoop: false
-        sourceType: code
-        targetType: llm
-      id: 1768601299799-source-1768601846740-target
-      source: '1768601299799'
-      sourceHandle: source
-      target: '1768601846740'
       targetHandle: target
       type: custom
       zIndex: 0
@@ -384,6 +351,41 @@ workflow:
       source: '1768603843069'
       sourceHandle: source
       target: '1768603963490'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: variable-aggregator
+      id: 1768601299799-source-1768683506629-target
+      source: '1768601299799'
+      sourceHandle: source
+      target: '1768683506629'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: variable-aggregator
+        targetType: llm
+      id: 1768683506629-source-1768601846740-target
+      source: '1768683506629'
+      sourceHandle: source
+      target: '1768601846740'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: code
+        targetType: variable-aggregator
+      id: 1768700000030-source-1768683506629-target
+      source: '1768700000030'
+      sourceHandle: source
+      target: '1768683506629'
       targetHandle: target
       type: custom
       zIndex: 0
@@ -700,15 +702,15 @@ workflow:
           \ -> dict:\n    # SPR探偵事務所シリーズ判定\n    is_spr = False\n    if is_admin ==\
           \ 'true':\n        spr_keywords = ['SPR', 'spr', 'SPR探偵', 'SPR探偵事務所', 'エスピーアール']\n\
           \        for kw in spr_keywords:\n            if kw in prompt:\n       \
-          \         is_spr = True\n                break\n    \n    # 伊都キャンパス判定\n   \
-          \ ito_keywords = ['伊都キャンパス', '伊都', '九大伊都', '九州大学伊都', 'Ito Campus', 'ito campus', '糸島', '元岡']\n\
-          \    is_ito = False\n\
-          \    check_text = prompt + ' ' + inferred_area\n    for kw in ito_keywords:\n        if kw in check_text:\n            is_ito\
-          \ = True\n            break\n    \n    return {\n        'is_spr': 'true'\
-          \ if is_spr else 'false',\n        'is_ito': 'true' if is_ito else\
-          \ 'false',\n        'spr_context': 'SPR探偵事務所シリーズ用のナレッジ検索結果がここに入ります' if is_spr\
-          \ else '',\n        'ito_context': '伊都キャンパスの詳細情報がここに入ります' if is_ito else\
-          \ ''\n    }\n"
+          \         is_spr = True\n                break\n    \n    # 伊都キャンパス判定\n\
+          \    ito_keywords = ['伊都キャンパス', '伊都', '九大伊都', '九州大学伊都', 'Ito Campus', 'ito\
+          \ campus', '糸島', '元岡']\n    is_ito = False\n    check_text = prompt + '\
+          \ ' + inferred_area\n    for kw in ito_keywords:\n        if kw in check_text:\n\
+          \            is_ito = True\n            break\n    \n    return {\n    \
+          \    'is_spr': 'true' if is_spr else 'false',\n        'is_ito': 'true'\
+          \ if is_ito else 'false',\n        'spr_context': 'SPR探偵事務所シリーズ用のナレッジ検索結果がここに入ります'\
+          \ if is_spr else '',\n        'ito_context': '伊都キャンパスの詳細情報がここに入ります' if is_ito\
+          \ else ''\n    }\n"
         code_language: python3
         outputs:
           is_ito:
@@ -790,18 +792,20 @@ workflow:
       type: custom
       width: 242
     - data:
-        dataset_ids: []
+        dataset_ids:
+        - TIvOi0/elXUiOvW1Eqil3sjfeekp2AzfMTsC0vlkz5a7cH+xbjIDLC9fpWlMiIwi
         multiple_retrieval_config:
-          reranking_enable: true
+          reranking_enable: false
           reranking_mode: weighted_score
           top_k: 10
           weights:
             keyword_setting:
               keyword_weight: 0.3
             vector_setting:
-              embedding_model_name: text-embedding-3-small
-              embedding_provider_name: openai
+              embedding_model_name: embedding-001
+              embedding_provider_name: langgenius/gemini/google
               vector_weight: 0.7
+            weight_type: customized
         query_attachment_selector: []
         query_variable_selector:
         - '1768599287614'
@@ -810,7 +814,7 @@ workflow:
         selected: false
         title: Knowledge_伊都キャンパス
         type: knowledge-retrieval
-      height: 52
+      height: 90
       id: '1768700000003'
       position:
         x: 2468.4759873404823
@@ -824,9 +828,57 @@ workflow:
       type: custom
       width: 242
     - data:
-        code: "import json\nimport re\n\ndef main(knowledge_result) -> dict:\n    \"\"\"\n    ナレッジ検索結果からスポット情報を抽出し、\n    CODE_実在スポット検索パースと同じ形式で出力する\n    \n    期待形式: セミコロン区切りのkey-value形式\n    例: spot_name: 椎木講堂;zone: センター;lat: 33.5934;lng: 130.2228;...\n    \"\"\"\n    spots = []\n    lines = []\n    \n    # 入力がリストの場合（Difyのナレッジ検索結果）\n    if isinstance(knowledge_result, list):\n        for item in knowledge_result:\n            if isinstance(item, dict):\n                # チャンクのcontentを取得\n                content = item.get('content', item.get('text', str(item)))\n                lines.append(content)\n            else:\n                lines.append(str(item))\n    else:\n        # 文字列の場合は改行で分割\n        lines = str(knowledge_result).strip().split('\\n')\n    \n    for i, line in enumerate(lines):\n        if not line or not str(line).strip():\n            continue\n        \n        line = str(line).strip()\n        \n        # セミコロン区切りのkey-value形式をパース\n        data = {}\n        # セミコロンで分割（ただしURL内のセミコロンは保持）\n        parts = re.split(r';(?=\\w+:)', line)\n        \n        for part in parts:\n            if ':' in part:\n                # 最初のコロンで分割（URL内のコロンは保持）\n                key, value = part.split(':', 1)\n                data[key.strip().lower()] = value.strip()\n        \n        # 必要なフィールドがあればスポットとして追加\n        if 'spot_name' in data or 'name' in data:\n            try:\n                name = data.get('spot_name', data.get('name', ''))\n                lat_str = data.get('lat', '33.5955')\n                lng_str = data.get('lng', '130.2186')\n                \n                spot = {\n                    'spot_id': f'S{len(spots) + 1}',\n                    'name': name,\n                    'lat': float(lat_str) if lat_str else 33.5955,\n                    'lng': float(lng_str) if lng_str else 130.2186,\n                    'place_id': '',\n                    'rating': 4.0,\n                    'reviews': 0,\n                    'types': data.get('category', 'point_of_interest'),\n                    'address': f\"九州大学伊都キャンパス {data.get('zone', '')}\",\n                    'google_maps_url': data.get('google_map_url', data.get('google_maps_url', f'https://www.google.com/maps/search/?api=1&query={lat_str},{lng_str}')),\n                    'observable_elements': data.get('observable_elements', ''),\n                    'puzzle_potential': data.get('puzzle_potential', ''),\n                    'trivia': data.get('trivia', ''),\n                    'history': data.get('history', ''),\n                    'difficulty': data.get('difficulty', 'medium')\n                }\n                spots.append(spot)\n            except (ValueError, KeyError) as e:\n                continue\n    \n    # スポットサマリーを生成\n    spots_summary = ''\n    for s in spots:\n        spots_summary += f\"{s['spot_id']}: {s['name']}\\n\"\n        spots_summary += f\"  住所: {s['address']}\\n\"\n        spots_summary += f\"  座標: {s['lat']}, {s['lng']}\\n\"\n        if s.get('observable_elements'):\n            spots_summary += f\"  観察要素: {s['observable_elements']}\\n\"\n        if s.get('trivia'):\n            spots_summary += f\"  豆知識: {s['trivia']}\\n\"\n        spots_summary += '\\n'\n    \n    return {\n        'spots_json': json.dumps(spots, ensure_ascii=False),\n        'spots_count': len(spots),\n        'spots_summary': spots_summary,\n        'source': 'knowledge_base'\n    }\n"
+        code: "import json\nimport re\n\ndef main(knowledge_result) -> dict:\n   \
+          \ \"\"\"\n    ナレッジ検索結果からスポット情報を抽出し、\n    CODE_実在スポット検索パースと同じ形式で出力する\n  \
+          \  \n    期待形式: セミコロン区切りのkey-value形式\n    例: spot_name: 椎木講堂;zone: センター;lat:\
+          \ 33.5934;lng: 130.2228;...\n    \"\"\"\n    spots = []\n    lines = []\n\
+          \    \n    # 入力がリストの場合（Difyのナレッジ検索結果）\n    if isinstance(knowledge_result,\
+          \ list):\n        for item in knowledge_result:\n            if isinstance(item,\
+          \ dict):\n                # チャンクのcontentを取得\n                content = item.get('content',\
+          \ item.get('text', str(item)))\n                lines.append(content)\n\
+          \            else:\n                lines.append(str(item))\n    else:\n\
+          \        # 文字列の場合は改行で分割\n        lines = str(knowledge_result).strip().split('\\\
+          n')\n    \n    for i, line in enumerate(lines):\n        if not line or\
+          \ not str(line).strip():\n            continue\n        \n        line =\
+          \ str(line).strip()\n        \n        # セミコロン区切りのkey-value形式をパース\n    \
+          \    data = {}\n        # セミコロンで分割（ただしURL内のセミコロンは保持）\n        parts = re.split(r';(?=\\\
+          w+:)', line)\n        \n        for part in parts:\n            if ':' in\
+          \ part:\n                # 最初のコロンで分割（URL内のコロンは保持）\n                key,\
+          \ value = part.split(':', 1)\n                data[key.strip().lower()]\
+          \ = value.strip()\n        \n        # 必要なフィールドがあればスポットとして追加\n        if\
+          \ 'spot_name' in data or 'name' in data:\n            try:\n           \
+          \     name = data.get('spot_name', data.get('name', ''))\n             \
+          \   lat_str = data.get('lat', '33.5955')\n                lng_str = data.get('lng',\
+          \ '130.2186')\n                \n                spot = {\n            \
+          \        'spot_id': f'S{len(spots) + 1}',\n                    'name': name,\n\
+          \                    'lat': float(lat_str) if lat_str else 33.5955,\n  \
+          \                  'lng': float(lng_str) if lng_str else 130.2186,\n   \
+          \                 'place_id': '',\n                    'rating': 4.0,\n\
+          \                    'reviews': 0,\n                    'types': data.get('category',\
+          \ 'point_of_interest'),\n                    'address': f\"九州大学伊都キャンパス {data.get('zone',\
+          \ '')}\",\n                    'google_maps_url': data.get('google_map_url',\
+          \ data.get('google_maps_url', f'https://www.google.com/maps/search/?api=1&query={lat_str},{lng_str}')),\n\
+          \                    'observable_elements': data.get('observable_elements',\
+          \ ''),\n                    'puzzle_potential': data.get('puzzle_potential',\
+          \ ''),\n                    'trivia': data.get('trivia', ''),\n        \
+          \            'history': data.get('history', ''),\n                    'difficulty':\
+          \ data.get('difficulty', 'medium')\n                }\n                spots.append(spot)\n\
+          \            except (ValueError, KeyError) as e:\n                continue\n\
+          \    \n    # スポットサマリーを生成\n    spots_summary = ''\n    for s in spots:\n\
+          \        spots_summary += f\"{s['spot_id']}: {s['name']}\\n\"\n        spots_summary\
+          \ += f\"  住所: {s['address']}\\n\"\n        spots_summary += f\"  座標: {s['lat']},\
+          \ {s['lng']}\\n\"\n        if s.get('observable_elements'):\n          \
+          \  spots_summary += f\"  観察要素: {s['observable_elements']}\\n\"\n       \
+          \ if s.get('trivia'):\n            spots_summary += f\"  豆知識: {s['trivia']}\\\
+          n\"\n        spots_summary += '\\n'\n    \n    return {\n        'spots_json':\
+          \ json.dumps(spots, ensure_ascii=False),\n        'spots_count': len(spots),\n\
+          \        'spots_summary': spots_summary,\n        'source': 'knowledge_base'\n\
+          \    }\n"
         code_language: python3
         outputs:
+          source:
+            children: null
+            type: string
           spots_count:
             children: null
             type: number
@@ -834,9 +886,6 @@ workflow:
             children: null
             type: string
           spots_summary:
-            children: null
-            type: string
-          source:
             children: null
             type: string
         selected: false
@@ -852,10 +901,10 @@ workflow:
       id: '1768700000030'
       position:
         x: 2750
-        y: 785
+        y: 785.0329201554958
       positionAbsolute:
         x: 2750
-        y: 785
+        y: 785.0329201554958
       selected: false
       sourcePosition: right
       targetPosition: left
@@ -961,11 +1010,11 @@ workflow:
       height: 88
       id: '1768599416646'
       position:
-        x: 2819.8448270452245
-        y: 870.1287196084256
+        x: 2468.4759873404823
+        y: 950.1110054080848
       positionAbsolute:
-        x: 2819.8448270452245
-        y: 870.1287196084256
+        x: 2468.4759873404823
+        y: 950.1110054080848
       selected: false
       sourcePosition: right
       targetPosition: left
@@ -1007,11 +1056,11 @@ workflow:
       height: 137
       id: '1768600394819'
       position:
-        x: 3167.2023468636507
-        y: 870.1287196084256
+        x: 2750
+        y: 950.1110054080848
       positionAbsolute:
-        x: 3167.2023468636507
-        y: 870.1287196084256
+        x: 2750
+        y: 950.1110054080848
       selected: false
       sourcePosition: right
       targetPosition: left
@@ -1067,11 +1116,11 @@ workflow:
       height: 52
       id: '1768601299799'
       position:
-        x: 3519.1740524432817
-        y: 870.1287196084256
+        x: 3033.7643179350043
+        y: 950.1110054080848
       positionAbsolute:
-        x: 3519.1740524432817
-        y: 870.1287196084256
+        x: 3033.7643179350043
+        y: 950.1110054080848
       selected: false
       sourcePosition: right
       targetPosition: left
@@ -1120,25 +1169,24 @@ workflow:
           role: user
           text: "【プレイヤーの役割】\n{{#1768599287614.player_role#}}\n\n【体験の約束】\n{{#1768599287614.experience_promise#}}\n\
             \n【雰囲気】\n{{#1768599287614.atmosphere_tone#}}\n\n【テーマ】\n{{#1768599287614.primary_themes#}}\n\
-            \n【エリア情報】\n{{#1768599416646.text#}}\n\n【スポット候補（HTTPルート）】\n{{#1768601299799.spots_summary#}}\n\
-            \n【スポット候補（ナレッジルート）】\n{{#1768700000030.spots_summary#}}\n\
-            \n【必要なスポット数】\n{{#1768558472266.spot_count#}}件\n\n\n【スコアリング基準（各0-100点）】\n\
-            \n1. observation_material（観察素材）\n   現地で見て発見できるものがあるか？\n   - 紋章/刻印/銘板/碑文\n\
-            \   - 数えられるもの（柱/石段/灯籠）\n   - 方角/配置/形状の特徴\n   - 100点＝見るべき具体的ディテールが複数ある\n\
-            \n2. heads_up_potential（ヘッズアップ度）\n   スマホを見ずに楽しめるか？\n   - 「正面の○○を見て」と言える明確な対象があるか\n\
-            \   - 見上げる/見渡す/探す動作が自然にできるか\n   - 100点＝完全に現地を見て体験できる\n\n3. story_anchor（物語アンカー度）\n\
-            \   物語上の役割を1つ明確に割り当てられるか？\n   役割例：証拠発見/目撃地点/暗号隠匿/記憶の揺らぎ/嘘の露呈/真実の確認\n \
-            \  - 100点＝物語上の必然がある\n\n4. walkability（ルート適性）\n   位置関係/アクセス/安全性\n   - 100点＝迷いにくく安全で気持ちいい動線\n\
-            \n5. resilience（時間帯耐性）\n   夜/雨/混雑/閉館でも成立するか？\n   - 100点＝いつ行っても成立する\n\n\
-            \n【各スポットに必ず含めるもの】\n- look_at_direction：「○○の方を見て」（見るべき具体的方向）\n- observable_details：現地で確認できる具体的ディテール（3つ以上）\n\
-            - story_role_candidate：このスポットに適した物語上の役割（1つ）\n\n\n【出力形式】JSON配列（必要数+予備3件）\n\
-            [\n  {\n    \"name\": \"スポット名\",\n    \"lat\": 緯度,\n    \"lng\": 経度,\n\
-            \    \"place_id\": \"place_id\",\n    \"address\": \"住所\",\n    \"observation_material\"\
-            : 点数,\n    \"heads_up_potential\": 点数,\n    \"story_anchor\": 点数,\n  \
-            \  \"walkability\": 点数,\n    \"resilience\": 点数,\n    \"total\": 合計点,\n\
-            \    \"look_at_direction\": \"正面の石碑の上部に注目\",\n    \"observable_details\"\
-            : [\"屋根の形状\", \"柱の本数\", \"入口の紋章\"],\n    \"story_role_candidate\": \"\
-            証拠発見地点\",\n    \"selection_reason\": \"選んだ理由（1文）\"\n  }\n]\n\ntotalが高い順に並べてください。"
+            \n【エリア情報】\n{{#1768599416646.text#}}\n\n【スポット候補】\n{{#1768683506629.output#}}\n\n【必要なスポット数】\n\
+            {{#1768558472266.spot_count#}}件\n\n\n【スコアリング基準（各0-100点）】\n\n1. observation_material（観察素材）\n\
+            \   現地で見て発見できるものがあるか？\n   - 紋章/刻印/銘板/碑文\n   - 数えられるもの（柱/石段/灯籠）\n   - 方角/配置/形状の特徴\n\
+            \   - 100点＝見るべき具体的ディテールが複数ある\n\n2. heads_up_potential（ヘッズアップ度）\n   スマホを見ずに楽しめるか？\n\
+            \   - 「正面の○○を見て」と言える明確な対象があるか\n   - 見上げる/見渡す/探す動作が自然にできるか\n   - 100点＝完全に現地を見て体験できる\n\
+            \n3. story_anchor（物語アンカー度）\n   物語上の役割を1つ明確に割り当てられるか？\n   役割例：証拠発見/目撃地点/暗号隠匿/記憶の揺らぎ/嘘の露呈/真実の確認\n\
+            \   - 100点＝物語上の必然がある\n\n4. walkability（ルート適性）\n   位置関係/アクセス/安全性\n   -\
+            \ 100点＝迷いにくく安全で気持ちいい動線\n\n5. resilience（時間帯耐性）\n   夜/雨/混雑/閉館でも成立するか？\n\
+            \   - 100点＝いつ行っても成立する\n\n\n【各スポットに必ず含めるもの】\n- look_at_direction：「○○の方を見て」（見るべき具体的方向）\n\
+            - observable_details：現地で確認できる具体的ディテール（3つ以上）\n- story_role_candidate：このスポットに適した物語上の役割（1つ）\n\
+            \n\n【出力形式】JSON配列（必要数+予備3件）\n[\n  {\n    \"name\": \"スポット名\",\n    \"lat\"\
+            : 緯度,\n    \"lng\": 経度,\n    \"place_id\": \"place_id\",\n    \"address\"\
+            : \"住所\",\n    \"observation_material\": 点数,\n    \"heads_up_potential\"\
+            : 点数,\n    \"story_anchor\": 点数,\n    \"walkability\": 点数,\n    \"resilience\"\
+            : 点数,\n    \"total\": 合計点,\n    \"look_at_direction\": \"正面の石碑の上部に注目\"\
+            ,\n    \"observable_details\": [\"屋根の形状\", \"柱の本数\", \"入口の紋章\"],\n   \
+            \ \"story_role_candidate\": \"証拠発見地点\",\n    \"selection_reason\": \"\
+            選んだ理由（1文）\"\n  }\n]\n\ntotalが高い順に並べてください。"
         selected: false
         title: LLM_テーマスコアリング
         type: llm
@@ -1147,10 +1195,10 @@ workflow:
       height: 88
       id: '1768601846740'
       position:
-        x: 3865.9692308779363
+        x: 4165.969230877936
         y: 870.1287196084256
       positionAbsolute:
-        x: 3865.9692308779363
+        x: 4165.969230877936
         y: 870.1287196084256
       selected: false
       sourcePosition: right
@@ -1193,10 +1241,10 @@ workflow:
       height: 52
       id: '1768602035766'
       position:
-        x: 2200.7143112894146
+        x: 2500.7143112894146
         y: 302.04736200195606
       positionAbsolute:
-        x: 2200.7143112894146
+        x: 2500.7143112894146
         y: 302.04736200195606
       sourcePosition: right
       targetPosition: left
@@ -1336,10 +1384,10 @@ workflow:
       height: 52
       id: '1768602131448'
       position:
-        x: 2502.7143112894146
+        x: 2802.7143112894146
         y: 302.04736200195606
       positionAbsolute:
-        x: 2502.7143112894146
+        x: 2802.7143112894146
         y: 302.04736200195606
       selected: false
       sourcePosition: right
@@ -1423,10 +1471,10 @@ workflow:
       height: 88
       id: '1768602371187'
       position:
-        x: 2804.7143112894146
+        x: 3104.7143112894146
         y: 302.04736200195606
       positionAbsolute:
-        x: 2804.7143112894146
+        x: 3104.7143112894146
         y: 302.04736200195606
       selected: false
       sourcePosition: right
@@ -1484,10 +1532,10 @@ workflow:
       height: 52
       id: '1768602505042'
       position:
-        x: 3106.7143112894146
+        x: 3406.7143112894146
         y: 302.04736200195606
       positionAbsolute:
-        x: 3106.7143112894146
+        x: 3406.7143112894146
         y: 302.04736200195606
       sourcePosition: right
       targetPosition: left
@@ -1565,10 +1613,10 @@ workflow:
       height: 88
       id: '1768602602678'
       position:
-        x: 3408.7143112894146
+        x: 3708.7143112894146
         y: 302.04736200195606
       positionAbsolute:
-        x: 3408.7143112894146
+        x: 3708.7143112894146
         y: 302.04736200195606
       selected: false
       sourcePosition: right
@@ -1627,10 +1675,10 @@ workflow:
       height: 52
       id: '1768602757091'
       position:
-        x: 3710.7143112894146
+        x: 4010.7143112894146
         y: 302.04736200195606
       positionAbsolute:
-        x: 3710.7143112894146
+        x: 4010.7143112894146
         y: 302.04736200195606
       selected: false
       sourcePosition: right
@@ -1723,10 +1771,10 @@ workflow:
       height: 88
       id: '1768603485259'
       position:
-        x: 4012.7143112894146
+        x: 4312.714311289415
         y: 302.04736200195606
       positionAbsolute:
-        x: 4012.7143112894146
+        x: 4312.714311289415
         y: 302.04736200195606
       selected: false
       sourcePosition: right
@@ -1819,10 +1867,10 @@ workflow:
       height: 52
       id: '1768603594197'
       position:
-        x: 4314.714311289415
+        x: 4614.714311289415
         y: 302.04736200195606
       positionAbsolute:
-        x: 4314.714311289415
+        x: 4614.714311289415
         y: 302.04736200195606
       sourcePosition: right
       targetPosition: left
@@ -1866,10 +1914,10 @@ workflow:
       height: 88
       id: '1768603666915'
       position:
-        x: 4618.539442266502
+        x: 4918.539442266502
         y: 302.04736200195606
       positionAbsolute:
-        x: 4618.539442266502
+        x: 4918.539442266502
         y: 302.04736200195606
       selected: false
       sourcePosition: right
@@ -1914,10 +1962,10 @@ workflow:
       height: 52
       id: '1768603767065'
       position:
-        x: 4918.714311289415
+        x: 5218.714311289415
         y: 302.04736200195606
       positionAbsolute:
-        x: 4918.714311289415
+        x: 5218.714311289415
         y: 302.04736200195606
       selected: false
       sourcePosition: right
@@ -1984,10 +2032,10 @@ workflow:
       height: 52
       id: '1768603843069'
       position:
-        x: 5220.714311289415
+        x: 5520.714311289415
         y: 302.04736200195606
       positionAbsolute:
-        x: 5220.714311289415
+        x: 5520.714311289415
         y: 302.04736200195606
       selected: false
       sourcePosition: right
@@ -2069,10 +2117,10 @@ workflow:
       height: 88
       id: '1768603963490'
       position:
-        x: 5616.887974994035
+        x: 5916.887974994035
         y: 302.04736200195606
       positionAbsolute:
-        x: 5616.887974994035
+        x: 5916.887974994035
         y: 302.04736200195606
       selected: false
       sourcePosition: right
@@ -2116,10 +2164,10 @@ workflow:
       height: 52
       id: '1768604146459'
       position:
-        x: 5967.9501944221265
+        x: 6267.9501944221265
         y: 302.04736200195606
       positionAbsolute:
-        x: 5967.9501944221265
+        x: 6267.9501944221265
         y: 302.04736200195606
       selected: false
       sourcePosition: right
@@ -2139,12 +2187,12 @@ workflow:
       height: 88
       id: '1768604222640'
       position:
-        x: 6659.542464558915
+        x: 6959.542464558915
         y: 302.04736200195606
       positionAbsolute:
-        x: 6659.542464558915
+        x: 6959.542464558915
         y: 302.04736200195606
-      selected: true
+      selected: false
       sourcePosition: right
       targetPosition: left
       type: custom
@@ -2285,18 +2333,41 @@ workflow:
       height: 52
       id: '1768605957312'
       position:
-        x: 6324.747432382666
+        x: 6624.747432382666
         y: 302.04736200195606
       positionAbsolute:
-        x: 6324.747432382666
+        x: 6624.747432382666
         y: 302.04736200195606
       selected: false
       sourcePosition: right
       targetPosition: left
       type: custom
       width: 242
+    - data:
+        output_type: string
+        selected: false
+        title: 変数集約器_スポット情報
+        type: variable-aggregator
+        variables:
+        - - '1768601299799'
+          - spots_summary
+        - - '1768700000030'
+          - spots_summary
+      height: 106
+      id: '1768683506629'
+      position:
+        x: 3780.4709253679553
+        y: 870.1287196084256
+      positionAbsolute:
+        x: 3780.4709253679553
+        y: 870.1287196084256
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
     viewport:
-      x: -1540.7884463624446
-      y: 156.45346279030696
-      zoom: 0.3630375214834998
+      x: -914.6581480517491
+      y: -16.9003334311397
+      zoom: 0.3625802852476557
   rag_pipeline_variables: []

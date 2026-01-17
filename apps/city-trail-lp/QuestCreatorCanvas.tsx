@@ -1800,12 +1800,14 @@ ${spotInputs
                             <div className="mt-2 flex gap-2 overflow-x-auto pb-0 scrollbar-hide">
                                 {mapSpots.map((spot, idx) => {
                                     const xp = getSpotExperienceIcon(spot);
-                                    const mapUrl = spot.placeId
-                                        ? `https://www.google.com/maps/place/?q=place_id:${encodeURIComponent(spot.placeId)}`
-                                        : `https://www.google.com/maps/place/${encodeURIComponent([spot.name, spot.address, basicInfo?.area]
-                                            .filter(Boolean)
-                                            .join(' ')
-                                            .trim() || `Spot ${idx + 1}`)}`;
+                                    // google_maps_urlがあれば使用、なければフォールバック
+                                    const mapUrl = (spot as any).google_maps_url
+                                        || (spot.placeId
+                                            ? `https://www.google.com/maps/place/?q=place_id:${encodeURIComponent(spot.placeId)}`
+                                            : `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent([spot.name, spot.address, basicInfo?.area]
+                                                .filter(Boolean)
+                                                .join(' ')
+                                                .trim() || `Spot ${idx + 1}`)}`);
                                     return (
                                         <div
                                             key={spot.id}

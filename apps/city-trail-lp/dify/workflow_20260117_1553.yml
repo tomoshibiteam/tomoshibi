@@ -1270,27 +1270,102 @@ workflow:
       type: custom
       width: 242
     - data:
-        code: "import json\nimport re\n\ndef main(llm_output: str) -> dict:\n    json_match\
-          \ = re.search(r'\\[[\\s\\S]*\\]', llm_output)\n    if json_match:\n    \
-          \    try:\n            spots = json.loads(json_match.group())\n        \
-          \    \n            # plot_keysを収集\n            plot_keys = []\n        \
-          \    spots_summary = \"\"\n            \n            for s in spots:\n \
-          \               spot_id = s.get('spot_id', '')\n                spot_name\
-          \ = s.get('spot_name', '')\n                plot_key = s.get('reward', {}).get('plot_key',\
-          \ '')\n                puzzle_prompt = s.get('puzzle', {}).get('prompt',\
-          \ '')\n                answer = s.get('puzzle', {}).get('answer', '')\n\
-          \                \n                plot_keys.append(f\"{spot_id}: {plot_key}\"\
-          )\n                spots_summary += f\"{spot_id} ({spot_name})\\n\"\n  \
-          \              spots_summary += f\"  謎: {puzzle_prompt}\\n\"\n         \
-          \       spots_summary += f\"  答え: {answer}\\n\"\n                spots_summary\
-          \ += f\"  鍵: {plot_key}\\n\\n\"\n            \n            return {\n  \
-          \              \"spot_scenes_json\": json.dumps(spots, ensure_ascii=False),\n\
-          \                \"spot_scenes_count\": len(spots),\n                \"\
-          plot_keys_text\": \"\\n\".join(plot_keys),\n                \"spots_summary\"\
-          : spots_summary\n            }\n        except:\n            pass\n    \n\
-          \    return {\n        \"spot_scenes_json\": \"[]\",\n        \"spot_scenes_count\"\
-          : 0,\n        \"plot_keys_text\": \"パースに失敗しました\",\n        \"spots_summary\"\
-          : \"\"\n    }\n"
+        code: "import json\nimport re\n\ndef main(llm_output: str) -> dict:\n    \
+          json_match = re.search(r'\\[[\\s\\S]*\\]', llm_output)\n    \
+          if json_match:\n        \
+          try:\n            \
+          spots = json.loads(json_match.group())\n            \
+          plot_keys = []\n            \
+          spots_summary = ''\n            \
+          converted_spots = []\n            \n            \
+          for s in spots:\n                \
+          spot_id = s.get('spot_id', '')\n                \
+          spot_name = s.get('spot_name', '')\n                \
+          story_anchor = s.get('story_anchor', '')\n                \n                \
+          # 新形式から旧形式への変換\n                \
+          arrival = s.get('arrival', {})\n                \
+          mission = s.get('mission', {})\n                \
+          hints = s.get('hints', {})\n                \
+          reward = s.get('reward', {})\n                \n                \
+          # lore_cardの構築\n                \
+          lore_card = {\n                    \
+          'short_story_text': arrival.get('arrival_text', ''),\n                    \
+          'player_handout': arrival.get('look_up_instruction', '') + ' ' + mission.get('observation_target', '')\n                \
+          }\n                \n                \
+          # puzzleの構築\n                \
+          puzzle = {\n                    \
+          'type': 'observation',\n                    \
+          'prompt': mission.get('puzzle_prompt', ''),\n                    \
+          'answer': mission.get('answer', ''),\n                    \
+          'difficulty': mission.get('difficulty', 2),\n                    \
+          'hints': [\n                        \
+          hints.get('hint_1', ''),\n                        \
+          hints.get('hint_2', ''),\n                        \
+          hints.get('hint_3', '')\n                    \
+          ],\n                    \
+          'solution_steps': [\n                        \
+          f\"ステップ1: {arrival.get('look_up_instruction', '')}\",\n                        \
+          f\"ステップ2: {mission.get('observation_target', '')}を{mission.get('action_verb', '確認する')}\",\n                        \
+          f\"ステップ3: 答えを導き出す\"\n                    \
+          ]\n                \
+          }\n                \n                \
+          # rewardの構築\n                \
+          reward_obj = {\n                    \
+          'lore_reveal': reward.get('solved_reveal', ''),\n                    \
+          'plot_key': reward.get('plot_key', ''),\n                    \
+          'next_hook': reward.get('next_push', '')\n                \
+          }\n                \n                \
+          # scene_roleのマッピング（story_anchor → scene_role）\n                \
+          scene_role_map = {\n                    \
+          'hook': '導入',\n                    \
+          'evidence': '展開',\n                    \
+          'witness': '展開',\n                    \
+          'cipher': '展開',\n                    \
+          'memory': '転換',\n                    \
+          'contradiction': '転換',\n                    \
+          'shift': '転換',\n                    \
+          'truth': '真相接近',\n                    \
+          'reveal': '結末'\n                \
+          }\n                \
+          scene_role = scene_role_map.get(story_anchor, '展開')\n                \n                \
+          # 変換済みスポット\n                \
+          converted = {\n                    \
+          'spot_id': spot_id,\n                    \
+          'spot_name': spot_name,\n                    \
+          'scene_role': scene_role,\n                    \
+          'story_anchor': story_anchor,\n                    \
+          'lore_card': lore_card,\n                    \
+          'puzzle': puzzle,\n                    \
+          'reward': reward_obj,\n                    \
+          'arrival': arrival,\n                    \
+          'mission': mission,\n                    \
+          'hints': hints\n                \
+          }\n                \
+          converted_spots.append(converted)\n                \n                \
+          # サマリー作成\n                \
+          plot_key = reward.get('plot_key', '')\n                \
+          puzzle_prompt = mission.get('puzzle_prompt', '')\n                \
+          answer = mission.get('answer', '')\n                \n                \
+          plot_keys.append(f'{spot_id}: {plot_key}')\n                \
+          spots_summary += f'{spot_id} ({spot_name})\\n'\n                \
+          spots_summary += f'  役割: {scene_role}\\n'\n                \
+          spots_summary += f'  謎: {puzzle_prompt}\\n'\n                \
+          spots_summary += f'  答え: {answer}\\n'\n                \
+          spots_summary += f'  鍵: {plot_key}\\n\\n'\n            \n            \
+          return {\n                \
+          'spot_scenes_json': json.dumps(converted_spots, ensure_ascii=False),\n                \
+          'spot_scenes_count': len(converted_spots),\n                \
+          'plot_keys_text': '\\n'.join(plot_keys),\n                \
+          'spots_summary': spots_summary\n            \
+          }\n        \
+          except:\n            \
+          pass\n    \n    \
+          return {\n        \
+          'spot_scenes_json': '[]',\n        \
+          'spot_scenes_count': 0,\n        \
+          'plot_keys_text': 'パースに失敗しました',\n        \
+          'spots_summary': ''\n    \
+          }\n"
         code_language: python3
         outputs:
           plot_keys_text:

@@ -482,28 +482,10 @@ workflow:
         prompt_template:
         - id: 0f5a1135-ce08-449f-b126-d96707e6967b
           role: system
-          text: 'あなたはユーザー体験設計の専門家です。
-
-            クエスト生成リクエストを分析し、ユーザーが本当に求めている体験を理解してください。
-
-            出力は必ずJSON形式で行ってください。'
+          text: "あなたは周遊型体験設計の専門家です。\n\n【北極星】街が主役、物語がレンズ、謎が動機\n- 街（場所）＝主役。見上げさせる/歩かせる/気づかせる対象\n- 物語＝街を見るためのレンズ。意味づけと感情を付与\n- 謎/ミッション＝次の場所へ動く動機。歩行の推進力\n\nユーザーのリクエストから「歩く体験としての本質」を抽出してください。\n出力は必ずJSON形式で。"
         - id: 46db2956-1745-4cd3-aa4a-bcd7c8fb97ca
           role: user
-          text: "以下のクエスト生成リクエストを分析してください。\n\n\n【ユーザーリクエスト】\nメインプロンプト: {{#1768558472266.prompt#}}\n\
-            難易度: {{#1768558472266.difficulty#}}\nスポット数: {{#1768558472266.spot_count#}}\n\
-            ジャンル: {{#1768558472266.genre_support#}}\nトーン: {{#1768558472266.tone_support#}}\n\
-            いつ: {{#1768558472266.when#}}\nどこで: {{#1768558472266.where#}}\n目的: {{#1768558472266.purpose#}}\n\
-            誰と: {{#1768558472266.with_whom#}}\n\n\n【分析項目】\n1. experience_type: 学習/冒険/ロマンチック/ファミリー/ひとり旅\
-            \ のどれか\n2. primary_themes: 歴史/アート/グルメ/自然/建築/文学/科学 から最大3つ\n3. fitness_level:\
-            \ 軽め/普通/しっかり\n4. learning_depth: 軽い豆知識/しっかり学習\n5. puzzle_expectation:\
-            \ 簡単に解きたい/じっくり考えたい\n6. mood_keywords: このクエストを表す形容詞3つ\n7. must_include:\
-            \ 必須要素\n8. must_avoid: 避けるべき要素\n9. inferred_area: 推測されるエリア名\n\n\n【出力形式】JSON\n\
-            {\n  \"experience_type\": \"string\",\n  \"primary_themes\": [\"string\"\
-            ],\n  \"fitness_level\": \"string\",\n  \"learning_depth\": \"string\"\
-            ,\n  \"puzzle_expectation\": \"string\",\n  \"mood_keywords\": [\"string\"\
-            ],\n  \"must_include\": [\"string\"],\n  \"must_avoid\": [\"string\"],\n\
-            \  \"inferred_area\": \"string\",\n  \"analysis_summary\": \"string\"\n\
-            }"
+          text: "以下のリクエストを分析し、街歩き体験としての設計要素を抽出してください。\n\n\n【ユーザーリクエスト】\nメインプロンプト: {{#1768558472266.prompt#}}\n難易度: {{#1768558472266.difficulty#}}\nスポット数: {{#1768558472266.spot_count#}}\nジャンル: {{#1768558472266.genre_support#}}\nトーン: {{#1768558472266.tone_support#}}\nいつ: {{#1768558472266.when#}}\nどこで: {{#1768558472266.where#}}\n目的: {{#1768558472266.purpose#}}\n誰と: {{#1768558472266.with_whom#}}\n\n\n【抽出する4つの核心要素（伝えるべきこと）】\n\n1. player_role（あなたは誰として歩くか）\n   例：街の記憶を回収する調査員／失われた手紙を届ける配達人／封印された謎を追う探求者\n   ※具体的で没入できる役割。「観光客」は避ける\n\n2. experience_promise（何を達成すると気持ちいいか）\n   例：最後に街の見え方が変わる／隠された物語が明らかになる／散らばった断片が1つに繋がる\n   ※ネタバレせず期待だけ置く「約束」\n\n3. atmosphere_tone（どんな空気の物語か）\n   静か/切ない/ノスタルジック/スリリング/軽やか/ミステリアス/温かい など3つまで\n\n4. effort_expectation（どれくらいの負荷か）\n   - walking_intensity: 軽め/普通/しっかり\n   - puzzle_difficulty: 観察メイン/考察も必要/本格謎解き\n   - time_estimate: 推定所要時間（分）\n\n\n【追加の分析項目】\n- primary_themes: 歴史/アート/グルメ/自然/建築/文学/ミステリー から最大3つ\n- inferred_area: 推測されるエリア名（地名）\n- story_hook: 物語の導入フック（30秒で掴む一行）\n- forbidden_elements: 絶対に避けるべき要素\n\n\n【出力形式】JSON\n{\n  \"player_role\": \"あなたは〇〇として歩く\",\n  \"experience_promise\": \"最後に〇〇が明らかになる\",\n  \"atmosphere_tone\": [\"形容詞1\", \"形容詞2\", \"形容詞3\"],\n  \"effort_expectation\": {\n    \"walking_intensity\": \"普通\",\n    \"puzzle_difficulty\": \"観察メイン\",\n    \"time_estimate\": 90\n  },\n  \"primary_themes\": [\"テーマ1\", \"テーマ2\"],\n  \"inferred_area\": \"エリア名\",\n  \"story_hook\": \"掴みの一行\",\n  \"forbidden_elements\": [\"避けるもの\"]\n}"
         selected: false
         title: LLM_ユーザー意図分析
         type: llm
@@ -523,57 +505,68 @@ workflow:
       type: custom
       width: 242
     - data:
-        code: "import json\nimport re\n\ndef main(llm_output: str) -> dict:\n    #\
-          \ JSON部分を抽出\n    json_match = re.search(r'\\{[\\s\\S]*\\}', llm_output)\n\
-          \    if json_match:\n        try:\n            parsed = json.loads(json_match.group())\n\
-          \            # 個別の変数として出力（Difyの制限対応）\n            return {\n           \
-          \     \"experience_type\": parsed.get(\"experience_type\", \"冒険\"),\n  \
-          \              \"primary_themes\": \", \".join(parsed.get(\"primary_themes\"\
-          , [\"歴史\"])),\n                \"fitness_level\": parsed.get(\"fitness_level\"\
-          , \"普通\"),\n                \"learning_depth\": parsed.get(\"learning_depth\"\
-          , \"軽い豆知識\"),\n                \"puzzle_expectation\": parsed.get(\"puzzle_expectation\"\
-          , \"簡単に解きたい\"),\n                \"mood_keywords\": \", \".join(parsed.get(\"\
-          mood_keywords\", [\"ミステリアス\"])),\n                \"must_include\": \",\
-          \ \".join(parsed.get(\"must_include\", [])),\n                \"must_avoid\"\
-          : \", \".join(parsed.get(\"must_avoid\", [])),\n                \"inferred_area\"\
-          : parsed.get(\"inferred_area\", \"\"),\n                \"analysis_summary\"\
-          : parsed.get(\"analysis_summary\", \"\")\n            }\n        except:\n\
-          \            pass\n    \n    # パース失敗時のデフォルト\n    return {\n        \"experience_type\"\
-          : \"冒険\",\n        \"primary_themes\": \"歴史\",\n        \"fitness_level\"\
-          : \"普通\",\n        \"learning_depth\": \"軽い豆知識\",\n        \"puzzle_expectation\"\
-          : \"簡単に解きたい\",\n        \"mood_keywords\": \"ミステリアス\",\n        \"must_include\"\
-          : \"\",\n        \"must_avoid\": \"\",\n        \"inferred_area\": \"\"\
-          ,\n        \"analysis_summary\": \"分析に失敗しました\"\n    }"
+        code: "import json\nimport re\n\ndef main(llm_output: str) -> dict:\n    \
+          json_match = re.search(r'\\{[\\s\\S]*\\}', llm_output)\n    \
+          if json_match:\n        \
+          try:\n            \
+          parsed = json.loads(json_match.group())\n            \
+          effort = parsed.get('effort_expectation', {})\n            \
+          return {\n                \
+          'player_role': parsed.get('player_role', 'あなたは謎を追う探求者として歩く'),\n                \
+          'experience_promise': parsed.get('experience_promise', '最後にこの街の見え方が変わる'),\n                \
+          'atmosphere_tone': ', '.join(parsed.get('atmosphere_tone', ['ミステリアス'])),\n                \
+          'walking_intensity': effort.get('walking_intensity', '普通'),\n                \
+          'puzzle_difficulty': effort.get('puzzle_difficulty', '観察メイン'),\n                \
+          'time_estimate': str(effort.get('time_estimate', 90)),\n                \
+          'primary_themes': ', '.join(parsed.get('primary_themes', ['歴史'])),\n                \
+          'inferred_area': parsed.get('inferred_area', ''),\n                \
+          'story_hook': parsed.get('story_hook', ''),\n                \
+          'forbidden_elements': ', '.join(parsed.get('forbidden_elements', []))\n            \
+          }\n        \
+          except:\n            \
+          pass\n    \
+          return {\n        \
+          'player_role': 'あなたは謎を追う探求者として歩く',\n        \
+          'experience_promise': '最後にこの街の見え方が変わる',\n        \
+          'atmosphere_tone': 'ミステリアス',\n        \
+          'walking_intensity': '普通',\n        \
+          'puzzle_difficulty': '観察メイン',\n        \
+          'time_estimate': '90',\n        \
+          'primary_themes': '歴史',\n        \
+          'inferred_area': '',\n        \
+          'story_hook': '',\n        \
+          'forbidden_elements': ''\n    \
+          }"
         code_language: python3
         outputs:
-          analysis_summary:
+          player_role:
             children: null
             type: string
-          experience_type:
+          experience_promise:
             children: null
             type: string
-          fitness_level:
+          atmosphere_tone:
             children: null
             type: string
-          inferred_area:
+          walking_intensity:
             children: null
             type: string
-          learning_depth:
+          puzzle_difficulty:
             children: null
             type: string
-          mood_keywords:
-            children: null
-            type: string
-          must_avoid:
-            children: null
-            type: string
-          must_include:
+          time_estimate:
             children: null
             type: string
           primary_themes:
             children: null
             type: string
-          puzzle_expectation:
+          inferred_area:
+            children: null
+            type: string
+          story_hook:
+            children: null
+            type: string
+          forbidden_elements:
             children: null
             type: string
         selected: false
@@ -766,29 +759,10 @@ workflow:
         prompt_template:
         - id: 9056441e-e9cf-4194-a354-32cb56ec70fa
           role: system
-          text: 'あなたはクエストデザイナーです。
-
-            観光スポットをユーザーの求める体験との適合度でスコアリングします。
-
-            出力は必ずJSON形式で行ってください。'
+          text: "あなたは周遊型クエストのスポット選定専門家です。\n\n【北極星】街が主役、物語がレンズ、謎が動機\n\n【スポット選定の7条件（強いスポットの条件）】\n1. 同定性：一目で「ここだ」と分かる\n2. 安全性：到達しやすく危険が少ない\n3. 物語必然性：そこに行く理由が作れる\n4. 観察素材：見るべきディテールがある（紋章/数/銘板/形状/方角）\n5. 時間帯耐性：夜/雨/閉館でも成立する\n6. 滞在性：立ち止まれる/混雑で詰まらない\n7. 連続性：次への移動が気持ちいい\n\n出力は必ずJSON形式で。"
         - id: 3739734d-7858-49c7-bfc2-7f6e8908a2e5
           role: user
-          text: "以下のスポット候補を、ユーザーの求める体験との適合度でスコアリングしてください。\n\n\n【ユーザーが求める体験】\n体験タイプ:\
-            \ {{#1768599287614.experience_type#}}\n主要テーマ: {{#1768599287614.primary_themes#}}\n\
-            学びの深さ: {{#1768599287614.fitness_level#}}\n謎の期待: {{#1768599287614.puzzle_expectation#}}\n\
-            必須要素: {{#1768599287614.must_include#}}\n避けるべき要素: {{#1768599287614.must_avoid#}}\n\
-            \n\n【エリア情報】\n{{#1768599416646.text#}}\n\n\n【スポット候補】\n{{#1768601299799.spots_summary#}}\n\
-            \n\n【必要なスポット数】\n{{#1768558472266.spot_count#}}件\n\n\n【スコアリング基準（各0-100点）】\n\
-            1. theme_fit: ユーザーの求めるテーマとの一致度\n2. educational_value: 「へぇ！」と思える学びがあるか\n\
-            3. puzzle_potential: 謎解きのネタになりそうか\n4. walkability: ルートに組み込みやすいか（位置関係）\n\
-            5. uniqueness: このスポットならではの特別感\n\n\n【出力形式】JSON配列\n必要なスポット数 + 予備3件を出力してください。\n\
-            \n\n[\n  {\n    \"name\": \"スポット名\",\n    \"lat\": 緯度,\n    \"lng\": 経度,\n\
-            \    \"place_id\": \"place_id\",\n    \"address\": \"住所\",\n    \"theme_fit\"\
-            : 点数,\n    \"educational_value\": 点数,\n    \"puzzle_potential\": 点数,\n\
-            \    \"walkability\": 点数,\n    \"uniqueness\": 点数,\n    \"total\": 合計点,\n\
-            \    \"selection_reason\": \"このスポットを選んだ理由（1文）\",\n    \"historical_facts\"\
-            : [\"このスポットの歴史的事実1\", \"事実2\"],\n    \"puzzle_ideas\": [\"謎のアイデア1\", \"\
-            アイデア2\"]\n  }\n]\n\n\ntotalが高い順に並べてください。"
+          text: "【プレイヤーの役割】\n{{#1768599287614.player_role#}}\n\n【体験の約束】\n{{#1768599287614.experience_promise#}}\n\n【雰囲気】\n{{#1768599287614.atmosphere_tone#}}\n\n【テーマ】\n{{#1768599287614.primary_themes#}}\n\n【エリア情報】\n{{#1768599416646.text#}}\n\n【スポット候補】\n{{#1768601299799.spots_summary#}}\n\n【必要なスポット数】\n{{#1768558472266.spot_count#}}件\n\n\n【スコアリング基準（各0-100点）】\n\n1. observation_material（観察素材）\n   現地で見て発見できるものがあるか？\n   - 紋章/刻印/銘板/碑文\n   - 数えられるもの（柱/石段/灯籠）\n   - 方角/配置/形状の特徴\n   - 100点＝見るべき具体的ディテールが複数ある\n\n2. heads_up_potential（ヘッズアップ度）\n   スマホを見ずに楽しめるか？\n   - 「正面の○○を見て」と言える明確な対象があるか\n   - 見上げる/見渡す/探す動作が自然にできるか\n   - 100点＝完全に現地を見て体験できる\n\n3. story_anchor（物語アンカー度）\n   物語上の役割を1つ明確に割り当てられるか？\n   役割例：証拠発見/目撃地点/暗号隠匿/記憶の揺らぎ/嘘の露呈/真実の確認\n   - 100点＝物語上の必然がある\n\n4. walkability（ルート適性）\n   位置関係/アクセス/安全性\n   - 100点＝迷いにくく安全で気持ちいい動線\n\n5. resilience（時間帯耐性）\n   夜/雨/混雑/閉館でも成立するか？\n   - 100点＝いつ行っても成立する\n\n\n【各スポットに必ず含めるもの】\n- look_at_direction：「○○の方を見て」（見るべき具体的方向）\n- observable_details：現地で確認できる具体的ディテール（3つ以上）\n- story_role_candidate：このスポットに適した物語上の役割（1つ）\n\n\n【出力形式】JSON配列（必要数+予備3件）\n[\n  {\n    \"name\": \"スポット名\",\n    \"lat\": 緯度,\n    \"lng\": 経度,\n    \"place_id\": \"place_id\",\n    \"address\": \"住所\",\n    \"observation_material\": 点数,\n    \"heads_up_potential\": 点数,\n    \"story_anchor\": 点数,\n    \"walkability\": 点数,\n    \"resilience\": 点数,\n    \"total\": 合計点,\n    \"look_at_direction\": \"正面の石碑の上部に注目\",\n    \"observable_details\": [\"屋根の形状\", \"柱の本数\", \"入口の紋章\"],\n    \"story_role_candidate\": \"証拠発見地点\",\n    \"selection_reason\": \"選んだ理由（1文）\"\n  }\n]\n\ntotalが高い順に並べてください。"
         selected: false
         title: LLM_テーマスコアリング
         type: llm
@@ -1077,30 +1051,10 @@ workflow:
         prompt_template:
         - id: 3c994e36-28b1-420b-911c-6b112e4c2ef4
           role: system
-          text: 'あなたは謎解きゲームの物語構成の専門家です。
-
-            各スポットに物語上の役割と謎のタイプを割り当てます。
-
-            出力は必ずJSON形式で行ってください。'
+          text: "あなたは周遊型物語×謎解きのストーリーアーキテクトです。\n\n【北極星】街が主役、物語がレンズ、謎が動機\n\n【ケースファイル型の物語構造】\n周遊型の物語は「起承転結」より「連続する発見」が重要です。\n\n1. Hook（導入）：事件/依頼/違和感。30秒で掴む\n2. Trail（探索）：スポットごとに「証拠」を1つ追加。短い達成を積む\n3. Shift（転換）：中盤で視点が変わる情報を投入。面白さが跳ねる\n4. Reveal（解決）：「街の意味が更新される」着地\n\n【アンカー（物語の杭）】\n各スポットには物語上の役割を1つだけ割り当てます（複数NG）。\n役割がブレるとスポットが弱く感じます。\n\n出力は必ずJSON形式で。"
         - id: c097160a-c146-4b61-aab6-00ff1309abdb
           role: user
-          text: "以下のスポットを使って、一貫した謎解き物語を構築するため、各スポットの役割を決定してください。\n\n\n【最適化されたスポット一覧】\n\
-            {{#1768602131448.optimized_spots_text#}}\n\n\n【ユーザーが求める体験】\n体験タイプ: {{#1768599287614.experience_type#}}\n\
-            テーマ: {{#1768599287614.primary_themes#}}\n学び: {{#1768599287614.learning_depth#}}\n\
-            雰囲気: {{#1768599287614.mood_keywords#}}\n\n【scene_roleの種類と説明】\n- 導入: 物語の始まり。世界観を提示する。必ず最初のスポット。\n\
-            - 展開: 情報収集フェーズ。謎が深まり、手がかりが増える。\n- 転換: 状況が変わる重要地点。新事実が判明する。中盤に1-2個。\n-\
-            \ 真相接近: 核心に迫る。答えに近づいている緊張感。\n- 結末: 物語の締めくくり。達成感と余韻。必ず最後のスポット。\n\n\n【puzzle_typeの種類】\n\
-            - logic: 論理パズル（証言整理、条件分岐）\n- pattern: パターン認識（数列、図形）\n- cipher: 暗号解読（換字式、位置暗号）\n\
-            - wordplay: 言葉遊び（漢字分解、アナグラム）\n- observation: 観察パズル（現地で見つける）\n\n\n【plot_key_typeの種類】\n\
-            - keyword: キーワード\n- number: 数字・年号\n- name: 人物名・地名\n- symbol: 記号・紋章\n\n\
-            \n【出力形式】JSON\n{\n  \"motifs\": [\n    {\n      \"spot_id\": \"S1\",\n\
-            \      \"spot_name\": \"スポット名\",\n      \"scene_role\": \"導入\",\n    \
-            \  \"puzzle_type\": \"observation\",\n      \"plot_key_type\": \"keyword\"\
-            ,\n      \"learning_elements\": [\"このスポットで学べること1\", \"学べること2\"],\n   \
-            \   \"story_beat\": \"物語上、このスポットで起こること（1文）\",\n      \"puzzle_concept\"\
-            : \"この謎の基本コンセプト（1文）\"\n    }\n  ],\n  \"overall_narrative\": \"物語全体の流れ（3-4文）\"\
-            ,\n  \"meta_puzzle_concept\": \"最終謎の基本アイデア\"\n}\n\n\n【重要ルール】\n- 最初のスポットは必ず「導入」\n\
-            - 最後のスポットは必ず「結末」\n- 「転換」は中盤に1-2個"
+          text: "【プレイヤーの役割】\n{{#1768599287614.player_role#}}\n\n【体験の約束】\n{{#1768599287614.experience_promise#}}\n\n【雰囲気】\n{{#1768599287614.atmosphere_tone#}}\n\n【物語の導入フック】\n{{#1768599287614.story_hook#}}\n\n【テーマ】\n{{#1768599287614.primary_themes#}}\n\n【エリア情報】\n{{#1768599416646.text#}}\n\n【最適化されたスポット一覧】\n{{#1768602131448.optimized_spots_text#}}\n\n\n【各スポットに割り当てる物語役割（story_anchor）】\n必ず1つだけ選ぶこと。\n\n- hook: 事件発生/依頼受諾（必ず最初のスポット）\n- evidence: 証拠が見つかる場所\n- witness: 目撃者/証言がいた場所\n- cipher: 暗号/符号が隠された場所\n- memory: 記憶が揺れる/過去が蘇る場所\n- contradiction: 矛盾/嘘が露呈する場所\n- shift: 視点が変わる転換点（中盤に1つ）\n- truth: 真実に近づく場所\n- reveal: 全てが明らかになる場所（必ず最後のスポット）\n\n【謎のタイプ（puzzle_type）】\n強い順（現地依存度順）\n\n- observation: 現地を見て解く（数/形/方角/紋章）最強\n- comparison: 地図や写真と現地を照らし合わせる\n- testimony: 証言の矛盾を見抜く（選択式）\n- cipher_light: 現地の文字/銘板を使う軽い暗号\n- logic: 情報を整理して推理（移動中向け）\n\n【出力形式】JSON\n{\n  \"narrative_structure\": {\n    \"case_title\": \"事件/謎の名前（魅力的に）\",\n    \"case_premise\": \"この事件/謎は何か（2-3文）\",\n    \"evidence_chain\": \"証拠がどう繋がるか（2文）\",\n    \"shift_moment\": \"どこで視点が変わるか（1文）\",\n    \"final_revelation\": \"最後に何が分かるか（ネタバレなし、曖昧に）\"\n  },\n  \"spots\": [\n    {\n      \"spot_id\": \"S1\",\n      \"spot_name\": \"スポット名\",\n      \"story_anchor\": \"hook\",\n      \"puzzle_type\": \"observation\",\n      \"what_player_finds\": \"ここで見つかる証拠/情報（具体的に）\",\n      \"look_at_instruction\": \"正面の○○を見て（ヘッズアップ指示）\",\n      \"emotional_beat\": \"この地点でプレイヤーが感じること\",\n      \"small_reward\": \"解けたときに得られる小報酬（情報/アイテム名）\",\n      \"next_push\": \"次のスポットへの動機付け（1文）\"\n    }\n  ],\n  \"reward_structure\": {\n    \"small_rewards\": \"各スポットで得る小報酬のリスト\",\n    \"medium_reward_spot\": \"中報酬がある転換点のスポットID\",\n    \"final_reward\": \"最後に得られる大報酬（街の意味の更新）\"\n  }\n}\n\n【重要ルール】\n- 最初のスポット＝必ず「hook」\n- 最後のスポット＝必ず「reveal」\n- 中盤に「shift」を1つ配置\n- 各スポットの役割は重複させない"
         selected: false
         title: LLMモチーフ選定
         type: llm
@@ -1194,28 +1148,10 @@ workflow:
         prompt_template:
         - id: 7659cb48-ffe5-4179-8f71-b2216b5825db
           role: system
-          text: 'あなたは「映画予告編のように没入感を作る」トップコピーライター兼ストーリー設計者です。
-
-            街歩き謎解きクエストの物語骨格を構築してください。
-
-            出力は必ずJSON形式で行ってください。'
+          text: "あなたは周遊型物語の脚本家です。\n\n【北極星】街が主役、物語がレンズ、謎が動機\n\n【ケースファイル型の物語構造】\n1. Hook（導入）：事件/依頼/違和感。30秒で掴む\n2. Trail（探索）：スポットごとに「証拠」を1つ追加\n3. Shift（転換）：中盤で視点が変わる\n4. Reveal（解決）：街の意味が更新される\n\n【ローカル事実は「ドラマの燃料」にする】\n観光ガイドの説明をそのまま入れると体験が止まる。\n事実はこう変換する：\n- 情報 → 緊張（なぜ隠された？）\n- 情報 → 選択（信じる？疑う？）\n- 情報 → 視点（同じ景色が違って見える）\n\n出力は必ずJSON形式で。"
         - id: 31be4b35-8c27-45ae-bcbe-995b273aba67
           role: user
-          text: "以下の情報を使って、街歩き謎解きクエストの物語骨格を構築してください。\n\n\n【スポットとモチーフ】\n{{#1768602505042.motifs_text#}}\n\
-            \n\n【物語全体の流れ】\n{{#1768602505042.overall_narrative#}}\n\n\n【ユーザーの求める体験】\n\
-            体験タイプ: {{#1768599287614.experience_type#}}\nテーマ: {{#1768599287614.primary_themes#}}\n\
-            雰囲気: {{#1768599287614.mood_keywords#}}\n\n\n【エリアの歴史】\n{{#1768599416646.text#}}\n\
-            \n\n【premise（前提説明）の必須ルール】\n- 500〜800字、3〜5段落\n- 二人称（あなた）中心、現在形\n- 段落は改行で区切る\n\
-            - 最後の1文は問いかけで締める\n- ネタバレ禁止（答え、犯人、どんでん返しは書かない）\n- 歴史的事実から逸脱しない\n\n\n【premiseに必ず含める8要素】\n\
-            1. 雰囲気の一撃目（映画のオープニング感）\n2. プレイヤーの役割（なりきり）\n3. 舞台の描写（具体的な場所）\n4. 事件・異変（導入フック）\n\
-            5. 痕跡（シンボル/暗号/伝承/手がかり）\n6. 賭け金（タイムリミット/危機/失敗示唆）\n7. 体験の約束（ただの散歩ではない）\n\
-            8. CTA（問いかけで締め）\n\n\n【出力形式】JSON\n{\n  \"main_plot\": {\n    \"premise\"\
-            : \"500〜800字の導入文\",\n    \"goal\": \"主人公の目的（1〜2文）\",\n    \"antagonist_or_mystery\"\
-            : \"対立要素または中心の謎（1〜2文）\",\n    \"final_reveal_outline\": \"最終的な真相の概要（ネタバレ注意、曖昧に）\"\
-            \n  },\n  \"spot_story_beats\": [\n    {\n      \"spot_id\": \"S1\",\n\
-            \      \"story_beat\": \"この地点で起こる物語上の出来事\",\n      \"emotional_arc\":\
-            \ \"この地点でのプレイヤーの感情\",\n      \"key_discovery\": \"この地点で発見する重要なこと\"\n \
-            \   }\n  ]\n}"
+          text: "【プレイヤーの役割】\n{{#1768599287614.player_role#}}\n\n【体験の約束】\n{{#1768599287614.experience_promise#}}\n\n【雰囲気】\n{{#1768599287614.atmosphere_tone#}}\n\n【テーマ】\n{{#1768599287614.primary_themes#}}\n\n【スポットとモチーフ】\n{{#1768602505042.motifs_text#}}\n\n【事件/謎の構造】\n{{#1768602505042.overall_narrative#}}\n\n【エリアの歴史】\n{{#1768599416646.text#}}\n\n\n【premise（前提説明）の必須ルール】\n- 300〜500字、3〜4段落\n- 二人称（あなた）中心、現在形\n- 最後の1文は問いかけで締める\n- ネタバレ禁止（答え、犯人、どんでん返しは書かない）\n- 歴史的事実から逸脱しない\n\n【premiseに必ず含める8要素】\n1. 雰囲気の一撃目（映画のオープニング感）\n2. プレイヤーの役割（なりきり）\n3. 舞台の描写（具体的な場所）\n4. 事件・異変（導入フック）\n5. 痕跡（シンボル/暗号/伝承/手がかり）\n6. 賭け金（タイムリミット/危機/失敗示唆）\n7. 体験の約束（ただの散歩ではない）\n8. CTA（問いかけで締め）\n\n\n【出力形式】JSON\n{\n  \"main_plot\": {\n    \"premise\": \"300〜500字の導入文\",\n    \"goal\": \"主人公の目的（1文）\",\n    \"antagonist_or_mystery\": \"対立要素または中心の謎（1文）\",\n    \"final_reveal_outline\": \"最後に街の見え方がどう変わるか（ネタバレなし、曖昧に）\"\n  },\n  \"spot_story_beats\": [\n    {\n      \"spot_id\": \"S1\",\n      \"story_beat\": \"この地点で起こる物語上の出来事（1文）\",\n      \"emotional_arc\": \"この地点でプレイヤーが感じること（1語）\",\n      \"key_discovery\": \"この地点で発見する証拠/情報（具体的に）\"\n    }\n  ],\n  \"reward_design\": {\n    \"small_rewards\": \"各スポットで得る小報酬の種類\",\n    \"medium_reward_description\": \"中盤で得る中報酬（視点の変化）\",\n    \"final_reward_description\": \"最後に得る大報酬（街の意味の更新）\"\n  }\n}"
         selected: false
         title: LLM_物語骨格生成
         type: llm
@@ -1311,31 +1247,10 @@ workflow:
         prompt_template:
         - id: 06727bcd-26e0-4eae-bf9c-095f88e2b36e
           role: system
-          text: 'あなたはひらめき型パズルの謎作家です。
-
-            「解く = 学ぶ」を実現する、美しい謎を設計してください。
-
-            出力は必ずJSON形式で行ってください。'
+          text: "あなたは周遊型謎解きの設計士です。\n\n【北極星】街が主役、物語がレンズ、謎が動機\n\n【謎の正解条件：ストーリー上の行為になっている】\n- 探偵なら「観察」「照合」「推理」\n- 旅人なら「発見」「収集」「記録」\n- 調査員なら「確認」「比較」「報告」\n\n「パズルだから解く」ではなく「物語の行為だから解く」に変える。\n\n【現地依存の謎の型（強い順）】\n1. 観察型：数/紋章/配置/方角/形状（最強。街が主役になる）\n2. 照合型：地図と現地を照らす、写真と同じ構図を探す\n3. 選択型：目撃証言の矛盾を見抜いて選ぶ（低負荷でドラマ強い）\n4. 軽暗号型：現地の文字・銘板を材料に（完全な画面完結は避ける）\n\n【絶対ルール】\n- 同じ場所でスマホ注視が長くなる謎は避ける\n- 「顔を上げて街を見る」体験を守る\n\n出力は必ずJSON形式で。"
         - id: f6252950-9da1-4e16-877d-43ad42f02e1d
           role: user
-          text: "以下の全スポットに対して、教育的価値のある謎を設計してください。\n\n\n【物語の前提】\n{{#1768602757091.premise#}}\n\
-            \n\n【物語の目的】\n{{#1768602757091.goal#}}\n\n\n【中心の謎】\n{{#1768602757091.mystery#}}\n\
-            \n\n【スポットとモチーフ】\n{{#1768602505042.motifs_text#}}\n\n\n【各スポットのストーリービート】\n\
-            {{#1768602757091.spot_beats_text#}}\n\n\n【謎設計の絶対ルール】\n1. player_handout（プレイヤー資料）だけで解けること\n\
-            2. 外部知識（ネット検索、暗記）は不要\n3. 解いた瞬間に「そうか！」と学びがあること\n4. スポットの歴史/文化と直接つながっていること\n\
-            5. 中学生でも読める言葉で書くこと\n\n\n【禁止事項】\n- 「○○を建てたのは誰？」系の暗記クイズ\n- スポットと関係ない一般パズル\n\
-            - 答えが複数通りある曖昧な問題\n\n\n【出力形式】JSON配列\n[\n  {\n    \"spot_id\": \"S1\",\n\
-            \    \"spot_name\": \"スポット名\",\n    \"scene_role\": \"導入\",\n    \"lore_card\"\
-            : {\n      \"short_story_text\": \"物語文（2-4文、このスポットの意味づけ）\",\n      \"\
-            player_handout\": \"プレイヤー用資料（100-200字、謎を解くヒント含む）\"\n    },\n    \"puzzle\"\
-            : {\n      \"type\": \"observation\",\n      \"prompt\": \"出題文（50-100字、美しく謎めいた語り口で）\"\
-            ,\n      \"answer\": \"答え（明確に）\",\n      \"solution_steps\": [\n     \
-            \   \"ステップ1: まず○○を確認する\",\n        \"ステップ2: 次に△△を比較する\",\n        \"ステップ3:\
-            \ 最後に□□を導き出す\"\n      ],\n      \"hints\": [\n        \"抽象的なヒント\",\n \
-            \       \"具体的なヒント\",\n        \"救済ヒント（ほぼ答え）\"\n      ],\n      \"difficulty\"\
-            : 2\n    },\n    \"reward\": {\n      \"lore_reveal\": \"謎を解くと分かる背景（2-3文）\"\
-            ,\n      \"plot_key\": \"物語の鍵（1-5文字）\",\n      \"next_hook\": \"次のスポットへ行きたくなる一文\"\
-            \n    }\n  }\n]\n\n全スポット分を生成してください。"
+          text: "【プレイヤーの役割】\n{{#1768599287614.player_role#}}\n\n【物語の前提（premise）】\n{{#1768602757091.premise#}}\n\n【スポットと役割】\n{{#1768602505042.motifs_text#}}\n\n【各スポットのストーリービート】\n{{#1768602757091.spot_beats_text#}}\n\n\n【謎設計の絶対ルール】\n\n1. 現地を見れば解ける（外部知識不要）\n2. 「顔を上げる指示」を必ず含める\n3. 答えは明確で1つだけ\n4. 解いた瞬間に「へぇ！」と学びがある\n5. 謎がプレイヤーの役割に合った行為である\n\n【禁止事項】\n- 「○○を建てたのは誰？」系の暗記クイズ\n- スポットと関係ない一般パズル\n- 答えが複数通りある曖昧な問題\n- 長文をスマホで読ませる謎\n\n\n【各スポットの謎設計フォーマット】\n\n1. 到着時導入（30〜60秒）\n   - arrival_text: 到着時に表示する短い文（2-3文）\n   - look_up_instruction: 「○○の方を見て」（顔を上げる具体的指示）\n\n2. 観察ミッション（1〜3分）\n   - observation_target: 何を見るか（具体的に）\n   - puzzle_prompt: 謎の出題文（50-80字、美しく謎めいた語り口）\n   - answer: 答え（明確に1つ）\n   - action_verb: プレイヤーがやること（数える/探す/見つける/比べる）\n\n3. 3段階ヒント\n   - hint_1: 方向性（何を見る？）\n   - hint_2: 具体的（どこを見る？）\n   - hint_3: 救済（ほぼ答え）\n\n4. 報酬（30〜60秒）\n   - solved_reveal: 解けたら分かる豆知識/背景（2-3文）\n   - evidence_item: 手に入る証拠/アイテムの名前\n   - next_push: 次のスポットへの動機（1文）\n\n\n【出力形式】JSON配列\n[\n  {\n    \"spot_id\": \"S1\",\n    \"spot_name\": \"スポット名\",\n    \"story_anchor\": \"hook\",\n    \"arrival\": {\n      \"arrival_text\": \"到着時の状況説明（2-3文、現在形）\",\n      \"look_up_instruction\": \"正面の○○を見上げて\"\n    },\n    \"mission\": {\n      \"observation_target\": \"屋根の上の○○\",\n      \"action_verb\": \"数える\",\n      \"puzzle_prompt\": \"美しく謎めいた出題文（50-80字）\",\n      \"answer\": \"答え\",\n      \"difficulty\": 2\n    },\n    \"hints\": {\n      \"hint_1\": \"方向性のヒント\",\n      \"hint_2\": \"具体的なヒント\",\n      \"hint_3\": \"救済のヒント（ほぼ答え）\"\n    },\n    \"reward\": {\n      \"solved_reveal\": \"解けたら分かる背景/豆知識（2-3文）\",\n      \"evidence_item\": \"手に入る証拠の名前\",\n      \"plot_key\": \"物語の鍵（1-5文字）\",\n      \"next_push\": \"次のスポットへの動機付け（1文）\"\n    }\n  }\n]\n\n全スポット分を生成してください。"
         selected: true
         title: LLM_謎設計ループ
         type: llm
@@ -1592,28 +1507,10 @@ workflow:
         prompt_template:
         - id: 957b4dd1-bae4-4b16-bab2-8583c9e68797
           role: system
-          text: 'あなたは「プレイヤーが"やってみたい！"と思える」クエスト紹介文を作る専門家です。
-
-            ネタバレは絶対に禁止です。
-
-            出力は必ずJSON形式で行ってください。'
+          text: "あなたは周遊型クエストの紹介文ライターです。\n\n【北極星】街が主役、物語がレンズ、謎が動機\n\n【伝えるべきは4つだけ】\n1. あなたは誰として歩くか（役割）\n2. 何を達成すると気持ちいいか（報酬）\n3. どんな空気の物語か（トーン）\n4. どれくらいの負荷か（時間/距離/難易度）\n\n【絶対に言わない方がいいもの】\n- どこで何が起きるか（転換点の場所）\n- 犯人/真相の示唆\n- 驚きポイントの列挙\n\n代わりに「約束（Promise）」だけ置く。\n例：「最後にこの像の意味が更新される」\n\n出力は必ずJSON形式で。"
         - id: 7e53383b-10a8-4410-9bd8-72d951a5c735
           role: user
-          text: "ネタバレなしの魅力的なプレビューを生成してください。\n\n\n【重要ルール：ネタバレ禁止】\n- 謎の問題文・答え・ヒントの具体は絶対に書かない\n\
-            - 「どう解くか」ではなく「何が起きるか」だけを書く\n\n\n【物語の導入】\n{{#1768602757091.premise#}}\n\
-            \n\n【スポット情報】\n{{#1768603594197.spots_summary#}}\n\n\n【ルート情報】\n総距離: {{#1768602131448.total_distance_m#}}m\n\
-            歩行時間: {{#1768602131448.walking_time_min#}}分\nスポット数: {{#1768558472266.spot_count#}}箇所\n\
-            \n\n【難易度】\n{{#1768558472266.difficulty#}}\n\n\n【出力形式】JSON\n{\n  \"title\"\
-            : \"クエストタイトル（魅力的に）\",\n  \"one_liner\": \"30〜45文字のキャッチコピー\",\n  \"trailer\"\
-            : \"80〜140文字の予告文\",\n  \"mission\": \"あなたは〇〇して最後に〇〇を突き止める\",\n  \"teasers\"\
-            : [\n    \"スポット名で〇〇すると△△が見えてくる\",\n    \"別のスポットで〇〇すると△△が起きる\",\n    \"\
-            最後に〇〇すると△△が現れる\"\n  ],\n  \"summary_actions\": [\"歩く\", \"集める\", \"照合する\"\
-            ],\n  \"route_meta\": {\n    \"area_start\": \"開始エリア名\",\n    \"area_end\"\
-            : \"終了エリア名\",\n    \"distance_km\": \"距離km\",\n    \"estimated_time_min\"\
-            : \"所要時間\",\n    \"spots_count\": スポット数,\n    \"difficulty_label\": \"\
-            難易度ラベル\",\n    \"weather_note\": \"天候の注意\"\n  },\n  \"tags\": [\"タグ1\"\
-            , \"タグ2\", \"タグ3\"],\n  \"cta_copy\": {\n    \"primary\": \"冒険を始める\",\n\
-            \    \"secondary\": \"詳しく見る\"\n  }\n}"
+          text: "【プレイヤーの役割】\n{{#1768599287614.player_role#}}\n\n【体験の約束】\n{{#1768599287614.experience_promise#}}\n\n【雰囲気】\n{{#1768599287614.atmosphere_tone#}}\n\n【物語の導入】\n{{#1768602757091.premise#}}\n\n【スポット情報】\n{{#1768603594197.spots_summary#}}\n\n【ルート情報】\n総距離: {{#1768602131448.total_distance_m#}}m\n歩行時間: {{#1768602131448.walking_time_min#}}分\nスポット数: {{#1768558472266.spot_count#}}箇所\n難易度: {{#1768558472266.difficulty#}}\n\n\n【出力形式】JSON\n{\n  \"title\": \"クエストタイトル（10字以内、魅力的に）\",\n  \"subtitle\": \"サブタイトル（20字以内）\",\n  \"one_liner\": \"30〜45文字のキャッチコピー（約束を含める）\",\n  \"premise_short\": \"100〜150字のあらすじ（ネタバレなし、期待だけ）\",\n  \n  \"four_things\": {\n    \"role\": \"あなたは〇〇として歩く（1文）\",\n    \"reward\": \"最後に〇〇が明らかになる（1文）\",\n    \"tone\": \"この物語の空気を表す言葉（3語）\",\n    \"effort\": {\n      \"time\": \"推定所要時間（〇〇分）\",\n      \"distance\": \"距離（〇〇km）\",\n      \"difficulty\": \"難易度（初心者向け/普通/本格派）\",\n      \"safety_note\": \"注意事項（1文、あれば）\"\n    }\n  },\n  \n  \"teasers\": [\n    \"期待を高める1文目（場所名なし）\",\n    \"期待を高める2文目（場所名なし）\",\n    \"期待を高める3文目（場所名なし）\"\n  ],\n  \n  \"route_meta\": {\n    \"area_name\": \"エリア名\",\n    \"distance_km\": \"距離km\",\n    \"estimated_time_min\": 所要時間（数字）,\n    \"spots_count\": スポット数（数字）,\n    \"difficulty_label\": \"難易度ラベル\"\n  },\n  \n  \"tags\": [\"タグ1\", \"タグ2\", \"タグ3\"],\n  \n  \"cta_copy\": {\n    \"primary\": \"冒険を始める\",\n    \"secondary\": \"詳しく見る\"\n  }\n}"
         selected: false
         title: LLM_プレビュー生成
         type: llm

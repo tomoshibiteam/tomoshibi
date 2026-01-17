@@ -1580,7 +1580,7 @@ workflow:
       type: custom
       width: 242
     - data:
-        code: "import json\nfrom datetime import datetime\n\ndef main(\n    player_preview_json:\
+        code: "import json\nfrom datetime import datetime\nfrom urllib.parse import quote\n\ndef main(\n    player_preview_json:\
           \ str,\n    quest_title: str,\n    premise: str,\n    goal: str,\n    mystery:\
           \ str,\n    final_reveal: str,\n    spot_scenes_json: str,\n    meta_puzzle_json:\
           \ str,\n    optimized_spots_json: str,\n    validation_passed: bool,\n \
@@ -1592,18 +1592,27 @@ workflow:
           error\": \"JSONパースに失敗しました\"\n        }\n    \n    # optimized_spotsを複数キーでインデックス化\n    \
           spots_by_id = {}\n    spots_by_name = {}\n    for i, spot in enumerate(optimized_spots):\n        \
           sid = spot.get('spot_id', f'S{i+1}')\n        name = spot.get('name', '')\n        \
-          spots_by_id[sid] = spot\n        if name:\n            spots_by_name[name] = spot\n    \n    # スポットシーンに座標を追加（数値として確保）\n    \
+          spots_by_id[sid] = spot\n        if name:\n            spots_by_name[name] = spot\n    \n    # スポットシーンに座標とGoogle Maps URLを追加\n    \
           matched_count = 0\n    for scene in spot_scenes:\n        spot_id = scene.get('spot_id', '')\n        \
           spot_name = scene.get('spot_name', '')\n        matched_spot = None\n        \n        \
           # 優先順位1: spot_idでマッチング\n        if spot_id in spots_by_id:\n            \
           matched_spot = spots_by_id[spot_id]\n        # 優先順位2: spot_nameでマッチング\n        \
           elif spot_name in spots_by_name:\n            matched_spot = spots_by_name[spot_name]\n        \n        \
           if matched_spot:\n            matched_count += 1\n            lat = matched_spot.get('lat', 0)\n            \
-          lng = matched_spot.get('lng', 0)\n            scene['lat'] = float(lat) if lat else 0.0\n            \
-          scene['lng'] = float(lng) if lng else 0.0\n            scene['place_id'] = matched_spot.get('place_id', '')\n            \
-          scene['address'] = matched_spot.get('address', '')\n        else:\n            \
-          # フォールバック：座標がない場合は0を設定\n            scene['lat'] = float(scene.get('lat', 0)) if scene.get('lat') else 0.0\n            \
-          scene['lng'] = float(scene.get('lng', 0)) if scene.get('lng') else 0.0\n    \n    # creator_payload構築\n    creator_payload =\
+          lng = matched_spot.get('lng', 0)\n            place_id = matched_spot.get('place_id', '')\n            \
+          name = matched_spot.get('name', spot_name)\n            address = matched_spot.get('address', '')\n            \n            \
+          scene['lat'] = float(lat) if lat else 0.0\n            scene['lng'] = float(lng) if lng else 0.0\n            \
+          scene['place_id'] = place_id\n            scene['address'] = address\n            \n            \
+          # Google Maps URLを生成\n            if place_id:\n                \
+          scene['google_maps_url'] = f'https://www.google.com/maps/search/?api=1&query={quote(name)}&query_place_id={place_id}'\n            \
+          elif lat and lng:\n                \
+          scene['google_maps_url'] = f'https://www.google.com/maps/search/?api=1&query={lat},{lng}'\n            \
+          else:\n                \
+          scene['google_maps_url'] = f'https://www.google.com/maps/search/?api=1&query={quote(spot_name)}'\n        \
+          else:\n            \
+          # フォールバック：座標がない場合\n            scene['lat'] = float(scene.get('lat', 0)) if scene.get('lat') else 0.0\n            \
+          scene['lng'] = float(scene.get('lng', 0)) if scene.get('lng') else 0.0\n            \
+          scene['google_maps_url'] = f'https://www.google.com/maps/search/?api=1&query={quote(spot_name)}'\n    \n    # creator_payload構築\n    creator_payload =\
           \ {\n        \"quest_id\": f\"quest-{int(datetime.now().timestamp())}\"\
           ,\n        \"quest_title\": quest_title,\n        \"main_plot\": {\n   \
           \         \"premise\": premise,\n            \"goal\": goal,\n         \
@@ -1611,7 +1620,7 @@ workflow:
           : final_reveal\n        },\n        \"spots\": spot_scenes,\n        \"\
           meta_puzzle\": meta_puzzle,\n        \"generation_metadata\": {\n      \
           \      \"generated_at\": datetime.now().isoformat(),\n            \"pipeline_version\"\
-          : \"2.2.0-dify\",\n            \"validation_passed\": validation_passed,\n\
+          : \"2.3.0-dify\",\n            \"validation_passed\": validation_passed,\n\
           \            \"quality_score\": quality_score,\n            \"spots_count\": len(spot_scenes),\n\
           \            \"coords_matched\": matched_count,\n            \"coords_match_rate\": round(matched_count / len(spot_scenes) * 100, 1) if spot_scenes else 0\n\
           \        }\n    }\n    \n    # 最終出力\n    output = {\n        \"player_preview\": player_preview,\n\

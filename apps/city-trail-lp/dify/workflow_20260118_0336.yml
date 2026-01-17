@@ -689,24 +689,24 @@ workflow:
           \ -> dict:\n    # SPR探偵事務所シリーズ判定\n    is_spr = False\n    if is_admin ==\
           \ 'true':\n        spr_keywords = ['SPR', 'spr', 'SPR探偵', 'SPR探偵事務所', 'エスピーアール']\n\
           \        for kw in spr_keywords:\n            if kw in prompt:\n       \
-          \         is_spr = True\n                break\n    \n    # 九州大学判定\n   \
-          \ kyudai_keywords = ['九州大学', '九大', '伊都キャンパス', '箱崎キャンパス', '大橋キャンパス', '病院キャンパス', 'Kyushu University', 'kyudai']\n\
-          \    is_kyushu = False\n\
-          \    check_text = prompt + ' ' + inferred_area\n    for kw in kyudai_keywords:\n        if kw in check_text:\n            is_kyushu\
+          \         is_spr = True\n                break\n    \n    # 伊都キャンパス判定\n   \
+          \ ito_keywords = ['伊都キャンパス', '伊都', '九大伊都', '九州大学伊都', 'Ito Campus', 'ito campus', '糸島', '元岡']\n\
+          \    is_ito = False\n\
+          \    check_text = prompt + ' ' + inferred_area\n    for kw in ito_keywords:\n        if kw in check_text:\n            is_ito\
           \ = True\n            break\n    \n    return {\n        'is_spr': 'true'\
-          \ if is_spr else 'false',\n        'is_kyushu': 'true' if is_kyushu else\
+          \ if is_spr else 'false',\n        'is_ito': 'true' if is_ito else\
           \ 'false',\n        'spr_context': 'SPR探偵事務所シリーズ用のナレッジ検索結果がここに入ります' if is_spr\
-          \ else '',\n        'kyushu_context': '九州大学の詳細情報がここに入ります' if is_kyushu else\
+          \ else '',\n        'ito_context': '伊都キャンパスの詳細情報がここに入ります' if is_ito else\
           \ ''\n    }\n"
         code_language: python3
         outputs:
-          is_kyushu:
+          is_ito:
             children: null
             type: string
           is_spr:
             children: null
             type: string
-          kyushu_context:
+          ito_context:
             children: null
             type: string
           spr_context:
@@ -797,7 +797,7 @@ workflow:
         - inferred_area
         retrieval_mode: multiple
         selected: false
-        title: Knowledge_九州大学
+        title: Knowledge_伊都キャンパス
         type: knowledge-retrieval
       height: 52
       id: '1768700000003'
@@ -846,16 +846,16 @@ workflow:
         - case_id: 'true'
           conditions:
           - comparison_operator: is
-            id: kyushu_check
+            id: ito_check
             value: 'true'
             varType: string
             variable_selector:
             - '1768700000001'
-            - is_kyushu
+            - is_ito
           id: 'true'
           logical_operator: and
         selected: false
-        title: IF_九州大学判定
+        title: IF_伊都キャンパス判定
         type: if-else
       height: 124
       id: '1768700000011'

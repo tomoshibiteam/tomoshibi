@@ -1,0 +1,1693 @@
+app:
+  description: ''
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: workflow
+  name: tomoshibi
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/gemini:0.7.4@5faf411e694e0da130a337347a625a3812b1b7502a0183382d66d92c841bf05a
+    version: null
+kind: app
+version: 0.5.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        attachment_image_file_size_limit: 2
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        file_upload_limit: 50
+        image_file_batch_limit: 10
+        image_file_size_limit: 10
+        single_chunk_attachment_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: llm
+      id: 1768558472266-source-1768597790579-target
+      source: '1768558472266'
+      sourceHandle: source
+      target: '1768597790579'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: 1768597790579-source-1768599287614-target
+      source: '1768597790579'
+      sourceHandle: source
+      target: '1768599287614'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: 1768599287614-source-1768599416646-target
+      source: '1768599287614'
+      sourceHandle: source
+      target: '1768599416646'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: http-request
+      id: 1768599416646-source-1768600394819-target
+      source: '1768599416646'
+      sourceHandle: source
+      target: '1768600394819'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: http-request
+        targetType: code
+      id: 1768600394819-source-1768601299799-target
+      source: '1768600394819'
+      sourceHandle: source
+      target: '1768601299799'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: 1768601299799-source-1768601846740-target
+      source: '1768601299799'
+      sourceHandle: source
+      target: '1768601846740'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: 1768601846740-source-1768602035766-target
+      source: '1768601846740'
+      sourceHandle: source
+      target: '1768602035766'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: code
+      id: 1768602035766-source-1768602131448-target
+      source: '1768602035766'
+      sourceHandle: source
+      target: '1768602131448'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: 1768602131448-source-1768602371187-target
+      source: '1768602131448'
+      sourceHandle: source
+      target: '1768602371187'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: 1768602371187-source-1768602505042-target
+      source: '1768602371187'
+      sourceHandle: source
+      target: '1768602505042'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: 1768602505042-source-1768602602678-target
+      source: '1768602505042'
+      sourceHandle: source
+      target: '1768602602678'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: 1768602602678-source-1768602757091-target
+      source: '1768602602678'
+      sourceHandle: source
+      target: '1768602757091'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: 1768602757091-source-1768603485259-target
+      source: '1768602757091'
+      sourceHandle: source
+      target: '1768603485259'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: 1768603485259-source-1768603594197-target
+      source: '1768603485259'
+      sourceHandle: source
+      target: '1768603594197'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: 1768603594197-source-1768603666915-target
+      source: '1768603594197'
+      sourceHandle: source
+      target: '1768603666915'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: 1768603666915-source-1768603767065-target
+      source: '1768603666915'
+      sourceHandle: source
+      target: '1768603767065'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: code
+      id: 1768603767065-source-1768603843069-target
+      source: '1768603767065'
+      sourceHandle: source
+      target: '1768603843069'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: 1768603843069-source-1768603963490-target
+      source: '1768603843069'
+      sourceHandle: source
+      target: '1768603963490'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: code
+      id: 1768603963490-source-1768604146459-target
+      source: '1768603963490'
+      sourceHandle: source
+      target: '1768604146459'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: code
+        targetType: code
+      id: 1768604146459-source-1768605957312-target
+      source: '1768604146459'
+      sourceHandle: source
+      target: '1768605957312'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: code
+        targetType: end
+      id: 1768605957312-source-1768604222640-target
+      source: '1768605957312'
+      sourceHandle: source
+      target: '1768604222640'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        selected: false
+        title: ユーザー入力
+        type: start
+        variables:
+        - hint: ''
+          label: プロンプト
+          max_length: 2000
+          options: []
+          placeholder: ''
+          required: true
+          type: paragraph
+          variable: prompt
+        - default: medium
+          hint: ''
+          label: difficulty
+          max_length: 48
+          options:
+          - easy
+          - medium
+          - hard
+          placeholder: ''
+          required: true
+          type: select
+          variable: difficulty
+        - default: '7'
+          hint: ''
+          label: spot_count
+          max_length: 48
+          options: []
+          placeholder: ''
+          required: true
+          type: number
+          variable: spot_count
+        - hint: ''
+          label: theme_tags
+          max_length: 256
+          options: []
+          placeholder: ''
+          required: false
+          type: text-input
+          variable: theme_tags
+        - hint: ''
+          label: genre_support
+          max_length: 100
+          options: []
+          placeholder: ''
+          required: false
+          type: text-input
+          variable: genre_support
+        - hint: ''
+          label: tone_support
+          max_length: 100
+          options: []
+          placeholder: ''
+          required: false
+          type: text-input
+          variable: tone_support
+        - hint: ''
+          label: protagonist
+          max_length: 200
+          options: []
+          placeholder: ''
+          required: false
+          type: text-input
+          variable: protagonist
+        - hint: ''
+          label: objective
+          max_length: 200
+          options: []
+          placeholder: ''
+          required: false
+          type: text-input
+          variable: objective
+        - hint: ''
+          label: ending
+          max_length: 200
+          options: []
+          placeholder: ''
+          required: false
+          type: text-input
+          variable: ending
+        - hint: ''
+          label: when
+          max_length: 100
+          options: []
+          placeholder: ''
+          required: false
+          type: text-input
+          variable: when
+        - hint: ''
+          label: where
+          max_length: 200
+          options: []
+          placeholder: ''
+          required: false
+          type: text-input
+          variable: where
+        - hint: ''
+          label: purpose
+          max_length: 200
+          options: []
+          placeholder: ''
+          required: false
+          type: text-input
+          variable: purpose
+        - hint: ''
+          label: with_whom
+          max_length: 100
+          options: []
+          placeholder: ''
+          required: false
+          type: text-input
+          variable: with_whom
+        - hint: ''
+          label: center_lat
+          max_length: 20
+          options: []
+          placeholder: ''
+          required: false
+          type: text-input
+          variable: center_lat
+        - hint: ''
+          label: center_lng
+          max_length: 20
+          options: []
+          placeholder: ''
+          required: false
+          type: text-input
+          variable: center_lng
+        - hint: ''
+          label: radius_km
+          max_length: 10
+          options: []
+          placeholder: ''
+          required: false
+          type: text-input
+          variable: radius_km
+      height: 499
+      id: '1768558472266'
+      position:
+        x: 81.99365959572805
+        y: 281.04736200195606
+      positionAbsolute:
+        x: 81.99365959572805
+        y: 281.04736200195606
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            max_output_tokens: 8192
+            temperature: 0.3
+            thinking_level: Low
+          mode: chat
+          name: gemini-3-flash-preview
+          provider: langgenius/gemini/google
+        prompt_template:
+        - id: 0f5a1135-ce08-449f-b126-d96707e6967b
+          role: system
+          text: 'あなたはユーザー体験設計の専門家です。
+
+            クエスト生成リクエストを分析し、ユーザーが本当に求めている体験を理解してください。
+
+            出力は必ずJSON形式で行ってください。'
+        - id: 46db2956-1745-4cd3-aa4a-bcd7c8fb97ca
+          role: user
+          text: "以下のクエスト生成リクエストを分析してください。\n\n\n【ユーザーリクエスト】\nメインプロンプト: {{#1768558472266.prompt#}}\n\
+            難易度: {{#1768558472266.difficulty#}}\nスポット数: {{#1768558472266.spot_count#}}\n\
+            ジャンル: {{#1768558472266.genre_support#}}\nトーン: {{#1768558472266.tone_support#}}\n\
+            いつ: {{#1768558472266.when#}}\nどこで: {{#1768558472266.where#}}\n目的: {{#1768558472266.purpose#}}\n\
+            誰と: {{#1768558472266.with_whom#}}\n\n\n【分析項目】\n1. experience_type: 学習/冒険/ロマンチック/ファミリー/ひとり旅\
+            \ のどれか\n2. primary_themes: 歴史/アート/グルメ/自然/建築/文学/科学 から最大3つ\n3. fitness_level:\
+            \ 軽め/普通/しっかり\n4. learning_depth: 軽い豆知識/しっかり学習\n5. puzzle_expectation:\
+            \ 簡単に解きたい/じっくり考えたい\n6. mood_keywords: このクエストを表す形容詞3つ\n7. must_include:\
+            \ 必須要素\n8. must_avoid: 避けるべき要素\n9. inferred_area: 推測されるエリア名\n\n\n【出力形式】JSON\n\
+            {\n  \"experience_type\": \"string\",\n  \"primary_themes\": [\"string\"\
+            ],\n  \"fitness_level\": \"string\",\n  \"learning_depth\": \"string\"\
+            ,\n  \"puzzle_expectation\": \"string\",\n  \"mood_keywords\": [\"string\"\
+            ],\n  \"must_include\": [\"string\"],\n  \"must_avoid\": [\"string\"],\n\
+            \  \"inferred_area\": \"string\",\n  \"analysis_summary\": \"string\"\n\
+            }"
+        selected: false
+        title: LLM_ユーザー意図分析
+        type: llm
+        vision:
+          enabled: false
+      height: 88
+      id: '1768597790579'
+      position:
+        x: 387.25450374209146
+        y: 302.04736200195606
+      positionAbsolute:
+        x: 387.25450374209146
+        y: 302.04736200195606
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        code: "import json\nimport re\n\ndef main(llm_output: str) -> dict:\n    #\
+          \ JSON部分を抽出\n    json_match = re.search(r'\\{[\\s\\S]*\\}', llm_output)\n\
+          \    if json_match:\n        try:\n            parsed = json.loads(json_match.group())\n\
+          \            # 個別の変数として出力（Difyの制限対応）\n            return {\n           \
+          \     \"experience_type\": parsed.get(\"experience_type\", \"冒険\"),\n  \
+          \              \"primary_themes\": \", \".join(parsed.get(\"primary_themes\"\
+          , [\"歴史\"])),\n                \"fitness_level\": parsed.get(\"fitness_level\"\
+          , \"普通\"),\n                \"learning_depth\": parsed.get(\"learning_depth\"\
+          , \"軽い豆知識\"),\n                \"puzzle_expectation\": parsed.get(\"puzzle_expectation\"\
+          , \"簡単に解きたい\"),\n                \"mood_keywords\": \", \".join(parsed.get(\"\
+          mood_keywords\", [\"ミステリアス\"])),\n                \"must_include\": \",\
+          \ \".join(parsed.get(\"must_include\", [])),\n                \"must_avoid\"\
+          : \", \".join(parsed.get(\"must_avoid\", [])),\n                \"inferred_area\"\
+          : parsed.get(\"inferred_area\", \"\"),\n                \"analysis_summary\"\
+          : parsed.get(\"analysis_summary\", \"\")\n            }\n        except:\n\
+          \            pass\n    \n    # パース失敗時のデフォルト\n    return {\n        \"experience_type\"\
+          : \"冒険\",\n        \"primary_themes\": \"歴史\",\n        \"fitness_level\"\
+          : \"普通\",\n        \"learning_depth\": \"軽い豆知識\",\n        \"puzzle_expectation\"\
+          : \"簡単に解きたい\",\n        \"mood_keywords\": \"ミステリアス\",\n        \"must_include\"\
+          : \"\",\n        \"must_avoid\": \"\",\n        \"inferred_area\": \"\"\
+          ,\n        \"analysis_summary\": \"分析に失敗しました\"\n    }"
+        code_language: python3
+        outputs:
+          analysis_summary:
+            children: null
+            type: string
+          experience_type:
+            children: null
+            type: string
+          fitness_level:
+            children: null
+            type: string
+          inferred_area:
+            children: null
+            type: string
+          learning_depth:
+            children: null
+            type: string
+          mood_keywords:
+            children: null
+            type: string
+          must_avoid:
+            children: null
+            type: string
+          must_include:
+            children: null
+            type: string
+          primary_themes:
+            children: null
+            type: string
+          puzzle_expectation:
+            children: null
+            type: string
+        selected: false
+        title: code_意図解析結果パース
+        type: code
+        variables:
+        - value_selector:
+          - '1768597790579'
+          - text
+          value_type: string
+          variable: llm_output
+      height: 52
+      id: '1768599287614'
+      position:
+        x: 689.2545037420914
+        y: 302.04736200195606
+      positionAbsolute:
+        x: 689.2545037420914
+        y: 302.04736200195606
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            max_output_tokens: 8192
+            temperature: 0.3
+            thinking_level: Low
+          mode: chat
+          name: gemini-3-flash-preview
+          provider: langgenius/gemini/google
+        prompt_template:
+        - id: 72c5350b-9813-4e99-a96c-81edf38a45ee
+          role: system
+          text: 'あなたは日本の地理と歴史に詳しい専門家です。
+
+            指定されたエリアについて、街歩きクエストに役立つ情報を分析してください。
+
+            出力は必ずJSON形式で行ってください。'
+        - id: 780f826a-e979-4a5d-88b4-e1dbf7433398
+          role: user
+          text: "以下のエリアを分析してください。\n\n\n【エリア情報】\n推測エリア名: {{#1768599287614.inferred_area#}}\n\
+            入力された場所: {{#1768558472266.where#}}\nプロンプト: {{#1768558472266.prompt#}}\n\
+            中心座標: 緯度{{#1768558472266.center_lat#}}, 経度{{#1768558472266.center_lng#}}\n\
+            検索半径: {{#1768558472266.radius_km#}}km\n求められるテーマ: {{#1768599287614.primary_themes#}}\n\
+            \n\n【分析項目】\n1. area_name: 正式なエリア名\n2. area_history: 歴史的背景（100-200字）\n\
+            3. cultural_significance: 文化的な重要性\n4. typical_spots: 典型的なスポットタイプ\n5. hidden_gems:\
+            \ 穴場的要素\n6. walking_characteristics: 歩行の特徴\n7. local_stories: 伝説や逸話\n\
+            8. connection_points: スポットを繋ぐテーマ\n\n\n【出力形式】JSON\n{\n  \"area_name\":\
+            \ \"string\",\n  \"area_history\": \"string\",\n  \"cultural_significance\"\
+            : \"string\",\n  \"typical_spots\": [\"string\"],\n  \"hidden_gems\":\
+            \ [\"string\"],\n  \"walking_characteristics\": \"string\",\n  \"local_stories\"\
+            : [\"string\"],\n  \"connection_points\": [\"string\"]\n}"
+        selected: false
+        title: LLM_エリア特性分析
+        type: llm
+        vision:
+          enabled: false
+      height: 88
+      id: '1768599416646'
+      position:
+        x: 991.2723824179543
+        y: 302.04736200195606
+      positionAbsolute:
+        x: 991.2723824179543
+        y: 302.04736200195606
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        authorization:
+          config: null
+          type: no-auth
+        body:
+          data: []
+          type: none
+        headers: ''
+        method: get
+        params: 'location:{{#1768558472266.center_lat#}},{{#1768558472266.center_lng#}}
+
+          radius:1000
+
+          type:tourist_attraction
+
+          language:ja
+
+          key:AIzaSyBdjMNtxtVjl2rivvMSkBnhqMGJAeLYwGQ'
+        retry_config:
+          max_retries: 3
+          retry_enabled: true
+          retry_interval: 100
+        selected: false
+        ssl_verify: true
+        timeout:
+          connect: 10
+          max_connect_timeout: 0
+          max_read_timeout: 0
+          max_write_timeout: 0
+          read: 10
+          write: 10
+        title: HTTP_実在スポット検索
+        type: http-request
+        url: https://maps.googleapis.com/maps/api/place/nearbysearch/json
+        variables: []
+      height: 153
+      id: '1768600394819'
+      position:
+        x: 1294.7143112894146
+        y: 302.04736200195606
+      positionAbsolute:
+        x: 1294.7143112894146
+        y: 302.04736200195606
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        code: "import json\n\ndef main(body: str) -> dict:\n    data = json.loads(body)\n\
+          \    spots = []\n    \n    for result in data.get(\"results\", []):\n  \
+          \      spot = {\n            \"name\": result.get(\"name\", \"\"),\n   \
+          \         \"lat\": result.get(\"geometry\", {}).get(\"location\", {}).get(\"\
+          lat\", 0),\n            \"lng\": result.get(\"geometry\", {}).get(\"location\"\
+          , {}).get(\"lng\", 0),\n            \"place_id\": result.get(\"place_id\"\
+          , \"\"),\n            \"rating\": result.get(\"rating\", 0),\n         \
+          \   \"reviews\": result.get(\"user_ratings_total\", 0),\n            \"\
+          types\": \", \".join(result.get(\"types\", [])),\n            \"address\"\
+          : result.get(\"vicinity\", \"\")\n        }\n        spots.append(spot)\n\
+          \    \n    # スポットの情報を個別変数として出力\n    spots_summary = \"\"\n    for i, s in\
+          \ enumerate(spots):\n        spots_summary += f\"{i+1}. {s['name']} (評価:\
+          \ {s['rating']}, {s['address']})\\n\"\n    \n    return {\n        \"spots_json\"\
+          : json.dumps(spots, ensure_ascii=False),\n        \"spots_count\": len(spots),\n\
+          \        \"spots_summary\": spots_summary\n    }"
+        code_language: python3
+        outputs:
+          spots_count:
+            children: null
+            type: number
+          spots_json:
+            children: null
+            type: string
+          spots_summary:
+            children: null
+            type: string
+        selected: false
+        title: CODE_実在スポット検索パース
+        type: code
+        variables:
+        - value_selector:
+          - '1768600394819'
+          - body
+          value_type: string
+          variable: body
+      height: 52
+      id: '1768601299799'
+      position:
+        x: 1596.7143112894146
+        y: 302.04736200195606
+      positionAbsolute:
+        x: 1596.7143112894146
+        y: 302.04736200195606
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            max_output_tokens: 8192
+            temperature: 0.3
+            thinking_level: Low
+          mode: chat
+          name: gemini-3-flash-preview
+          provider: langgenius/gemini/google
+        prompt_template:
+        - id: 9056441e-e9cf-4194-a354-32cb56ec70fa
+          role: system
+          text: 'あなたはクエストデザイナーです。
+
+            観光スポットをユーザーの求める体験との適合度でスコアリングします。
+
+            出力は必ずJSON形式で行ってください。'
+        - id: 3739734d-7858-49c7-bfc2-7f6e8908a2e5
+          role: user
+          text: "以下のスポット候補を、ユーザーの求める体験との適合度でスコアリングしてください。\n\n\n【ユーザーが求める体験】\n体験タイプ:\
+            \ {{#1768599287614.experience_type#}}\n主要テーマ: {{#1768599287614.primary_themes#}}\n\
+            学びの深さ: {{#1768599287614.fitness_level#}}\n謎の期待: {{#1768599287614.puzzle_expectation#}}\n\
+            必須要素: {{#1768599287614.must_include#}}\n避けるべき要素: {{#1768599287614.must_avoid#}}\n\
+            \n\n【エリア情報】\n{{#1768599416646.text#}}\n\n\n【スポット候補】\n{{#1768601299799.spots_summary#}}\n\
+            \n\n【必要なスポット数】\n{{#1768558472266.spot_count#}}件\n\n\n【スコアリング基準（各0-100点）】\n\
+            1. theme_fit: ユーザーの求めるテーマとの一致度\n2. educational_value: 「へぇ！」と思える学びがあるか\n\
+            3. puzzle_potential: 謎解きのネタになりそうか\n4. walkability: ルートに組み込みやすいか（位置関係）\n\
+            5. uniqueness: このスポットならではの特別感\n\n\n【出力形式】JSON配列\n必要なスポット数 + 予備3件を出力してください。\n\
+            \n\n[\n  {\n    \"name\": \"スポット名\",\n    \"lat\": 緯度,\n    \"lng\": 経度,\n\
+            \    \"place_id\": \"place_id\",\n    \"address\": \"住所\",\n    \"theme_fit\"\
+            : 点数,\n    \"educational_value\": 点数,\n    \"puzzle_potential\": 点数,\n\
+            \    \"walkability\": 点数,\n    \"uniqueness\": 点数,\n    \"total\": 合計点,\n\
+            \    \"selection_reason\": \"このスポットを選んだ理由（1文）\",\n    \"historical_facts\"\
+            : [\"このスポットの歴史的事実1\", \"事実2\"],\n    \"puzzle_ideas\": [\"謎のアイデア1\", \"\
+            アイデア2\"]\n  }\n]\n\n\ntotalが高い順に並べてください。"
+        selected: false
+        title: LLM_テーマスコアリング
+        type: llm
+        vision:
+          enabled: false
+      height: 88
+      id: '1768601846740'
+      position:
+        x: 1898.7143112894146
+        y: 302.04736200195606
+      positionAbsolute:
+        x: 1898.7143112894146
+        y: 302.04736200195606
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        code: "import json\nimport re\n\ndef main(llm_output: str) -> dict:\n    #\
+          \ JSON部分を抽出\n    json_match = re.search(r'\\[[\\s\\S]*\\]', llm_output)\n\
+          \    if json_match:\n        try:\n            spots = json.loads(json_match.group())\n\
+          \            \n            # スポット一覧をテキスト化\n            spots_text = \"\"\
+          \n            for i, s in enumerate(spots):\n                spots_text\
+          \ += f\"{i+1}. {s.get('name', '')} (スコア: {s.get('total', 0)})\\n\"\n   \
+          \         \n            return {\n                \"scored_spots_json\"\
+          : json.dumps(spots, ensure_ascii=False),\n                \"scored_spots_count\"\
+          : len(spots),\n                \"scored_spots_text\": spots_text\n     \
+          \       }\n        except:\n            pass\n    \n    return {\n     \
+          \   \"scored_spots_json\": \"[]\",\n        \"scored_spots_count\": 0,\n\
+          \        \"scored_spots_text\": \"パースに失敗しました\"\n    }"
+        code_language: python3
+        outputs:
+          scored_spots_count:
+            children: null
+            type: number
+          scored_spots_json:
+            children: null
+            type: string
+          scored_spots_text:
+            children: null
+            type: string
+        selected: false
+        title: CODE_テーマスコアリングパース
+        type: code
+        variables:
+        - value_selector:
+          - '1768601846740'
+          - text
+          value_type: string
+          variable: llm_output
+      height: 52
+      id: '1768602035766'
+      position:
+        x: 2200.7143112894146
+        y: 302.04736200195606
+      positionAbsolute:
+        x: 2200.7143112894146
+        y: 302.04736200195606
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        code: "import json\nimport math\n\ndef haversine_distance(lat1, lng1, lat2,\
+          \ lng2):\n    R = 6371000\n    phi1 = math.radians(float(lat1))\n    phi2\
+          \ = math.radians(float(lat2))\n    delta_phi = math.radians(float(lat2)\
+          \ - float(lat1))\n    delta_lambda = math.radians(float(lng2) - float(lng1))\n\
+          \    \n    a = math.sin(delta_phi/2)**2 + math.cos(phi1) * math.cos(phi2)\
+          \ * math.sin(delta_lambda/2)**2\n    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))\n\
+          \    return R * c\n\ndef optimize_route(spots, start_lat, start_lng):\n\
+          \    if not spots:\n        return []\n    remaining = spots.copy()\n  \
+          \  route = []\n    current_lat, current_lng = float(start_lat), float(start_lng)\n\
+          \    \n    while remaining:\n        nearest = min(remaining, key=lambda\
+          \ s: haversine_distance(\n            current_lat, current_lng, s.get('lat',\
+          \ 0), s.get('lng', 0)\n        ))\n        route.append(nearest)\n     \
+          \   remaining.remove(nearest)\n        current_lat = nearest.get('lat',\
+          \ current_lat)\n        current_lng = nearest.get('lng', current_lng)\n\
+          \    return route\n\ndef main(scored_spots_json: str, spot_count: int, center_lat:\
+          \ str, center_lng: str) -> dict:\n    spots = json.loads(scored_spots_json)\n\
+          \    \n    if not spots:\n        return {\n            \"optimized_spots_json\"\
+          : \"[]\",\n            \"optimized_spots_text\": \"スポットがありません\",\n     \
+          \       \"total_distance_m\": 0,\n            \"walking_time_min\": 0\n\
+          \        }\n    \n    # 上位スポットを取得\n    top_spots = spots[:int(spot_count)\
+          \ + 2]\n    \n    # ルート最適化\n    start_lat = center_lat if center_lat else\
+          \ \"35.7148\"\n    start_lng = center_lng if center_lng else \"139.7967\"\
+          \n    optimized = optimize_route(top_spots, start_lat, start_lng)\n    \n\
+          \    # 必要数に絞り込み\n    final_route = optimized[:int(spot_count)]\n    \n \
+          \   # スポットID付与\n    for i, spot in enumerate(final_route):\n        spot['spot_index']\
+          \ = i + 1\n        spot['spot_id'] = f\"S{i + 1}\"\n    \n    # 総距離計算\n\
+          \    total_distance = 0\n    for i in range(1, len(final_route)):\n    \
+          \    total_distance += haversine_distance(\n            final_route[i-1].get('lat',\
+          \ 0), final_route[i-1].get('lng', 0),\n            final_route[i].get('lat',\
+          \ 0), final_route[i].get('lng', 0)\n        )\n    \n    # テキスト形式\n    spots_text\
+          \ = \"\"\n    for s in final_route:\n        spots_text += f\"{s['spot_id']}:\
+          \ {s['name']} ({s.get('address', '')})\\n\"\n        spots_text += f\" \
+          \  - 選定理由: {s.get('selection_reason', '')}\\n\"\n        spots_text += f\"\
+          \   - 歴史: {', '.join(s.get('historical_facts', []))}\\n\"\n        spots_text\
+          \ += f\"   - 謎アイデア: {', '.join(s.get('puzzle_ideas', []))}\\n\\n\"\n   \
+          \ \n    return {\n        \"optimized_spots_json\": json.dumps(final_route,\
+          \ ensure_ascii=False),\n        \"optimized_spots_text\": spots_text,\n\
+          \        \"total_distance_m\": int(total_distance),\n        \"walking_time_min\"\
+          : int(total_distance / 80)\n    }"
+        code_language: python3
+        outputs:
+          optimized_spots_json:
+            children: null
+            type: string
+          optimized_spots_text:
+            children: null
+            type: string
+          total_distance_m:
+            children: null
+            type: number
+          walking_time_min:
+            children: null
+            type: number
+        selected: false
+        title: CODE_ルート最適化
+        type: code
+        variables:
+        - value_selector:
+          - '1768602035766'
+          - scored_spots_json
+          value_type: string
+          variable: scored_spots_json
+        - value_selector:
+          - '1768558472266'
+          - spot_count
+          value_type: number
+          variable: spot_count
+        - value_selector:
+          - '1768558472266'
+          - center_lat
+          value_type: string
+          variable: center_lat
+        - value_selector:
+          - '1768558472266'
+          - center_lng
+          value_type: string
+          variable: center_lng
+      height: 52
+      id: '1768602131448'
+      position:
+        x: 2502.7143112894146
+        y: 302.04736200195606
+      positionAbsolute:
+        x: 2502.7143112894146
+        y: 302.04736200195606
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            max_output_tokens: 8192
+            temperature: 0.3
+            thinking_level: Low
+          mode: chat
+          name: gemini-3-flash-preview
+          provider: langgenius/gemini/google
+        prompt_template:
+        - id: 3c994e36-28b1-420b-911c-6b112e4c2ef4
+          role: system
+          text: 'あなたは謎解きゲームの物語構成の専門家です。
+
+            各スポットに物語上の役割と謎のタイプを割り当てます。
+
+            出力は必ずJSON形式で行ってください。'
+        - id: c097160a-c146-4b61-aab6-00ff1309abdb
+          role: user
+          text: "以下のスポットを使って、一貫した謎解き物語を構築するため、各スポットの役割を決定してください。\n\n\n【最適化されたスポット一覧】\n\
+            {{#1768602131448.optimized_spots_text#}}\n\n\n【ユーザーが求める体験】\n体験タイプ: {{#1768599287614.experience_type#}}\n\
+            テーマ: {{#1768599287614.primary_themes#}}\n学び: {{#1768599287614.learning_depth#}}\n\
+            雰囲気: {{#1768599287614.mood_keywords#}}\n\n【scene_roleの種類と説明】\n- 導入: 物語の始まり。世界観を提示する。必ず最初のスポット。\n\
+            - 展開: 情報収集フェーズ。謎が深まり、手がかりが増える。\n- 転換: 状況が変わる重要地点。新事実が判明する。中盤に1-2個。\n-\
+            \ 真相接近: 核心に迫る。答えに近づいている緊張感。\n- 結末: 物語の締めくくり。達成感と余韻。必ず最後のスポット。\n\n\n【puzzle_typeの種類】\n\
+            - logic: 論理パズル（証言整理、条件分岐）\n- pattern: パターン認識（数列、図形）\n- cipher: 暗号解読（換字式、位置暗号）\n\
+            - wordplay: 言葉遊び（漢字分解、アナグラム）\n- observation: 観察パズル（現地で見つける）\n\n\n【plot_key_typeの種類】\n\
+            - keyword: キーワード\n- number: 数字・年号\n- name: 人物名・地名\n- symbol: 記号・紋章\n\n\
+            \n【出力形式】JSON\n{\n  \"motifs\": [\n    {\n      \"spot_id\": \"S1\",\n\
+            \      \"spot_name\": \"スポット名\",\n      \"scene_role\": \"導入\",\n    \
+            \  \"puzzle_type\": \"observation\",\n      \"plot_key_type\": \"keyword\"\
+            ,\n      \"learning_elements\": [\"このスポットで学べること1\", \"学べること2\"],\n   \
+            \   \"story_beat\": \"物語上、このスポットで起こること（1文）\",\n      \"puzzle_concept\"\
+            : \"この謎の基本コンセプト（1文）\"\n    }\n  ],\n  \"overall_narrative\": \"物語全体の流れ（3-4文）\"\
+            ,\n  \"meta_puzzle_concept\": \"最終謎の基本アイデア\"\n}\n\n\n【重要ルール】\n- 最初のスポットは必ず「導入」\n\
+            - 最後のスポットは必ず「結末」\n- 「転換」は中盤に1-2個"
+        selected: false
+        title: LLMモチーフ選定
+        type: llm
+        vision:
+          enabled: false
+      height: 88
+      id: '1768602371187'
+      position:
+        x: 2804.7143112894146
+        y: 302.04736200195606
+      positionAbsolute:
+        x: 2804.7143112894146
+        y: 302.04736200195606
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        code: "import json\nimport re\n\ndef main(llm_output: str) -> dict:\n    json_match\
+          \ = re.search(r'\\{[\\s\\S]*\\}', llm_output)\n    if json_match:\n    \
+          \    try:\n            data = json.loads(json_match.group())\n         \
+          \   motifs = data.get(\"motifs\", [])\n            \n            # モチーフテキスト化\n\
+          \            motifs_text = \"\"\n            for m in motifs:\n        \
+          \        motifs_text += f\"{m.get('spot_id')}: {m.get('spot_name')}\\n\"\
+          \n                motifs_text += f\"  役割: {m.get('scene_role')}\\n\"\n \
+          \               motifs_text += f\"  謎タイプ: {m.get('puzzle_type')}\\n\"\n\
+          \                motifs_text += f\"  鍵タイプ: {m.get('plot_key_type')}\\n\"\
+          \n                motifs_text += f\"  学び: {', '.join(m.get('learning_elements',\
+          \ []))}\\n\"\n                motifs_text += f\"  物語: {m.get('story_beat')}\\\
+          n\"\n                motifs_text += f\"  謎コンセプト: {m.get('puzzle_concept')}\\\
+          n\\n\"\n            \n            return {\n                \"motifs_json\"\
+          : json.dumps(motifs, ensure_ascii=False),\n                \"motifs_text\"\
+          : motifs_text,\n                \"overall_narrative\": data.get(\"overall_narrative\"\
+          , \"\"),\n                \"meta_puzzle_concept\": data.get(\"meta_puzzle_concept\"\
+          , \"\"),\n                \"motifs_count\": len(motifs)\n            }\n\
+          \        except:\n            pass\n    \n    return {\n        \"motifs_json\"\
+          : \"[]\",\n        \"motifs_text\": \"パースに失敗しました\",\n        \"overall_narrative\"\
+          : \"\",\n        \"meta_puzzle_concept\": \"\",\n        \"motifs_count\"\
+          : 0\n    }"
+        code_language: python3
+        outputs:
+          meta_puzzle_concept:
+            children: null
+            type: string
+          motifs_count:
+            children: null
+            type: number
+          motifs_json:
+            children: null
+            type: string
+          motifs_text:
+            children: null
+            type: string
+          overall_narrative:
+            children: null
+            type: string
+        selected: false
+        title: CODE_モチーフ選定パース
+        type: code
+        variables:
+        - value_selector:
+          - '1768602371187'
+          - text
+          value_type: string
+          variable: llm_output
+      height: 52
+      id: '1768602505042'
+      position:
+        x: 3106.7143112894146
+        y: 302.04736200195606
+      positionAbsolute:
+        x: 3106.7143112894146
+        y: 302.04736200195606
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            max_output_tokens: 8192
+            temperature: 0.3
+            thinking_level: Low
+          mode: chat
+          name: gemini-3-flash-preview
+          provider: langgenius/gemini/google
+        prompt_template:
+        - id: 7659cb48-ffe5-4179-8f71-b2216b5825db
+          role: system
+          text: 'あなたは「映画予告編のように没入感を作る」トップコピーライター兼ストーリー設計者です。
+
+            街歩き謎解きクエストの物語骨格を構築してください。
+
+            出力は必ずJSON形式で行ってください。'
+        - id: 31be4b35-8c27-45ae-bcbe-995b273aba67
+          role: user
+          text: "以下の情報を使って、街歩き謎解きクエストの物語骨格を構築してください。\n\n\n【スポットとモチーフ】\n{{#1768602505042.motifs_text#}}\n\
+            \n\n【物語全体の流れ】\n{{#1768602505042.overall_narrative#}}\n\n\n【ユーザーの求める体験】\n\
+            体験タイプ: {{#1768599287614.experience_type#}}\nテーマ: {{#1768599287614.primary_themes#}}\n\
+            雰囲気: {{#1768599287614.mood_keywords#}}\n\n\n【エリアの歴史】\n{{#1768599416646.text#}}\n\
+            \n\n【premise（前提説明）の必須ルール】\n- 500〜800字、3〜5段落\n- 二人称（あなた）中心、現在形\n- 段落は改行で区切る\n\
+            - 最後の1文は問いかけで締める\n- ネタバレ禁止（答え、犯人、どんでん返しは書かない）\n- 歴史的事実から逸脱しない\n\n\n【premiseに必ず含める8要素】\n\
+            1. 雰囲気の一撃目（映画のオープニング感）\n2. プレイヤーの役割（なりきり）\n3. 舞台の描写（具体的な場所）\n4. 事件・異変（導入フック）\n\
+            5. 痕跡（シンボル/暗号/伝承/手がかり）\n6. 賭け金（タイムリミット/危機/失敗示唆）\n7. 体験の約束（ただの散歩ではない）\n\
+            8. CTA（問いかけで締め）\n\n\n【出力形式】JSON\n{\n  \"main_plot\": {\n    \"premise\"\
+            : \"500〜800字の導入文\",\n    \"goal\": \"主人公の目的（1〜2文）\",\n    \"antagonist_or_mystery\"\
+            : \"対立要素または中心の謎（1〜2文）\",\n    \"final_reveal_outline\": \"最終的な真相の概要（ネタバレ注意、曖昧に）\"\
+            \n  },\n  \"spot_story_beats\": [\n    {\n      \"spot_id\": \"S1\",\n\
+            \      \"story_beat\": \"この地点で起こる物語上の出来事\",\n      \"emotional_arc\":\
+            \ \"この地点でのプレイヤーの感情\",\n      \"key_discovery\": \"この地点で発見する重要なこと\"\n \
+            \   }\n  ]\n}"
+        selected: false
+        title: LLM_物語骨格生成
+        type: llm
+        vision:
+          enabled: false
+      height: 88
+      id: '1768602602678'
+      position:
+        x: 3408.7143112894146
+        y: 302.04736200195606
+      positionAbsolute:
+        x: 3408.7143112894146
+        y: 302.04736200195606
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        code: "import json\nimport re\n\ndef main(llm_output: str) -> dict:\n    json_match\
+          \ = re.search(r'\\{[\\s\\S]*\\}', llm_output)\n    if json_match:\n    \
+          \    try:\n            data = json.loads(json_match.group())\n         \
+          \   main_plot = data.get(\"main_plot\", {})\n            spot_beats = data.get(\"\
+          spot_story_beats\", [])\n            \n            # ストーリービートテキスト化\n   \
+          \         beats_text = \"\"\n            for b in spot_beats:\n        \
+          \        beats_text += f\"{b.get('spot_id')}: {b.get('story_beat')}\\n\"\
+          \n                beats_text += f\"  感情: {b.get('emotional_arc')}\\n\"\n\
+          \                beats_text += f\"  発見: {b.get('key_discovery')}\\n\\n\"\
+          \n            \n            return {\n                \"premise\": main_plot.get(\"\
+          premise\", \"\"),\n                \"goal\": main_plot.get(\"goal\", \"\"\
+          ),\n                \"mystery\": main_plot.get(\"antagonist_or_mystery\"\
+          , \"\"),\n                \"final_reveal\": main_plot.get(\"final_reveal_outline\"\
+          , \"\"),\n                \"spot_beats_json\": json.dumps(spot_beats, ensure_ascii=False),\n\
+          \                \"spot_beats_text\": beats_text\n            }\n      \
+          \  except:\n            pass\n    \n    return {\n        \"premise\": \"\
+          パースに失敗しました\",\n        \"goal\": \"\",\n        \"mystery\": \"\",\n   \
+          \     \"final_reveal\": \"\",\n        \"spot_beats_json\": \"[]\",\n  \
+          \      \"spot_beats_text\": \"\"\n    }"
+        code_language: python3
+        outputs:
+          final_reveal:
+            children: null
+            type: string
+          goal:
+            children: null
+            type: string
+          mystery:
+            children: null
+            type: string
+          premise:
+            children: null
+            type: string
+          spot_beats_json:
+            children: null
+            type: string
+          spot_beats_text:
+            children: null
+            type: string
+        selected: false
+        title: CODE_物語骨格生成パース
+        type: code
+        variables:
+        - value_selector:
+          - '1768602602678'
+          - text
+          value_type: string
+          variable: llm_output
+      height: 52
+      id: '1768602757091'
+      position:
+        x: 3710.7143112894146
+        y: 302.04736200195606
+      positionAbsolute:
+        x: 3710.7143112894146
+        y: 302.04736200195606
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            max_output_tokens: 8192
+            temperature: 0.3
+            thinking_level: Low
+          mode: chat
+          name: gemini-3-flash-preview
+          provider: langgenius/gemini/google
+        prompt_template:
+        - id: 06727bcd-26e0-4eae-bf9c-095f88e2b36e
+          role: system
+          text: 'あなたはひらめき型パズルの謎作家です。
+
+            「解く = 学ぶ」を実現する、美しい謎を設計してください。
+
+            出力は必ずJSON形式で行ってください。'
+        - id: f6252950-9da1-4e16-877d-43ad42f02e1d
+          role: user
+          text: "以下の全スポットに対して、教育的価値のある謎を設計してください。\n\n\n【物語の前提】\n{{#1768602757091.premise#}}\n\
+            \n\n【物語の目的】\n{{#1768602757091.goal#}}\n\n\n【中心の謎】\n{{#1768602757091.mystery#}}\n\
+            \n\n【スポットとモチーフ】\n{{#1768602505042.motifs_text#}}\n\n\n【各スポットのストーリービート】\n\
+            {{#1768602757091.spot_beats_text#}}\n\n\n【謎設計の絶対ルール】\n1. player_handout（プレイヤー資料）だけで解けること\n\
+            2. 外部知識（ネット検索、暗記）は不要\n3. 解いた瞬間に「そうか！」と学びがあること\n4. スポットの歴史/文化と直接つながっていること\n\
+            5. 中学生でも読める言葉で書くこと\n\n\n【禁止事項】\n- 「○○を建てたのは誰？」系の暗記クイズ\n- スポットと関係ない一般パズル\n\
+            - 答えが複数通りある曖昧な問題\n\n\n【出力形式】JSON配列\n[\n  {\n    \"spot_id\": \"S1\",\n\
+            \    \"spot_name\": \"スポット名\",\n    \"scene_role\": \"導入\",\n    \"lore_card\"\
+            : {\n      \"short_story_text\": \"物語文（2-4文、このスポットの意味づけ）\",\n      \"\
+            player_handout\": \"プレイヤー用資料（100-200字、謎を解くヒント含む）\"\n    },\n    \"puzzle\"\
+            : {\n      \"type\": \"observation\",\n      \"prompt\": \"出題文（50-100字、美しく謎めいた語り口で）\"\
+            ,\n      \"answer\": \"答え（明確に）\",\n      \"solution_steps\": [\n     \
+            \   \"ステップ1: まず○○を確認する\",\n        \"ステップ2: 次に△△を比較する\",\n        \"ステップ3:\
+            \ 最後に□□を導き出す\"\n      ],\n      \"hints\": [\n        \"抽象的なヒント\",\n \
+            \       \"具体的なヒント\",\n        \"救済ヒント（ほぼ答え）\"\n      ],\n      \"difficulty\"\
+            : 2\n    },\n    \"reward\": {\n      \"lore_reveal\": \"謎を解くと分かる背景（2-3文）\"\
+            ,\n      \"plot_key\": \"物語の鍵（1-5文字）\",\n      \"next_hook\": \"次のスポットへ行きたくなる一文\"\
+            \n    }\n  }\n]\n\n全スポット分を生成してください。"
+        selected: true
+        title: LLM_謎設計ループ
+        type: llm
+        vision:
+          enabled: false
+      height: 88
+      id: '1768603485259'
+      position:
+        x: 4012.7143112894146
+        y: 302.04736200195606
+      positionAbsolute:
+        x: 4012.7143112894146
+        y: 302.04736200195606
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        code: "import json\nimport re\n\ndef main(llm_output: str) -> dict:\n    json_match\
+          \ = re.search(r'\\[[\\s\\S]*\\]', llm_output)\n    if json_match:\n    \
+          \    try:\n            spots = json.loads(json_match.group())\n        \
+          \    \n            # plot_keysを収集\n            plot_keys = []\n        \
+          \    spots_summary = \"\"\n            \n            for s in spots:\n \
+          \               spot_id = s.get('spot_id', '')\n                spot_name\
+          \ = s.get('spot_name', '')\n                plot_key = s.get('reward', {}).get('plot_key',\
+          \ '')\n                puzzle_prompt = s.get('puzzle', {}).get('prompt',\
+          \ '')\n                answer = s.get('puzzle', {}).get('answer', '')\n\
+          \                \n                plot_keys.append(f\"{spot_id}: {plot_key}\"\
+          )\n                spots_summary += f\"{spot_id} ({spot_name})\\n\"\n  \
+          \              spots_summary += f\"  謎: {puzzle_prompt}\\n\"\n         \
+          \       spots_summary += f\"  答え: {answer}\\n\"\n                spots_summary\
+          \ += f\"  鍵: {plot_key}\\n\\n\"\n            \n            return {\n  \
+          \              \"spot_scenes_json\": json.dumps(spots, ensure_ascii=False),\n\
+          \                \"spot_scenes_count\": len(spots),\n                \"\
+          plot_keys_text\": \"\\n\".join(plot_keys),\n                \"spots_summary\"\
+          : spots_summary\n            }\n        except:\n            pass\n    \n\
+          \    return {\n        \"spot_scenes_json\": \"[]\",\n        \"spot_scenes_count\"\
+          : 0,\n        \"plot_keys_text\": \"パースに失敗しました\",\n        \"spots_summary\"\
+          : \"\"\n    }\n"
+        code_language: python3
+        outputs:
+          plot_keys_text:
+            children: null
+            type: string
+          spot_scenes_count:
+            children: null
+            type: number
+          spot_scenes_json:
+            children: null
+            type: string
+          spots_summary:
+            children: null
+            type: string
+        selected: false
+        title: CODE_謎設計結果結合
+        type: code
+        variables:
+        - value_selector:
+          - '1768603485259'
+          - text
+          value_type: string
+          variable: llm_output
+      height: 52
+      id: '1768603594197'
+      position:
+        x: 4314.714311289415
+        y: 302.04736200195606
+      positionAbsolute:
+        x: 4314.714311289415
+        y: 302.04736200195606
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            max_output_tokens: 8192
+            temperature: 0.3
+            thinking_level: Low
+          mode: chat
+          name: gemini-3-flash-preview
+          provider: langgenius/gemini/google
+        prompt_template:
+        - id: dafc3445-0350-4b98-9b93-3b4d78991d8b
+          role: system
+          text: 'あなたはひらめき型パズルの謎作家です。
+
+            全スポットで集めた「鍵」を使って解く、感動の最終謎を作成してください。
+
+            出力は必ずJSON形式で行ってください。'
+        - id: e6d6a840-9132-41d3-8bad-82aecbb32abc
+          role: user
+          text: "これまでのスポットで集めた「鍵」を全て使って解く、最終謎を作成してください。\n\n\n【集めた鍵】\n{{#1768603594197.plot_keys_text#}}\n\
+            \n\n【物語の真相】\n{{#1768602757091.final_reveal#}}\n\n\n【メタパズルのコンセプト】\n{{#1768602505042.meta_puzzle_concept#}}\n\
+            \n\n【設計原則】\n1. 全てのplot_keyを使うこと\n2. 解けた時に「そういうことだったのか！」と全体が繋がる感覚\n3. 謎自体は難しすぎない（鍵を並べれば見えてくる）\n\
+            4. 真相が教育的価値を持つこと\n\n\n【出力形式】JSON\n{\n  \"meta_puzzle\": {\n    \"inputs\"\
+            : [\"S1の鍵\", \"S2の鍵\", ...],\n    \"prompt\": \"最終謎の出題文（50-100字）\",\n\
+            \    \"answer\": \"最終的な答え\",\n    \"solution_steps\": [\n      \"ステップ1\"\
+            ,\n      \"ステップ2\",\n      \"ステップ3\"\n    ],\n    \"explanation\": \"\
+            真相との接続説明（2-3文）\"\n  }\n}"
+        selected: false
+        title: LLM_メタパズル生成
+        type: llm
+        vision:
+          enabled: false
+      height: 88
+      id: '1768603666915'
+      position:
+        x: 4618.539442266502
+        y: 302.04736200195606
+      positionAbsolute:
+        x: 4618.539442266502
+        y: 302.04736200195606
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        code: "import json\nimport re\n\ndef main(llm_output: str) -> dict:\n    json_match\
+          \ = re.search(r'\\{[\\s\\S]*\\}', llm_output)\n    if json_match:\n    \
+          \    try:\n            data = json.loads(json_match.group())\n         \
+          \   meta = data.get(\"meta_puzzle\", data)\n            \n            return\
+          \ {\n                \"meta_puzzle_json\": json.dumps(meta, ensure_ascii=False),\n\
+          \                \"meta_prompt\": meta.get(\"prompt\", \"\"),\n        \
+          \        \"meta_answer\": meta.get(\"answer\", \"\"),\n                \"\
+          meta_explanation\": meta.get(\"explanation\", \"\")\n            }\n   \
+          \     except:\n            pass\n    \n    return {\n        \"meta_puzzle_json\"\
+          : \"{}\",\n        \"meta_prompt\": \"パースに失敗しました\",\n        \"meta_answer\"\
+          : \"\",\n        \"meta_explanation\": \"\"\n    }"
+        code_language: python3
+        outputs:
+          meta_answer:
+            children: null
+            type: string
+          meta_explanation:
+            children: null
+            type: string
+          meta_prompt:
+            children: null
+            type: string
+          meta_puzzle_json:
+            children: null
+            type: string
+        selected: false
+        title: CODE_メタパズル生成パース
+        type: code
+        variables:
+        - value_selector:
+          - '1768603666915'
+          - text
+          value_type: string
+          variable: llm_output
+      height: 52
+      id: '1768603767065'
+      position:
+        x: 4918.714311289415
+        y: 302.04736200195606
+      positionAbsolute:
+        x: 4918.714311289415
+        y: 302.04736200195606
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        code: "import json\n\ndef main(spot_scenes_json: str, meta_puzzle_json: str,\
+          \ spot_count: int) -> dict:\n    errors = []\n    warnings = []\n    \n\
+          \    try:\n        spots = json.loads(spot_scenes_json)\n        meta =\
+          \ json.loads(meta_puzzle_json)\n    except:\n        return {\n        \
+          \    \"validation_passed\": False,\n            \"errors_text\": \"JSONパースに失敗\"\
+          ,\n            \"warnings_text\": \"\",\n            \"quality_score\":\
+          \ 0\n        }\n    \n    # スポット数チェック\n    if len(spots) < int(spot_count):\n\
+          \        errors.append(f\"スポット数が不足: {len(spots)} / {spot_count}\")\n   \
+          \ \n    # 各スポット検証\n    for scene in spots:\n        spot_id = scene.get('spot_id',\
+          \ 'unknown')\n        \n        # player_handoutチェック\n        handout =\
+          \ scene.get('lore_card', {}).get('player_handout', '')\n        if len(handout)\
+          \ < 30:\n            warnings.append(f\"{spot_id}: player_handoutが短い\")\n\
+          \        \n        # 答えチェック\n        answer = scene.get('puzzle', {}).get('answer',\
+          \ '')\n        if not answer:\n            errors.append(f\"{spot_id}: 答えがない\"\
+          )\n        \n        # plot_keyチェック\n        plot_key = scene.get('reward',\
+          \ {}).get('plot_key', '')\n        if not plot_key:\n            errors.append(f\"\
+          {spot_id}: plot_keyがない\")\n    \n    # メタパズルチェック\n    if not meta.get('answer'):\n\
+          \        errors.append(\"メタパズルの答えがない\")\n    \n    # スコア計算\n    score =\
+          \ 100 - (len(errors) * 20) - (len(warnings) * 5)\n    score = max(0, score)\n\
+          \    \n    return {\n        \"validation_passed\": len(errors) == 0,\n\
+          \        \"errors_text\": \"\\n\".join(errors) if errors else \"なし\",\n\
+          \        \"warnings_text\": \"\\n\".join(warnings) if warnings else \"なし\"\
+          ,\n        \"quality_score\": score\n    }"
+        code_language: python3
+        outputs:
+          errors_text:
+            children: null
+            type: string
+          quality_score:
+            children: null
+            type: number
+          validation_passed:
+            children: null
+            type: boolean
+          warnings_text:
+            children: null
+            type: string
+        selected: false
+        title: CODE_検証
+        type: code
+        variables:
+        - value_selector:
+          - '1768603594197'
+          - spot_scenes_json
+          value_type: string
+          variable: spot_scenes_json
+        - value_selector:
+          - '1768603767065'
+          - meta_puzzle_json
+          value_type: string
+          variable: meta_puzzle_json
+        - value_selector:
+          - '1768558472266'
+          - spot_count
+          value_type: number
+          variable: spot_count
+      height: 52
+      id: '1768603843069'
+      position:
+        x: 5220.714311289415
+        y: 302.04736200195606
+      positionAbsolute:
+        x: 5220.714311289415
+        y: 302.04736200195606
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            max_output_tokens: 8192
+            temperature: 0.3
+            thinking_level: Low
+          mode: chat
+          name: gemini-3-flash-preview
+          provider: langgenius/gemini/google
+        prompt_template:
+        - id: 957b4dd1-bae4-4b16-bab2-8583c9e68797
+          role: system
+          text: 'あなたは「プレイヤーが"やってみたい！"と思える」クエスト紹介文を作る専門家です。
+
+            ネタバレは絶対に禁止です。
+
+            出力は必ずJSON形式で行ってください。'
+        - id: 7e53383b-10a8-4410-9bd8-72d951a5c735
+          role: user
+          text: "ネタバレなしの魅力的なプレビューを生成してください。\n\n\n【重要ルール：ネタバレ禁止】\n- 謎の問題文・答え・ヒントの具体は絶対に書かない\n\
+            - 「どう解くか」ではなく「何が起きるか」だけを書く\n\n\n【物語の導入】\n{{#1768602757091.premise#}}\n\
+            \n\n【スポット情報】\n{{#1768603594197.spots_summary#}}\n\n\n【ルート情報】\n総距離: {{#1768602131448.total_distance_m#}}m\n\
+            歩行時間: {{#1768602131448.walking_time_min#}}分\nスポット数: {{#1768558472266.spot_count#}}箇所\n\
+            \n\n【難易度】\n{{#1768558472266.difficulty#}}\n\n\n【出力形式】JSON\n{\n  \"title\"\
+            : \"クエストタイトル（魅力的に）\",\n  \"one_liner\": \"30〜45文字のキャッチコピー\",\n  \"trailer\"\
+            : \"80〜140文字の予告文\",\n  \"mission\": \"あなたは〇〇して最後に〇〇を突き止める\",\n  \"teasers\"\
+            : [\n    \"スポット名で〇〇すると△△が見えてくる\",\n    \"別のスポットで〇〇すると△△が起きる\",\n    \"\
+            最後に〇〇すると△△が現れる\"\n  ],\n  \"summary_actions\": [\"歩く\", \"集める\", \"照合する\"\
+            ],\n  \"route_meta\": {\n    \"area_start\": \"開始エリア名\",\n    \"area_end\"\
+            : \"終了エリア名\",\n    \"distance_km\": \"距離km\",\n    \"estimated_time_min\"\
+            : \"所要時間\",\n    \"spots_count\": スポット数,\n    \"difficulty_label\": \"\
+            難易度ラベル\",\n    \"weather_note\": \"天候の注意\"\n  },\n  \"tags\": [\"タグ1\"\
+            , \"タグ2\", \"タグ3\"],\n  \"cta_copy\": {\n    \"primary\": \"冒険を始める\",\n\
+            \    \"secondary\": \"詳しく見る\"\n  }\n}"
+        selected: false
+        title: LLM_プレビュー生成
+        type: llm
+        vision:
+          enabled: false
+      height: 88
+      id: '1768603963490'
+      position:
+        x: 5522.714311289415
+        y: 302.04736200195606
+      positionAbsolute:
+        x: 5522.714311289415
+        y: 302.04736200195606
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        code: "import json\nimport re\n\ndef main(llm_output: str) -> dict:\n    json_match\
+          \ = re.search(r'\\{[\\s\\S]*\\}', llm_output)\n    if json_match:\n    \
+          \    try:\n            preview = json.loads(json_match.group())\n      \
+          \      return {\n                \"player_preview_json\": json.dumps(preview,\
+          \ ensure_ascii=False),\n                \"quest_title\": preview.get(\"\
+          title\", \"無題のクエスト\"),\n                \"one_liner\": preview.get(\"one_liner\"\
+          , \"\"),\n                \"trailer\": preview.get(\"trailer\", \"\")\n\
+          \            }\n        except:\n            pass\n    \n    return {\n\
+          \        \"player_preview_json\": \"{}\",\n        \"quest_title\": \"無題のクエスト\"\
+          ,\n        \"one_liner\": \"\",\n        \"trailer\": \"\"\n    }"
+        code_language: python3
+        outputs:
+          one_liner:
+            children: null
+            type: string
+          player_preview_json:
+            children: null
+            type: string
+          quest_title:
+            children: null
+            type: string
+          trailer:
+            children: null
+            type: string
+        selected: false
+        title: CODE_プレビュー生成パース
+        type: code
+        variables:
+        - value_selector:
+          - '1768603963490'
+          - text
+          value_type: string
+          variable: llm_output
+      height: 52
+      id: '1768604146459'
+      position:
+        x: 5824.714311289415
+        y: 302.04736200195606
+      positionAbsolute:
+        x: 5824.714311289415
+        y: 302.04736200195606
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        outputs:
+        - value_selector:
+          - '1768605957312'
+          - output_json
+          value_type: string
+          variable: result
+        selected: false
+        title: 出力
+        type: end
+      height: 88
+      id: '1768604222640'
+      position:
+        x: 6452.952248502118
+        y: 302.04736200195606
+      positionAbsolute:
+        x: 6452.952248502118
+        y: 302.04736200195606
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        code: "import json\nfrom datetime import datetime\n\ndef main(\n    player_preview_json:\
+          \ str,\n    quest_title: str,\n    premise: str,\n    goal: str,\n    mystery:\
+          \ str,\n    final_reveal: str,\n    spot_scenes_json: str,\n    meta_puzzle_json:\
+          \ str,\n    optimized_spots_json: str,\n    validation_passed: bool,\n \
+          \   quality_score: int\n) -> dict:\n    \n    # JSONパース\n    try:\n    \
+          \    player_preview = json.loads(player_preview_json)\n        spot_scenes\
+          \ = json.loads(spot_scenes_json)\n        meta_puzzle = json.loads(meta_puzzle_json)\n\
+          \        optimized_spots = json.loads(optimized_spots_json)\n    except:\n\
+          \        return {\n            \"output_json\": \"{}\",\n            \"\
+          error\": \"JSONパースに失敗しました\"\n        }\n    \n    # スポットシーンに座標を追加\n    for\
+          \ scene in spot_scenes:\n        spot_id = scene.get('spot_id')\n      \
+          \  for spot in optimized_spots:\n            if spot.get('spot_id') == spot_id:\n\
+          \                scene['lat'] = spot.get('lat')\n                scene['lng']\
+          \ = spot.get('lng')\n                scene['place_id'] = spot.get('place_id',\
+          \ '')\n                scene['address'] = spot.get('address', '')\n    \
+          \            break\n    \n    # creator_payload構築\n    creator_payload =\
+          \ {\n        \"quest_id\": f\"quest-{int(datetime.now().timestamp())}\"\
+          ,\n        \"quest_title\": quest_title,\n        \"main_plot\": {\n   \
+          \         \"premise\": premise,\n            \"goal\": goal,\n         \
+          \   \"antagonist_or_mystery\": mystery,\n            \"final_reveal_outline\"\
+          : final_reveal\n        },\n        \"spots\": spot_scenes,\n        \"\
+          meta_puzzle\": meta_puzzle,\n        \"generation_metadata\": {\n      \
+          \      \"generated_at\": datetime.now().isoformat(),\n            \"pipeline_version\"\
+          : \"2.0.0-dify\",\n            \"validation_passed\": validation_passed,\n\
+          \            \"quality_score\": quality_score\n        }\n    }\n    \n\
+          \    # 最終出力\n    output = {\n        \"player_preview\": player_preview,\n\
+          \        \"creator_payload\": creator_payload\n    }\n    \n    return {\n\
+          \        \"output_json\": json.dumps(output, ensure_ascii=False, indent=2)\n\
+          \    }"
+        code_language: python3
+        outputs:
+          output_json:
+            children: null
+            type: string
+        selected: false
+        title: CODE_出力結合
+        type: code
+        variables:
+        - value_selector:
+          - '1768604146459'
+          - player_preview_json
+          value_type: string
+          variable: player_preview_json
+        - value_selector:
+          - '1768604146459'
+          - quest_title
+          value_type: string
+          variable: quest_title
+        - value_selector:
+          - '1768602757091'
+          - premise
+          value_type: string
+          variable: premise
+        - value_selector:
+          - '1768602757091'
+          - goal
+          value_type: string
+          variable: goal
+        - value_selector:
+          - '1768602757091'
+          - mystery
+          value_type: string
+          variable: mystery
+        - value_selector:
+          - '1768602757091'
+          - final_reveal
+          value_type: string
+          variable: final_reveal
+        - value_selector:
+          - '1768603594197'
+          - spot_scenes_json
+          value_type: string
+          variable: spot_scenes_json
+        - value_selector:
+          - '1768603767065'
+          - meta_puzzle_json
+          value_type: string
+          variable: meta_puzzle_json
+        - value_selector:
+          - '1768602131448'
+          - optimized_spots_json
+          value_type: string
+          variable: optimized_spots_json
+        - value_selector:
+          - '1768603843069'
+          - validation_passed
+          value_type: boolean
+          variable: validation_passed
+        - value_selector:
+          - '1768603843069'
+          - quality_score
+          value_type: number
+          variable: quality_score
+      height: 52
+      id: '1768605957312'
+      position:
+        x: 6142.948042252686
+        y: 302.04736200195606
+      positionAbsolute:
+        x: 6142.948042252686
+        y: 302.04736200195606
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    viewport:
+      x: -4332.174545427862
+      y: 85.76988903914202
+      zoom: 0.7361134310840899
+  rag_pipeline_variables: []

@@ -237,17 +237,18 @@ const ProfileHome = () => {
   // Not logged in state
   if (!user) {
     return (
-      <div className="min-h-[60vh] flex flex-col items-center justify-center px-6 text-center">
-        <div className="w-20 h-20 rounded-full bg-gradient-to-br from-[#f7efe5] to-[#eadfd0] flex items-center justify-center mb-4">
-          <User className="w-10 h-10 text-[#c27a34]" />
+      <div className="min-h-[70vh] flex flex-col items-center justify-center px-6 text-center -mx-4 -mt-6 bg-[#FAFAFA]">
+        <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center mb-6 shadow-soft animate-float">
+          <User className="w-10 h-10 text-[#F2994A]" />
         </div>
-        <h2 className="text-xl font-bold text-[#2f1d0f] mb-2">マイページ</h2>
-        <p className="text-sm text-[#7c644c] mb-6">
-          ログインして、購入したクエストや<br />プレイ履歴を確認しましょう
+        <h2 className="text-xl font-bold text-[#333333] mb-2">マイページにログイン</h2>
+        <p className="text-sm text-[#999999] mb-8 leading-relaxed">
+          ログインして、購入したクエストの続きや<br />
+          今までの冒険の記録を確認しましょう
         </p>
         <Button
           onClick={() => navigate("/auth")}
-          className="bg-gradient-to-r from-[#ffb566] to-[#e67a28] text-white font-bold rounded-full px-8"
+          className="bg-gradient-to-r from-[#FFB566] to-[#F2994A] text-white font-bold rounded-full px-8 py-6 shadow-lg shadow-[#F2994A]/20 hover:shadow-[#F2994A]/30 transition-all hover:-translate-y-0.5"
         >
           ログイン / 新規登録
         </Button>
@@ -256,223 +257,248 @@ const ProfileHome = () => {
   }
 
   return (
-    <div className="space-y-6 pb-8">
-      {/* Profile Header */}
-      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#2f1d0f] via-[#4a2f1d] to-[#1a1008] p-5">
-        <div className="absolute -right-10 -top-10 w-40 h-40 bg-[#e67a28]/20 rounded-full blur-3xl" />
-        <div className="relative flex items-center gap-4">
-          <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#ffb566] to-[#e67a28] flex items-center justify-center shadow-lg">
-            <User className="w-8 h-8 text-white" />
-          </div>
-          <div className="flex-1 min-w-0">
-            <h1 className="text-lg font-bold text-white truncate">
-              {user.email?.split("@")[0] || "探偵"}
-            </h1>
-            <p className="text-xs text-white/60">{user.email}</p>
-            <Badge className="mt-1 bg-[#ffb566]/20 text-[#ffb566] border-[#ffb566]/30 text-[10px]">
-              <Trophy className="w-3 h-3 mr-1" />
-              見習い探偵
-            </Badge>
-          </div>
-          <Button
-            variant="ghost"
-            size="sm"
-            className="text-white/60 hover:text-white hover:bg-white/10"
-            onClick={() => navigate("/settings")}
-          >
-            <Settings className="w-5 h-5" />
-          </Button>
-        </div>
-      </div>
+    <div className="space-y-6 pb-20 bg-[#FAFAFA] -mx-4 -mt-6">
+      {/* Profile Header - Edgeless Hero */}
+      <div className="relative h-[240px] overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-br from-[#2f1d0f] via-[#4a2f1d] to-[#1a1008]" />
+        {/* Animated Background Elements */}
+        <div className="absolute -right-20 -top-20 w-80 h-80 bg-[#F2994A]/20 rounded-full blur-[100px] animate-pulse" />
+        <div className="absolute -left-20 bottom-0 w-60 h-60 bg-[#FFB566]/10 rounded-full blur-[80px]" />
 
-      {/* Stats Dashboard */}
-      <div className="grid grid-cols-2 gap-3">
-        <Card className="p-4 border-[#eadfd0] bg-gradient-to-br from-white to-[#faf8f5]">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center">
-              <Trophy className="w-4 h-4 text-emerald-600" />
+        <div className="absolute inset-0 flex flex-col justify-end p-6 pb-8">
+          <div className="flex items-end justify-between gap-4">
+            <div className="flex items-center gap-4">
+              <div className="relative group">
+                <div className="absolute inset-0 bg-[#F2994A] rounded-full blur opacity-50 group-hover:opacity-75 transition-opacity" />
+                <div className="relative w-20 h-20 rounded-full bg-gradient-to-br from-[#FFB566] to-[#F2994A] p-0.5">
+                  <div className="w-full h-full rounded-full bg-[#1a1008] flex items-center justify-center overflow-hidden border-2 border-white/10">
+                    <User className="w-10 h-10 text-white/90" />
+                  </div>
+                </div>
+                <div className="absolute -bottom-1 -right-1 w-6 h-6 bg-white rounded-full flex items-center justify-center shadow-sm">
+                  <Star className="w-3.5 h-3.5 text-[#F2994A] fill-current" />
+                </div>
+              </div>
+
+              <div className="mb-1">
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="px-2 py-0.5 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-[10px] text-white/90 font-medium">
+                    見習い探偵
+                  </span>
+                </div>
+                <h1 className="text-2xl font-bold text-white tracking-tight mb-0.5">
+                  {user.email?.split("@")[0] || "探偵"}
+                </h1>
+                <p className="text-xs text-white/60 font-medium">{user.email}</p>
+              </div>
             </div>
-            <span className="text-xs text-[#7c644c]">クリア数</span>
-          </div>
-          <p className="text-2xl font-bold text-[#2f1d0f]">
-            {stats.completedQuests}
-            <span className="text-sm font-normal text-[#7c644c]"> / {stats.totalQuests}</span>
-          </p>
-        </Card>
 
-        <Card className="p-4 border-[#eadfd0] bg-gradient-to-br from-white to-[#faf8f5]">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-              <Clock className="w-4 h-4 text-blue-600" />
-            </div>
-            <span className="text-xs text-[#7c644c]">総プレイ時間</span>
-          </div>
-          <p className="text-2xl font-bold text-[#2f1d0f]">
-            {formatDuration(stats.totalPlayTime)}
-          </p>
-        </Card>
-      </div>
-
-      {/* Playable Quests */}
-      <div className="space-y-3">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Target className="w-5 h-5 text-[#e67a28]" />
-            <h2 className="text-lg font-bold text-[#2f1d0f]">プレイ可能なクエスト</h2>
-          </div>
-          {loading && <Loader2 className="w-4 h-4 text-[#c35f1f] animate-spin" />}
-        </div>
-
-        {loading ? (
-          <div className="space-y-3">
-            {[...Array(2)].map((_, i) => (
-              <Skeleton key={i} className="h-32 rounded-2xl" />
-            ))}
-          </div>
-        ) : error ? (
-          <p className="text-sm text-rose-600 py-4">{error}</p>
-        ) : playable.length === 0 ? (
-          <Card className="p-6 border-[#eadfd0] text-center">
-            <Target className="w-10 h-10 text-[#eadfd0] mx-auto mb-3" />
-            <p className="text-sm text-[#7c644c] mb-3">購入済みのクエストがありません</p>
             <Button
-              variant="outline"
-              className="border-[#e67a28] text-[#e67a28] hover:bg-[#fff8f0]"
-              onClick={() => navigate("/quests")}
+              variant="ghost"
+              size="icon"
+              className="rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-white hover:bg-white/20 hover:text-white transition-all"
+              onClick={() => navigate("/settings")}
             >
-              クエストを探す
+              <Settings className="w-5 h-5" />
             </Button>
-          </Card>
-        ) : (
-          <div className="space-y-3">
-            {playable.map((q) => (
-              <Card
-                key={q.purchaseId}
-                className="overflow-hidden border-[#eadfd0] hover:border-[#e67a28]/30 hover:shadow-md transition-all cursor-pointer"
-                onClick={() => handlePlay(q)}
+          </div>
+        </div>
+      </div>
+
+      <div className="px-4 space-y-8 -mt-4 relative z-10">
+        {/* Stats Dashboard */}
+        <div className="grid grid-cols-2 gap-3">
+          <div className="p-5 rounded-3xl bg-white shadow-soft hover:shadow-soft-lg transition-all duration-300 group">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Trophy className="w-4 h-4" />
+              </div>
+              <span className="text-xs font-bold text-[#999999]">クリア数</span>
+            </div>
+            <p className="text-2xl font-bold text-[#333333]">
+              {stats.completedQuests}
+              <span className="text-xs font-medium text-[#CCCCCC] ml-1">/ {stats.totalQuests}</span>
+            </p>
+          </div>
+
+          <div className="p-5 rounded-3xl bg-white shadow-soft hover:shadow-soft-lg transition-all duration-300 group">
+            <div className="flex items-center gap-2 mb-3">
+              <div className="w-8 h-8 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
+                <Clock className="w-4 h-4" />
+              </div>
+              <span className="text-xs font-bold text-[#999999]">総プレイ時間</span>
+            </div>
+            <p className="text-2xl font-bold text-[#333333]">
+              {formatDuration(stats.totalPlayTime)}
+            </p>
+          </div>
+        </div>
+
+        {/* Playable Quests */}
+        <div className="space-y-4">
+          <div className="flex items-center justify-between px-1">
+            <h2 className="text-base font-bold text-[#333333]">プレイ可能なクエスト</h2>
+            {loading && <Loader2 className="w-4 h-4 text-[#F2994A] animate-spin" />}
+          </div>
+
+          {loading ? (
+            <div className="space-y-4">
+              {[...Array(2)].map((_, i) => (
+                <div key={i} className="rounded-3xl bg-white p-3 shadow-soft flex gap-4">
+                  <Skeleton className="w-24 h-24 rounded-2xl" />
+                  <div className="flex-1 space-y-2 py-2">
+                    <Skeleton className="h-4 w-3/4" />
+                    <Skeleton className="h-3 w-1/2" />
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : error ? (
+            <p className="text-sm text-rose-600 py-4 text-center">{error}</p>
+          ) : playable.length === 0 ? (
+            <div className="p-8 rounded-3xl bg-white border border-dashed border-[#EEEEEE] text-center">
+              <div className="w-16 h-16 rounded-full bg-[#F5F5F5] flex items-center justify-center mx-auto mb-4">
+                <Target className="w-8 h-8 text-[#CCCCCC]" />
+              </div>
+              <p className="text-sm text-[#999999] mb-6">購入済みのクエストがありません</p>
+              <Button
+                variant="outline"
+                className="rounded-full border-[#F2994A] text-[#F2994A] hover:bg-[#FFF5EB] hover:text-[#F2994A] px-6"
+                onClick={() => navigate("/quests")}
               >
-                <div className="flex">
+                クエストを探す
+              </Button>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              {playable.map((q) => (
+                <div
+                  key={q.purchaseId}
+                  className="group flex gap-3.5 rounded-3xl bg-white p-3 shadow-soft hover:shadow-soft-lg transition-all duration-300 cursor-pointer min-h-[104px]"
+                  onClick={() => handlePlay(q)}
+                >
                   {/* Cover Image */}
-                  <div className="w-28 h-24 shrink-0 bg-gradient-to-br from-[#f7efe5] to-[#eadfd0]">
+                  <div className="relative w-24 h-20 rounded-2xl overflow-hidden bg-[#F5F5F5] shrink-0 self-center">
                     {q.cover ? (
-                      <img src={q.cover} alt={q.title} className="w-full h-full object-cover" />
+                      <img src={q.cover} alt={q.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                     ) : (
                       <div className="w-full h-full flex items-center justify-center">
-                        <Target className="w-8 h-8 text-[#c27a34]/30" />
+                        <Target className="w-8 h-8 text-[#CCCCCC]" />
                       </div>
                     )}
+                    {/* Status Badge Overlay */}
+                    <div className={`absolute inset-0 opacity-20 ${q.progressStatus === "completed" ? "bg-emerald-500" :
+                        q.progressStatus === "in_progress" ? "bg-[#F2994A]" : ""
+                      }`} />
                   </div>
 
                   {/* Info */}
-                  <div className="flex-1 p-3 min-w-0">
-                    <div className="flex items-start justify-between gap-2 mb-1">
-                      <h3 className="text-sm font-bold text-[#2f1d0f] line-clamp-1">{q.title}</h3>
-                      <Badge className={
-                        q.progressStatus === "completed"
-                          ? "bg-emerald-100 text-emerald-700 border-emerald-200 shrink-0"
-                          : q.progressStatus === "in_progress"
-                            ? "bg-amber-100 text-amber-700 border-amber-200 shrink-0"
-                            : "bg-gray-100 text-gray-600 border-gray-200 shrink-0"
-                      }>
-                        {q.progressStatus === "completed" ? "クリア" : q.progressStatus === "in_progress" ? "進行中" : "未開始"}
-                      </Badge>
+                  <div className="flex-1 min-w-0 flex flex-col justify-center py-0.5 gap-2">
+                    <div>
+                      <div className="flex items-start justify-between gap-2 mb-1">
+                        <h3 className="text-sm font-bold text-[#333333] line-clamp-1">{q.title}</h3>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${q.progressStatus === "completed"
+                            ? "bg-emerald-50 text-emerald-600"
+                            : q.progressStatus === "in_progress"
+                              ? "bg-orange-50 text-orange-600"
+                              : "bg-gray-50 text-gray-500"
+                          }`}>
+                          {q.progressStatus === "completed" ? "クリア済" : q.progressStatus === "in_progress" ? "進行中" : "未開始"}
+                        </span>
+                        {q.area && (
+                          <span className="text-[10px] text-[#999999] flex items-center gap-0.5">
+                            <MapPin className="w-3 h-3" />
+                            {q.area}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
-                    {q.area && (
-                      <p className="text-[10px] text-[#7c644c] flex items-center gap-1 mb-2">
-                        <MapPin className="w-3 h-3" />
-                        {q.area}
-                      </p>
-                    )}
-
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 mt-1">
                       <Button
                         size="sm"
-                        className="h-7 rounded-full bg-gradient-to-r from-[#ffb566] to-[#e67a28] text-white text-xs"
+                        className={`h-7 rounded-full text-[10px] px-3 font-bold shadow-sm transition-all ${q.progressStatus === "completed"
+                            ? "bg-[#F5F5F5] text-[#999999] hover:bg-[#EEEEEE]"
+                            : "bg-[#333333] text-white hover:bg-[#000000]"
+                          }`}
                         onClick={(e) => {
                           e.stopPropagation();
                           handlePlay(q);
                         }}
                       >
                         <Play className="w-3 h-3 mr-1 fill-current" />
-                        {q.progressStatus === "completed" ? "再プレイ" : q.progressStatus === "in_progress" ? "続きから" : "開始"}
+                        {q.progressStatus === "completed" ? "再プレイ" : "プレイ開始"}
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="h-7 w-7 p-0 rounded-full text-[#7c644c] hover:text-rose-600 hover:bg-rose-50"
+
+                      <button
+                        className="p-1.5 rounded-full text-[#CCCCCC] hover:bg-rose-50 hover:text-rose-500 transition-colors ml-auto"
                         onClick={(e) => handleDelete(q, e)}
-                        title="削除"
                       >
                         <Trash2 className="w-4 h-4" />
-                      </Button>
+                      </button>
                     </div>
                   </div>
                 </div>
-              </Card>
-            ))}
-          </div>
-        )}
-      </div>
+              ))}
+            </div>
+          )}
+        </div>
 
-      {/* Recent Sessions */}
-      {recentSessions.length > 0 && (
-        <div className="space-y-3">
-          <div className="flex items-center gap-2">
-            <History className="w-5 h-5 text-[#e67a28]" />
-            <h2 className="text-lg font-bold text-[#2f1d0f]">プレイ履歴</h2>
-          </div>
+        {/* Recent Sessions */}
+        {recentSessions.length > 0 && (
+          <div className="space-y-4">
+            <h2 className="text-base font-bold text-[#333333] px-1">プレイ履歴</h2>
 
-          <div className="space-y-2">
-            {recentSessions.map((s) => (
-              <Card key={s.id} className="p-3 border-[#eadfd0]">
-                <div className="flex items-center justify-between mb-1">
-                  <h3 className="text-sm font-semibold text-[#2f1d0f] line-clamp-1">{s.questTitle}</h3>
-                  <span className="text-[10px] text-[#7c644c]">
-                    {s.endedAt ? new Date(s.endedAt).toLocaleDateString("ja-JP") : ""}
-                  </span>
-                </div>
-                <div className="flex items-center gap-3 text-[10px] text-[#7c644c]">
-                  <span className="flex items-center gap-1">
-                    <Clock className="w-3 h-3" />
-                    {s.durationSec != null ? formatDuration(s.durationSec) : "—"}
-                  </span>
-                  {s.wrongAnswers != null && (
-                    <span>誤答: {s.wrongAnswers}回</span>
-                  )}
+            <div className="space-y-2">
+              {recentSessions.map((s) => (
+                <div key={s.id} className="flex items-center justify-between p-4 rounded-2xl bg-white border border-[#F5F5F5]">
+                  <div className="min-w-0 flex-1 mr-4">
+                    <h3 className="text-sm font-bold text-[#333333] line-clamp-1 mb-1">{s.questTitle}</h3>
+                    <div className="flex items-center gap-3 text-[10px] text-[#999999]">
+                      <span className="flex items-center gap-1">
+                        <Clock className="w-3 h-3" />
+                        {s.durationSec != null ? formatDuration(s.durationSec) : "—"}
+                      </span>
+                      <span>{s.endedAt ? new Date(s.endedAt).toLocaleDateString("ja-JP") : ""}</span>
+                    </div>
+                  </div>
                   {myReviews[s.questId] && (
-                    <span className="flex items-center gap-0.5 text-[#e67a28]">
+                    <div className="flex items-center gap-0.5 px-2 py-1 rounded-lg bg-[#FFF5EB] text-[#F2994A] text-xs font-bold">
                       <Star className="w-3 h-3 fill-current" />
                       {myReviews[s.questId]}
-                    </span>
+                    </div>
                   )}
                 </div>
-              </Card>
-            ))}
+              ))}
+            </div>
           </div>
+        )}
+
+        {/* Actions */}
+        <div className="space-y-3 pt-4">
+          <button
+            className="w-full flex items-center justify-between p-4 rounded-2xl bg-white border border-[#F5F5F5] text-[#333333] font-medium hover:bg-[#FAFAFA] transition-all"
+            onClick={() => navigate("/settings")}
+          >
+            <div className="flex items-center gap-3">
+              <div className="w-8 h-8 rounded-full bg-[#F5F5F5] flex items-center justify-center">
+                <Settings className="w-4 h-4 text-[#666666]" />
+              </div>
+              設定
+            </div>
+            <ChevronRight className="w-4 h-4 text-[#CCCCCC]" />
+          </button>
+
+          <button
+            className="w-full flex items-center justify-center p-4 rounded-2xl text-rose-500 font-medium hover:bg-rose-50 transition-all"
+            onClick={handleLogout}
+          >
+            <LogOut className="w-4 h-4 mr-2" />
+            ログアウト
+          </button>
         </div>
-      )}
-
-      {/* Actions */}
-      <div className="space-y-2 pt-4">
-        <Button
-          variant="outline"
-          className="w-full justify-start border-[#eadfd0] text-[#7c644c] hover:bg-[#f7efe5]"
-          onClick={() => navigate("/settings")}
-        >
-          <Settings className="w-4 h-4 mr-3" />
-          設定
-          <ChevronRight className="w-4 h-4 ml-auto" />
-        </Button>
-
-        <Button
-          variant="ghost"
-          className="w-full justify-start text-rose-600 hover:bg-rose-50"
-          onClick={handleLogout}
-        >
-          <LogOut className="w-4 h-4 mr-3" />
-          ログアウト
-        </Button>
       </div>
     </div>
   );

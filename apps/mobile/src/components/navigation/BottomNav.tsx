@@ -10,30 +10,29 @@ const BottomNav = () => {
   ];
 
   return (
-    <nav className="w-full bg-white/95 backdrop-blur-sm border-t border-[#ede1d2] px-2 py-2 safe-area-pb">
-      <div className="grid grid-cols-4 gap-1">
+    <nav className="w-full bg-white/80 backdrop-blur-xl border-t border-white/50 px-4 py-1.5 safe-area-pb">
+      <div className="flex justify-around items-center max-w-md mx-auto">
         {navItems.map(({ to, label, icon: Icon }) => (
           <NavLink
             key={to}
             to={to}
             end={to === "/"}
             className={({ isActive }) =>
-              `relative flex flex-col items-center justify-center gap-0.5 py-2.5 rounded-2xl text-xs font-semibold transition-all duration-200 tap-effect ${isActive
-                ? "bg-gradient-to-r from-[#ffb566] to-[#e67a28] text-white shadow-md scale-[1.02]"
-                : "text-[#6b5a4a] hover:bg-[#f6eee3] active:scale-95"
+              `relative flex flex-col items-center justify-center gap-0.5 py-2 px-4 min-h-[52px] rounded-xl text-[11px] font-medium transition-all duration-300 ${isActive
+                ? "text-[#F2994A]"
+                : "text-[#666666] hover:text-[#333333] active:scale-95"
               }`
             }
           >
             {({ isActive }) => (
               <>
-                <div className={`transition-transform duration-200 ${isActive ? "animate-bounce-subtle" : ""}`}>
-                  <Icon className={`w-5 h-5 ${isActive ? "drop-shadow-sm" : ""}`} strokeWidth={isActive ? 2.5 : 2} />
-                </div>
-                <span className={`transition-all duration-200 ${isActive ? "font-bold" : ""}`}>
-                  {label}
-                </span>
+                <Icon
+                  className={`w-5 h-5 transition-all duration-300 ${isActive ? "stroke-[2.5]" : "stroke-[1.8]"
+                    }`}
+                />
+                <span className="mt-0.5">{label}</span>
                 {isActive && (
-                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-white shadow-sm" />
+                  <div className="absolute bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-[#F2994A]" />
                 )}
               </>
             )}
@@ -45,3 +44,4 @@ const BottomNav = () => {
 };
 
 export default BottomNav;
+

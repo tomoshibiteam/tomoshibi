@@ -14,7 +14,8 @@ import {
   Trash2,
   Globe,
   Info,
-  Settings as SettingsIcon
+  Settings as SettingsIcon,
+  Shield
 } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,6 +39,7 @@ const Settings = () => {
   const [notificationEnabled, setNotificationEnabled] = useState(true);
   const [notificationTimes, setNotificationTimes] = useState<string[]>(["22:00"]);
   const [saving, setSaving] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
   const [profile, setProfile] = useState<{
     name: string;
     profile_picture_url: string | null;
@@ -58,8 +60,22 @@ const Settings = () => {
     if (user) {
       fetchSettings();
       fetchProfile();
+      checkAdminRole();
     }
   }, [user]);
+
+  const checkAdminRole = async () => {
+    if (!user) return;
+
+    const { data } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', user.id)
+      .eq('role', 'admin')
+      .maybeSingle();
+
+    setIsAdmin(!!data);
+  };
 
   const fetchProfile = async () => {
     if (!user) return;
@@ -347,6 +363,16 @@ const Settings = () => {
           </CardTitle>
         </CardHeader>
         <CardContent className="space-y-2">
+          {isAdmin && (
+            <Button
+              variant="outline"
+              className="w-full justify-start gap-3 border-primary/50 hover:border-primary text-primary"
+              onClick={() => navigate("/admin")}
+            >
+              <Shield className="w-5 h-5" />
+              運営ダッシュボード
+            </Button>
+          )}
           <Button
             variant="outline"
             className="w-full justify-start gap-3"

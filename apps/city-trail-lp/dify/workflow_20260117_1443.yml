@@ -853,45 +853,205 @@ workflow:
       type: custom
       width: 242
     - data:
-        code: "import json\nimport math\n\ndef haversine_distance(lat1, lng1, lat2,\
-          \ lng2):\n    R = 6371000\n    phi1 = math.radians(float(lat1))\n    phi2\
-          \ = math.radians(float(lat2))\n    delta_phi = math.radians(float(lat2)\
-          \ - float(lat1))\n    delta_lambda = math.radians(float(lng2) - float(lng1))\n\
-          \    \n    a = math.sin(delta_phi/2)**2 + math.cos(phi1) * math.cos(phi2)\
-          \ * math.sin(delta_lambda/2)**2\n    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))\n\
-          \    return R * c\n\ndef optimize_route(spots, start_lat, start_lng):\n\
-          \    if not spots:\n        return []\n    remaining = spots.copy()\n  \
-          \  route = []\n    current_lat, current_lng = float(start_lat), float(start_lng)\n\
-          \    \n    while remaining:\n        nearest = min(remaining, key=lambda\
-          \ s: haversine_distance(\n            current_lat, current_lng, s.get('lat',\
-          \ 0), s.get('lng', 0)\n        ))\n        route.append(nearest)\n     \
-          \   remaining.remove(nearest)\n        current_lat = nearest.get('lat',\
-          \ current_lat)\n        current_lng = nearest.get('lng', current_lng)\n\
-          \    return route\n\ndef main(scored_spots_json: str, spot_count: int, center_lat:\
-          \ str, center_lng: str) -> dict:\n    spots = json.loads(scored_spots_json)\n\
-          \    \n    if not spots:\n        return {\n            \"optimized_spots_json\"\
-          : \"[]\",\n            \"optimized_spots_text\": \"スポットがありません\",\n     \
-          \       \"total_distance_m\": 0,\n            \"walking_time_min\": 0\n\
-          \        }\n    \n    # 上位スポットを取得\n    top_spots = spots[:int(spot_count)\
-          \ + 2]\n    \n    # ルート最適化\n    start_lat = center_lat if center_lat else\
-          \ \"35.7148\"\n    start_lng = center_lng if center_lng else \"139.7967\"\
-          \n    optimized = optimize_route(top_spots, start_lat, start_lng)\n    \n\
-          \    # 必要数に絞り込み\n    final_route = optimized[:int(spot_count)]\n    \n \
-          \   # スポットID付与\n    for i, spot in enumerate(final_route):\n        spot['spot_index']\
-          \ = i + 1\n        spot['spot_id'] = f\"S{i + 1}\"\n    \n    # 総距離計算\n\
-          \    total_distance = 0\n    for i in range(1, len(final_route)):\n    \
-          \    total_distance += haversine_distance(\n            final_route[i-1].get('lat',\
-          \ 0), final_route[i-1].get('lng', 0),\n            final_route[i].get('lat',\
-          \ 0), final_route[i].get('lng', 0)\n        )\n    \n    # テキスト形式\n    spots_text\
-          \ = \"\"\n    for s in final_route:\n        spots_text += f\"{s['spot_id']}:\
-          \ {s['name']} ({s.get('address', '')})\\n\"\n        spots_text += f\" \
-          \  - 選定理由: {s.get('selection_reason', '')}\\n\"\n        spots_text += f\"\
-          \   - 歴史: {', '.join(s.get('historical_facts', []))}\\n\"\n        spots_text\
-          \ += f\"   - 謎アイデア: {', '.join(s.get('puzzle_ideas', []))}\\n\\n\"\n   \
-          \ \n    return {\n        \"optimized_spots_json\": json.dumps(final_route,\
-          \ ensure_ascii=False),\n        \"optimized_spots_text\": spots_text,\n\
-          \        \"total_distance_m\": int(total_distance),\n        \"walking_time_min\"\
-          : int(total_distance / 80)\n    }"
+        code: "import json\nimport math\nfrom typing import List, Dict, Tuple\n\n# ============= 定数 =============\n\
+          MAX_SEGMENT_DISTANCE_M = 800  # スポット間の最大距離（メートル）\n\
+          MIN_SEGMENT_DISTANCE_M = 50   # スポット間の最小距離（メートル）\n\
+          WALKING_SPEED_M_PER_MIN = 67  # 歩行速度（約4km/h）\n\
+          CROSSING_PENALTY_SEC = 30     # 交差点での待ち時間（秒）\n\n\
+          # ============= 距離計算 =============\n\
+          def haversine_distance(lat1, lng1, lat2, lng2):\n    \
+          R = 6371000  # 地球の半径（メートル）\n    \
+          phi1, phi2 = math.radians(float(lat1)), math.radians(float(lat2))\n    \
+          delta_phi = math.radians(float(lat2) - float(lat1))\n    \
+          delta_lambda = math.radians(float(lng2) - float(lng1))\n    \
+          a = math.sin(delta_phi/2)**2 + math.cos(phi1) * math.cos(phi2) * math.sin(delta_lambda/2)**2\n    \
+          return R * 2 * math.atan2(math.sqrt(a), math.sqrt(1-a))\n\n\
+          def calculate_bearing(lat1, lng1, lat2, lng2):\n    \
+          '''2点間の方位角を計算（0-360度）'''\n    \
+          lat1, lat2 = math.radians(float(lat1)), math.radians(float(lat2))\n    \
+          lng1, lng2 = math.radians(float(lng1)), math.radians(float(lng2))\n    \
+          d_lng = lng2 - lng1\n    \
+          x = math.sin(d_lng) * math.cos(lat2)\n    \
+          y = math.cos(lat1) * math.sin(lat2) - math.sin(lat1) * math.cos(lat2) * math.cos(d_lng)\n    \
+          bearing = math.atan2(x, y)\n    \
+          return (math.degrees(bearing) + 360) % 360\n\n\
+          def direction_change_penalty(bearing1, bearing2):\n    \
+          '''方向転換のペナルティ（0-1、0が最良）'''\n    \
+          diff = abs(bearing1 - bearing2)\n    \
+          if diff > 180:\n        diff = 360 - diff\n    \
+          # 90度以上の方向転換にペナルティ\n    \
+          if diff < 90:\n        return 0\n    \
+          return (diff - 90) / 90  # 90度=0, 180度=1\n\n\
+          # ============= ルート評価 =============\n\
+          def calculate_route_score(route: List[Dict]) -> Tuple[float, float, int]:\n    \
+          '''ルートの総距離、総ペナルティ、問題箇所数を計算'''\n    \
+          if len(route) < 2:\n        return 0, 0, 0\n    \n    \
+          total_distance = 0\n    \
+          total_penalty = 0\n    \
+          issues = 0\n    \
+          prev_bearing = None\n    \n    \
+          for i in range(1, len(route)):\n        \
+          lat1, lng1 = route[i-1].get('lat', 0), route[i-1].get('lng', 0)\n        \
+          lat2, lng2 = route[i].get('lat', 0), route[i].get('lng', 0)\n        \
+          dist = haversine_distance(lat1, lng1, lat2, lng2)\n        \
+          total_distance += dist\n        \n        \
+          # 距離が長すぎる場合のペナルティ\n        \
+          if dist > MAX_SEGMENT_DISTANCE_M:\n            \
+          total_penalty += (dist - MAX_SEGMENT_DISTANCE_M) / 100\n            \
+          issues += 1\n        \n        \
+          # 方向転換ペナルティ\n        \
+          current_bearing = calculate_bearing(lat1, lng1, lat2, lng2)\n        \
+          if prev_bearing is not None:\n            \
+          penalty = direction_change_penalty(prev_bearing, current_bearing)\n            \
+          total_penalty += penalty * 50  # ペナルティ係数\n            \
+          if penalty > 0.5:\n                issues += 1\n        \
+          prev_bearing = current_bearing\n    \n    \
+          return total_distance, total_penalty, issues\n\n\
+          # ============= 2-opt 改善 =============\n\
+          def two_opt_improve(route: List[Dict], max_iterations: int = 50) -> List[Dict]:\n    \
+          '''2-optアルゴリズムでルートを改善'''\n    \
+          if len(route) < 4:\n        return route\n    \n    \
+          improved = True\n    \
+          iterations = 0\n    \
+          best_route = route.copy()\n    \
+          best_score = calculate_route_score(best_route)\n    \n    \
+          while improved and iterations < max_iterations:\n        \
+          improved = False\n        \
+          iterations += 1\n        \n        \
+          for i in range(1, len(best_route) - 2):\n            \
+          for j in range(i + 2, len(best_route)):\n                \
+          # 区間を反転\n                \
+          new_route = best_route[:i] + best_route[i:j+1][::-1] + best_route[j+1:]\n                \
+          new_score = calculate_route_score(new_route)\n                \n                \
+          # スコアが改善したら採用（距離+ペナルティで比較）\n                \
+          if (new_score[0] + new_score[1]) < (best_score[0] + best_score[1]):\n                    \
+          best_route = new_route\n                    \
+          best_score = new_score\n                    \
+          improved = True\n    \n    \
+          return best_route\n\n\
+          # ============= 距離フィルタリング =============\n\
+          def filter_by_distance_constraints(spots: List[Dict], center_lat: float, center_lng: float) -> List[Dict]:\n    \
+          '''距離制約に基づいてスポットをフィルタリング'''\n    \
+          if not spots:\n        return []\n    \n    \
+          # 中心からの距離でソート\n    \
+          for spot in spots:\n        \
+          spot['_center_dist'] = haversine_distance(center_lat, center_lng, spot.get('lat', 0), spot.get('lng', 0))\n    \n    \
+          # 近い順にソート\n    \
+          sorted_spots = sorted(spots, key=lambda s: s['_center_dist'])\n    \n    \
+          # 極端に遠いスポットを除外（中心から3km以上）\n    \
+          filtered = [s for s in sorted_spots if s['_center_dist'] < 3000]\n    \n    \
+          return filtered\n\n\
+          # ============= クラスタリング =============\n\
+          def cluster_spots(spots: List[Dict], cluster_radius_m: float = 300) -> List[List[Dict]]:\n    \
+          '''近接するスポットをクラスタリング'''\n    \
+          if not spots:\n        return []\n    \n    \
+          clusters = []\n    \
+          used = set()\n    \n    \
+          for i, spot in enumerate(spots):\n        \
+          if i in used:\n            continue\n        \n        \
+          cluster = [spot]\n        \
+          used.add(i)\n        \n        \
+          for j, other in enumerate(spots[i+1:], start=i+1):\n            \
+          if j in used:\n                continue\n            \
+          dist = haversine_distance(spot.get('lat', 0), spot.get('lng', 0), other.get('lat', 0), other.get('lng', 0))\n            \
+          if dist < cluster_radius_m:\n                \
+          cluster.append(other)\n                \
+          used.add(j)\n        \n        \
+          clusters.append(cluster)\n    \n    \
+          return clusters\n\n\
+          # ============= メイン関数 =============\n\
+          def main(scored_spots_json: str, spot_count: int, center_lat: str, center_lng: str) -> dict:\n    \
+          spots = json.loads(scored_spots_json)\n    \n    \
+          if not spots:\n        \
+          return {\n            \
+          'optimized_spots_json': '[]',\n            \
+          'optimized_spots_text': 'スポットがありません',\n            \
+          'total_distance_m': 0,\n            \
+          'walking_time_min': 0,\n            \
+          'route_quality': 'N/A'\n        \
+          }\n    \n    \
+          # 中心座標（デフォルトは最初のスポット）\n    \
+          c_lat = float(center_lat) if center_lat else spots[0].get('lat', 35.7148)\n    \
+          c_lng = float(center_lng) if center_lng else spots[0].get('lng', 139.7967)\n    \n    \
+          # Step 1: 上位スポットを取得（必要数+予備）\n    \
+          top_spots = spots[:int(spot_count) + 5]\n    \n    \
+          # Step 2: 距離フィルタリング\n    \
+          filtered = filter_by_distance_constraints(top_spots, c_lat, c_lng)\n    \n    \
+          # Step 3: クラスタリング（近すぎるスポットをグループ化）\n    \
+          clusters = cluster_spots(filtered)\n    \n    \
+          # Step 4: 各クラスタから代表を選出（スコア最高のもの）\n    \
+          representatives = []\n    \
+          for cluster in clusters:\n        \
+          best = max(cluster, key=lambda s: s.get('total', 0))\n        \
+          representatives.append(best)\n    \n    \
+          # Step 5: 必要数に絞り込み（スコア順で上位を選択）\n    \
+          representatives.sort(key=lambda s: s.get('total', 0), reverse=True)\n    \
+          selected = representatives[:int(spot_count)]\n    \n    \
+          # Step 6: Greedy Nearest Neighbor で初期ルート構築\n    \
+          if not selected:\n        \
+          return {\n            \
+          'optimized_spots_json': '[]',\n            \
+          'optimized_spots_text': 'フィルタリング後にスポットがありません',\n            \
+          'total_distance_m': 0,\n            \
+          'walking_time_min': 0,\n            \
+          'route_quality': 'N/A'\n        \
+          }\n    \n    \
+          remaining = selected.copy()\n    \
+          route = []\n    \
+          current_lat, current_lng = c_lat, c_lng\n    \n    \
+          while remaining:\n        \
+          nearest = min(remaining, key=lambda s: haversine_distance(current_lat, current_lng, s.get('lat', 0), s.get('lng', 0)))\n        \
+          route.append(nearest)\n        \
+          remaining.remove(nearest)\n        \
+          current_lat, current_lng = nearest.get('lat', current_lat), nearest.get('lng', current_lng)\n    \n    \
+          # Step 7: 2-opt改善\n    \
+          optimized = two_opt_improve(route)\n    \n    \
+          # Step 8: スポットID付与と距離計算\n    \
+          total_distance = 0\n    \
+          segment_distances = []\n    \n    \
+          for i, spot in enumerate(optimized):\n        \
+          spot['spot_index'] = i + 1\n        \
+          spot['spot_id'] = f'S{i + 1}'\n        \n        \
+          if i > 0:\n            \
+          dist = haversine_distance(\n                \
+          optimized[i-1].get('lat', 0), optimized[i-1].get('lng', 0),\n                \
+          spot.get('lat', 0), spot.get('lng', 0)\n            \
+          )\n            \
+          total_distance += dist\n            \
+          segment_distances.append(int(dist))\n            \
+          spot['distance_from_prev_m'] = int(dist)\n            \
+          spot['walking_time_from_prev_min'] = round(dist / WALKING_SPEED_M_PER_MIN, 1)\n    \n    \
+          # Step 9: ルート品質評価\n    \
+          _, penalty, issues = calculate_route_score(optimized)\n    \
+          if issues == 0:\n        \
+          quality = '最適'\n    \
+          elif issues <= 2:\n        \
+          quality = '良好'\n    \
+          else:\n        \
+          quality = '要改善'\n    \n    \
+          # Step 10: 歩行時間計算（交差点ペナルティ含む）\n    \
+          walking_time = total_distance / WALKING_SPEED_M_PER_MIN\n    \
+          crossing_time = len(optimized) * CROSSING_PENALTY_SEC / 60  # 各スポットで30秒\n    \
+          total_time = walking_time + crossing_time\n    \n    \
+          # Step 11: テキスト形式出力\n    \
+          spots_text = f'【ルート品質: {quality}】\\n\\n'\n    \
+          for i, s in enumerate(optimized):\n        \
+          spots_text += f\"{s['spot_id']}: {s['name']}\\n\"\n        \
+          spots_text += f\"   住所: {s.get('address', '')}\\n\"\n        \
+          if i > 0:\n            \
+          spots_text += f\"   ← 前スポットから{s.get('distance_from_prev_m', 0)}m ({s.get('walking_time_from_prev_min', 0)}分)\\n\"\n        \
+          spots_text += f\"   選定理由: {s.get('selection_reason', '')}\\n\"\n        \
+          spots_text += f\"   歴史: {', '.join(s.get('historical_facts', []))}\\n\"\n        \
+          spots_text += f\"   謎アイデア: {', '.join(s.get('puzzle_ideas', []))}\\n\\n\"\n    \n    \
+          spots_text += f'【総距離】{int(total_distance)}m\\n'\n    \
+          spots_text += f'【推定歩行時間】{int(total_time)}分\\n'\n    \n    \
+          return {\n        \
+          'optimized_spots_json': json.dumps(optimized, ensure_ascii=False),\n        \
+          'optimized_spots_text': spots_text,\n        \
+          'total_distance_m': int(total_distance),\n        \
+          'walking_time_min': int(total_time),\n        \
+          'route_quality': quality\n    \
+          }"
         code_language: python3
         outputs:
           optimized_spots_json:
@@ -906,6 +1066,9 @@ workflow:
           walking_time_min:
             children: null
             type: number
+          route_quality:
+            children: null
+            type: string
         selected: false
         title: CODE_ルート最適化
         type: code

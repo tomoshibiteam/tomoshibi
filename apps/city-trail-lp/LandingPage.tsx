@@ -1639,7 +1639,7 @@ const InstallBar = ({
 };
 
 const PhoneMockup = () => (
-  <div className="relative mx-auto w-[280px] h-[580px] bg-brand-dark rounded-[3rem] border-4 border-brand-dark shadow-2xl overflow-hidden flex flex-col z-10">
+  <div className="relative mx-auto w-[390px] h-[844px] bg-brand-dark rounded-[3rem] border-4 border-brand-dark shadow-2xl overflow-hidden flex flex-col z-10">
     {/* Status Bar */}
     <div className="h-6 bg-brand-dark w-full absolute top-0 z-20 flex justify-center items-center">
       <div className="w-24 h-4 bg-black/30 rounded-b-xl" />
@@ -6936,10 +6936,10 @@ export default function LandingPage() {
             ? 'creator-workspace'
             : initialPath === '/creator/analytics' || initialPath.startsWith('/creator/analytics/')
               ? 'creator-analytics'
-          : initialPath.startsWith('/creator/route-spots/')
-            ? 'creator-spot-detail'
-            : initialPath === '/creator/storytelling' || initialPath.startsWith('/creator/storytelling/')
-              ? 'creator-storytelling'
+              : initialPath.startsWith('/creator/route-spots/')
+                ? 'creator-spot-detail'
+                : initialPath === '/creator/storytelling' || initialPath.startsWith('/creator/storytelling/')
+                  ? 'creator-storytelling'
                   : initialPath === '/creator/test-run'
                     ? 'creator-test-run'
                     : initialPath === '/creator/submitted'
@@ -10920,19 +10920,19 @@ const CreatorMysterySetupPage = ({
     setSaveError(null);
     setSaving(true);
     try {
-	      const { data, error } = await supabase
-	        .from('quests')
-	        .upsert({
-	          id: questId || undefined,
-	          creator_id: userId,
-	          title,
-	          description,
-	          area_name: location,
-	          location_lat: mapCenter.lat,
-	          location_lng: mapCenter.lng,
-	        })
-	        .select()
-	        .single();
+      const { data, error } = await supabase
+        .from('quests')
+        .upsert({
+          id: questId || undefined,
+          creator_id: userId,
+          title,
+          description,
+          area_name: location,
+          location_lat: mapCenter.lat,
+          location_lng: mapCenter.lng,
+        })
+        .select()
+        .single();
       if (error) throw error;
       if (data?.id) {
         setQuestId(data.id);

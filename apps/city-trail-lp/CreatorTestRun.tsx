@@ -245,12 +245,12 @@ export default function CreatorTestRun() {
         return (
             <section className="min-h-screen bg-gradient-to-br from-[#3D2E1F] via-[#2A1F15] to-[#1A1510] flex items-center justify-center p-4">
                 {/* Phone Frame */}
-                <div className="w-full max-w-[375px] bg-[#FEF9F3] rounded-[40px] shadow-2xl overflow-hidden border-[8px] border-[#1A1510] relative" style={{ minHeight: '700px' }}>
+                <div className="w-full max-w-[390px] bg-[#FEF9F3] rounded-[40px] shadow-2xl overflow-hidden border-[8px] border-[#1A1510] relative" style={{ minHeight: '844px' }}>
                     {/* Dynamic Island */}
                     <div className="absolute top-2 left-1/2 -translate-x-1/2 w-[120px] h-[32px] bg-[#1A1510] rounded-full z-20" />
 
                     {/* Screen */}
-                    <div className="min-h-[684px] bg-gradient-to-b from-[#FEF9F3] to-[#F7E7D3] flex flex-col">
+                    <div className="min-h-[828px] bg-gradient-to-b from-[#FEF9F3] to-[#F7E7D3] flex flex-col">
                         {/* Header with language switcher */}
                         <div className="bg-[#FEF9F3]/95 backdrop-blur-sm border-b-2 border-[#E8D5BE] px-4 py-3 pt-12 flex items-center justify-between">
                             <button onClick={endSimulation} className="text-[#7A6652] hover:text-[#3D2E1F]">

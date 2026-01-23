@@ -12,32 +12,31 @@ const AppLayout = () => {
 
   return (
     <MobileFrame
+      enableFontScale
       header={
-        <div className="flex items-center justify-between px-4 py-2 border-b border-[#ede1d2]/80 bg-white/95 backdrop-blur-sm">
-          <div className="flex items-center gap-2">
-            <img src={tomoshibiLogo} alt="TOMOSHIBI" className="w-7 h-7 rounded-lg shadow-sm" />
-            <div className="leading-tight">
-              <p className="text-[10px] text-[#b07a4c] font-semibold uppercase tracking-wider flex items-center gap-1">
-                TOMOSHIBI
-                <span className="px-1.5 py-0.5 rounded-full bg-[#f7efe5]/80 border border-[#eadfd0] text-[9px] text-[#7c644c] font-medium">β</span>
-              </p>
-              <p className="text-xs font-bold text-[#2f1d0f]">街歩き謎解きプラットフォーム</p>
-            </div>
+        <div className="flex items-center justify-between px-4 py-3 border-b border-amber-200 bg-amber-50/95 backdrop-blur-sm shadow-sm">
+          <div
+            className="flex items-center gap-2 cursor-pointer active:opacity-70 transition-opacity"
+            onClick={() => navigate("/")}
+          >
+            <p className="text-[14px] font-bold tracking-[0.2em] text-amber-900">
+              TOMOSHIBI
+            </p>
           </div>
           <div className="flex items-center gap-2">
             {loading ? (
-              <div className="w-8 h-8 rounded-full bg-[#f7efe5] animate-pulse" />
+              <div className="w-8 h-8 rounded-full bg-amber-100 animate-pulse" />
             ) : user ? (
               <button
                 onClick={() => navigate("/profile")}
-                className="w-8 h-8 rounded-full bg-gradient-to-br from-[#ffb566] to-[#e67a28] flex items-center justify-center text-white shadow-md hover:shadow-lg hover:scale-105 transition-all active:scale-95"
+                className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white shadow-md hover:shadow-lg hover:scale-105 transition-all active:scale-95"
               >
                 <User className="w-4 h-4" />
               </button>
             ) : (
               <button
                 onClick={() => navigate("/auth")}
-                className="px-3 py-1.5 rounded-full border border-stone-300 bg-white/80 backdrop-blur text-xs font-bold text-[#2f1d0f] hover:border-[#d4a574] hover:text-[#d4a574] transition-all shadow-sm active:scale-95"
+                className="px-4 py-2 rounded-full bg-amber-600 text-white text-xs font-bold hover:bg-amber-700 transition-all shadow-md active:scale-95"
               >
                 ログイン
               </button>

@@ -19,7 +19,7 @@ const Auth = () => {
   const location = useLocation();
   const { toast } = useToast();
   const { user, signUp, signIn } = useAuth();
-  const [isSignUp, setIsSignUp] = useState(true);
+  const [isSignUp, setIsSignUp] = useState(false);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");

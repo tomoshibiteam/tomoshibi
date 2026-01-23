@@ -1,376 +1,643 @@
-import { useEffect, useMemo, useState } from "react";
-import { useNavigate } from "react-router-dom";
-import {
-  Search,
-  MapPin,
-  Clock,
-  Star,
-  Sparkles,
-  Flame,
-  Crown,
-  ChevronRight,
-  Play,
-  Compass,
-  Target,
-  TrendingUp,
-} from "lucide-react";
-import { supabase } from "@/integrations/supabase/client";
-import { Badge } from "@/components/ui/badge";
+import { useState, useCallback, useEffect, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { MapPin } from "lucide-react";
+import LanternPrompt from "@/components/home/LanternPrompt";
+import QuestWizard from "@/components/home/QuestWizard";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import JourneyMapPreview from "@/components/quest/JourneyMapPreview";
+import PlayerPreview from "@/components/quest/PlayerPreview";
+import {
+  createDifyConfigFromEnv,
+  generateQuestWithDify,
+  PlayerPreviewOutput,
+  QuestCreatorPayload,
+  QuestGenerationRequest,
+} from "@/lib/difyQuest";
+import { useNavigate } from "react-router-dom";
+import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
+import RetroGlobe from "@/components/home/RetroGlobe";
+import QuestShowcase from "@/components/home/QuestShowcase";
 
-const tabs = [
-  { id: "all", label: "すべて", icon: Sparkles },
-  { id: "popular", label: "人気", icon: Flame },
-  { id: "new", label: "新着", icon: TrendingUp },
+type ViewMode = "idle" | "wizard" | "generating" | "preview";
+
+const GENERATION_PHASES = [
+  "モチーフを選定中...",
+  "物語を構築中...",
+  "謎を設計中...",
+  "品質を検証中...",
 ];
 
-type QuestRow = {
-  id: string;
-  title: string | null;
-  area_name: string | null;
-  cover_image_url: string | null;
-};
+const EXAMPLE_SETS = [
+  [
+    "夕暮れの水辺で、静かなミステリーを歩きたい",
+    "週末に友達と、短時間で濃密な物語を体験したい"
+  ],
+  [
+    "レトロな街並みで、写真と謎解きを楽しみたい",
+    "雨の日に、カフェを巡りながら小説のような旅を"
+  ],
+  [
+    "誰も知らない裏路地で、猫を探す小さな冒険",
+    "夜の公園で、星空を見上げながら秘密を解き明かす"
+  ]
+];
+
+const LEGACY_SERIES = new Set(["灯りの回廊", "港町の手紙"]);
+const OFFICIAL_SERIES = "SPR探偵事務所の事件簿";
+const DEFAULT_SPOT_COUNT = 6;
+const DEFAULT_DIFFICULTY: QuestGenerationRequest["difficulty"] = "medium";
+const DEFAULT_RADIUS_KM = 1.5;
+const FALLBACK_COORDS = { lat: 35.6812, lng: 139.7671 };
 
 const Home = () => {
+  const [viewMode, setViewMode] = useState<ViewMode>("idle");
+  const [generationPhase, setGenerationPhase] = useState("");
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [draftPrompt, setDraftPrompt] = useState("");
+  const [generationError, setGenerationError] = useState("");
+  const [playerPreview, setPlayerPreview] = useState<PlayerPreviewOutput | null>(null);
+  const [creatorPayload, setCreatorPayload] = useState<QuestCreatorPayload | null>(null);
+  const [locationStatus, setLocationStatus] = useState<"idle" | "loading" | "ready" | "error">(
+    "idle"
+  );
+  const [locationCoords, setLocationCoords] = useState<{ lat: number; lng: number } | null>(null);
+  const [locationError, setLocationError] = useState("");
+  const [seriesOptions, setSeriesOptions] = useState<string[]>(() => {
+    if (typeof window === "undefined") return [OFFICIAL_SERIES];
+    const stored = window.localStorage.getItem("tomoshibi.seriesOptions");
+    if (!stored) return [OFFICIAL_SERIES];
+    try {
+      const parsed = JSON.parse(stored);
+      if (!Array.isArray(parsed)) return [OFFICIAL_SERIES];
+      const cleaned = parsed.filter((item) => typeof item === "string" && !LEGACY_SERIES.has(item));
+      return cleaned.includes(OFFICIAL_SERIES) ? cleaned : [OFFICIAL_SERIES, ...cleaned];
+    } catch {
+      return [OFFICIAL_SERIES];
+    }
+  });
+  const [selectedSeries, setSelectedSeries] = useState<string | null>(() => {
+    if (typeof window === "undefined") return null;
+    return window.localStorage.getItem("tomoshibi.selectedSeries");
+  });
+  const [isSeriesOpen, setIsSeriesOpen] = useState(false);
+  const [newSeriesName, setNewSeriesName] = useState("");
+  const [isLocationDialogOpen, setIsLocationDialogOpen] = useState(false);
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [activeTab, setActiveTab] = useState<string>("all");
-  const [quests, setQuests] = useState<QuestRow[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [keyword, setKeyword] = useState("");
-  const [purchasedIds, setPurchasedIds] = useState<Set<string>>(new Set());
+  const { toast } = useToast();
+  const [isSaving, setIsSaving] = useState(false);
+  const [savedQuestId, setSavedQuestId] = useState<string | null>(null);
+  const [currentExampleSet, setCurrentExampleSet] = useState(0);
 
   useEffect(() => {
-    const fetchQuests = async () => {
-      setLoading(true);
-      setError(null);
-      const { data, error } = await supabase
-        .from("quests")
-        .select("id, title, area_name, cover_image_url")
-        .eq("status", "published")
-        .order("created_at", { ascending: false });
-      if (error) {
-        setError("クエストの取得に失敗しました");
-        setQuests([]);
-      } else {
-        setQuests(data || []);
-      }
-      setLoading(false);
-    };
-    fetchQuests();
+    const timer = setInterval(() => {
+      setCurrentExampleSet((prev) => (prev + 1) % EXAMPLE_SETS.length);
+    }, 10000);
+    return () => clearInterval(timer);
   }, []);
 
+  const canGenerate = Boolean(draftPrompt.trim()) && !isGenerating;
+  const canRegenerate = Boolean(draftPrompt.trim()) && !isGenerating && !isSaving;
+
   useEffect(() => {
-    const fetchPurchased = async () => {
-      if (!user) return;
-      const { data } = await supabase
-        .from("purchases")
-        .select("quest_id")
-        .eq("user_id", user.id);
-      if (data) {
-        setPurchasedIds(new Set(data.map(p => p.quest_id)));
+    if (typeof window === "undefined") return;
+    window.localStorage.setItem("tomoshibi.seriesOptions", JSON.stringify(seriesOptions));
+  }, [seriesOptions]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    if (selectedSeries) {
+      window.localStorage.setItem("tomoshibi.selectedSeries", selectedSeries);
+    } else {
+      window.localStorage.removeItem("tomoshibi.selectedSeries");
+    }
+  }, [selectedSeries]);
+
+  useEffect(() => {
+    if (selectedSeries && LEGACY_SERIES.has(selectedSeries)) {
+      setSelectedSeries(null);
+    }
+  }, [selectedSeries]);
+
+  const handleUseLocation = useCallback(() => {
+    if (locationStatus === "loading") return;
+    if (locationStatus === "ready") {
+      setLocationStatus("idle");
+      setLocationCoords(null);
+      setLocationError("");
+      return;
+    }
+    setIsLocationDialogOpen(true);
+  }, [locationStatus]);
+
+  const requestLocation = useCallback(() => {
+    if (!navigator.geolocation) {
+      setLocationStatus("error");
+      setLocationError("この端末では現在地を取得できません");
+      setIsLocationDialogOpen(false);
+      return;
+    }
+    setLocationStatus("loading");
+    setLocationError("");
+    setIsLocationDialogOpen(false);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setLocationCoords({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude,
+        });
+        setLocationStatus("ready");
+      },
+      () => {
+        setLocationStatus("error");
+        setLocationError("現在地を取得できませんでした");
+      },
+      { enableHighAccuracy: true, timeout: 8000, maximumAge: 0 }
+    );
+  }, []);
+
+  const handleAddSeries = useCallback(() => {
+    const trimmed = newSeriesName.trim();
+    if (!trimmed) return;
+    setSeriesOptions((prev) => (prev.includes(trimmed) ? prev : [trimmed, ...prev]));
+    setSelectedSeries(trimmed);
+    setNewSeriesName("");
+    setIsSeriesOpen(false);
+  }, [newSeriesName]);
+
+  const handleIgnite = useCallback(async () => {
+    const trimmed = draftPrompt.trim();
+    if (!trimmed || isGenerating) return;
+
+    if (!user) {
+      toast({
+        title: "ログインが必要です",
+        description: "クエストを作成するにはログインしてください。",
+      });
+      navigate("/auth", { state: { returnTo: "/" } });
+      return;
+    }
+
+    const prefixTokens = [
+      ...(locationCoords ? ["現在地周辺で"] : []),
+      ...(selectedSeries ? [`シリーズ「${selectedSeries}」`] : []),
+    ];
+    const combinedPrompt = prefixTokens.length > 0 ? `${prefixTokens.join("、")}、${trimmed}` : trimmed;
+
+    setGenerationError("");
+    setPlayerPreview(null);
+    setCreatorPayload(null);
+    setViewMode("generating");
+    setIsGenerating(true);
+    setGenerationPhase(GENERATION_PHASES[0]);
+    setIsSeriesOpen(false);
+
+    let phaseIndex = 0;
+    const phaseTimer = window.setInterval(() => {
+      phaseIndex += 1;
+      if (phaseIndex < GENERATION_PHASES.length) {
+        setGenerationPhase(GENERATION_PHASES[phaseIndex]);
+      } else {
+        window.clearInterval(phaseTimer);
+      }
+    }, 1200);
+
+    try {
+      const config = createDifyConfigFromEnv();
+      const request: QuestGenerationRequest = {
+        prompt: combinedPrompt,
+        difficulty: DEFAULT_DIFFICULTY,
+        spot_count: DEFAULT_SPOT_COUNT,
+        center_location: locationCoords || undefined,
+        radius_km: locationCoords ? DEFAULT_RADIUS_KM : undefined,
+      };
+      const output = await generateQuestWithDify(request, config);
+
+      setPlayerPreview(output.player_preview);
+      setCreatorPayload(output.creator_payload);
+      setViewMode("preview");
+    } catch (error: any) {
+      setViewMode("idle");
+      setGenerationError(error?.message || "クエスト生成に失敗しました");
+    } finally {
+      window.clearInterval(phaseTimer);
+      setIsGenerating(false);
+      setGenerationPhase("");
+    }
+  }, [draftPrompt, isGenerating, locationCoords, selectedSeries]);
+
+  const handleRegenerate = useCallback(() => {
+    if (!canRegenerate) return;
+    void handleIgnite();
+  }, [canRegenerate, handleIgnite]);
+
+  const locationLabel = (() => {
+    if (locationStatus === "loading") return "現在地: 取得中...";
+    if (locationStatus === "ready") return "現在地: 使用中";
+    if (locationStatus === "error") return "現在地: 取得失敗";
+    return "現在地を使う";
+  })();
+
+  const promptPrefixes = [
+    ...(locationCoords ? ["現在地周辺で"] : []),
+    ...(selectedSeries ? [`シリーズ「${selectedSeries}」`] : []),
+  ];
+
+  const previewSpots = useMemo(() => {
+    const rawSpots = creatorPayload?.spots || [];
+
+    return rawSpots.map((spot, idx) => {
+      const name = spot.spot_name || `スポット${idx + 1}`;
+      const mapUrl =
+        (spot as any).google_maps_url ||
+        (spot as any).googleMapsUrl ||
+        (spot.place_id
+          ? `https://www.google.com/maps/place/?q=place_id:${encodeURIComponent(spot.place_id)}`
+          : "");
+      const lat = typeof spot.lat === "number" && Number.isFinite(spot.lat) ? spot.lat : FALLBACK_COORDS.lat;
+      const lng = typeof spot.lng === "number" && Number.isFinite(spot.lng) ? spot.lng : FALLBACK_COORDS.lng;
+
+      return {
+        id: spot.spot_id || `spot-${idx + 1}`,
+        name,
+        lat,
+        lng,
+        placeId: spot.place_id,
+        mapUrl,
+      };
+    });
+  }, [creatorPayload]);
+
+  const journeyTitle = useMemo(() => {
+    if (playerPreview?.title?.trim()) return playerPreview.title.trim();
+    if (creatorPayload?.quest_title?.trim()) return creatorPayload.quest_title.trim();
+    if (draftPrompt.trim()) return "まだ名前のない旅";
+    return "旅の設計プレビュー";
+  }, [playerPreview, creatorPayload, draftPrompt]);
+
+  const journeyTeaser = useMemo(() => {
+    return (
+      playerPreview?.trailer?.trim() ||
+      creatorPayload?.main_plot?.premise?.trim() ||
+      playerPreview?.one_liner?.trim() ||
+      ""
+    );
+  }, [playerPreview, creatorPayload]);
+
+  const journeyBadges = useMemo(() => {
+    const badges: string[] = [];
+    const meta = playerPreview?.route_meta;
+    const distanceValue = meta?.distance_km ? parseFloat(meta.distance_km) : NaN;
+    const walkingValue = meta?.estimated_time_min ? parseInt(meta.estimated_time_min, 10) : NaN;
+    const spotCount = meta?.spots_count || previewSpots.length;
+    const difficultyLabel = meta?.difficulty_label || "";
+
+    if (Number.isFinite(walkingValue)) badges.push(`⏱ ${walkingValue}分`);
+    if (Number.isFinite(distanceValue)) badges.push(`🗺 ${distanceValue}km`);
+    if (difficultyLabel) {
+      const shortLabel =
+        difficultyLabel.includes("初") ? "易" : difficultyLabel.includes("上") ? "難" : "中";
+      badges.push(`🔥 ${shortLabel}`);
+    }
+    if (spotCount) badges.push(`📍 ${spotCount} spots`);
+    if (locationCoords) badges.push("🧭 現在地周辺");
+    if (selectedSeries) badges.push(`📚 ${selectedSeries}`);
+
+    return badges;
+  }, [playerPreview, previewSpots.length, locationCoords, selectedSeries]);
+
+  const mapCenter = useMemo(() => {
+    if (locationCoords) return locationCoords;
+    if (previewSpots.length > 0) {
+      return {
+        lat: previewSpots.reduce((sum, s) => sum + s.lat, 0) / previewSpots.length,
+        lng: previewSpots.reduce((sum, s) => sum + s.lng, 0) / previewSpots.length,
+      };
+    }
+    return FALLBACK_COORDS;
+  }, [locationCoords, previewSpots]);
+
+  const coverImageUrl = useMemo(() => {
+    return (
+      creatorPayload?.cover_image_url ||
+      creatorPayload?.coverImageUrl ||
+      (playerPreview as any)?.cover_image_url ||
+      ""
+    );
+  }, [creatorPayload, playerPreview]);
+
+  const highlightSpotLookup = useMemo(() => {
+    const map = new Map<string, string>();
+    (playerPreview?.highlight_spots || []).forEach((spot) => {
+      if (!spot?.name) return;
+      map.set(spot.name, spot.teaser_experience || "");
+    });
+    return map;
+  }, [playerPreview]);
+
+  const detailSpots = useMemo(() => {
+    return previewSpots.map((spot) => ({
+      id: spot.id,
+      name: spot.name,
+      lat: spot.lat,
+      lng: spot.lng,
+      isHighlight: highlightSpotLookup.has(spot.name),
+      highlightDescription: highlightSpotLookup.get(spot.name) || undefined,
+    }));
+  }, [previewSpots, highlightSpotLookup]);
+
+  const detailBasicInfo = useMemo(() => {
+    if (!playerPreview && !creatorPayload) return null;
+    const meta = playerPreview?.route_meta;
+    const recommended = meta?.recommended_people
+      ? meta.recommended_people.split(/[、,]/).map((value) => value.trim()).filter(Boolean)
+      : [];
+    const highlights = (playerPreview?.highlight_spots || [])
+      .map((spot) => (spot.teaser_experience ? `${spot.name}：${spot.teaser_experience}` : spot.name))
+      .filter(Boolean);
+    return {
+      title: journeyTitle,
+      description:
+        creatorPayload?.main_plot?.premise ||
+        playerPreview?.trailer ||
+        playerPreview?.one_liner ||
+        "",
+      area: meta?.area_start || meta?.area_end || "",
+      difficulty: meta?.difficulty_label || DEFAULT_DIFFICULTY,
+      tags: playerPreview?.tags || [],
+      highlights,
+      recommendedFor: recommended,
+      coverImageUrl: coverImageUrl || undefined,
+    };
+  }, [playerPreview, creatorPayload, journeyTitle, coverImageUrl]);
+
+  const detailStory = useMemo(() => {
+    if (!playerPreview && !creatorPayload?.main_plot) return null;
+    const summary =
+      playerPreview?.summary_actions?.filter(Boolean).join("\n") || "";
+    const story = {
+      prologueBody:
+        creatorPayload?.main_plot?.premise ||
+        playerPreview?.trailer ||
+        playerPreview?.one_liner ||
+        "",
+      atmosphere: playerPreview?.route_meta?.weather_note || "",
+      whatToExpect: summary,
+      mission: playerPreview?.mission || "",
+      clearCondition: creatorPayload?.main_plot?.goal || "",
+      teaser: playerPreview?.teasers?.[0] || "",
+    };
+    const hasContent = Object.values(story).some(
+      (value) => typeof value === "string" && value.trim().length > 0
+    );
+    return hasContent ? story : null;
+  }, [playerPreview, creatorPayload]);
+
+  const detailDuration = useMemo(() => {
+    const minutes = playerPreview?.route_meta?.estimated_time_min;
+    const parsed = minutes ? parseInt(minutes, 10) : Number.NaN;
+    return Number.isFinite(parsed) ? parsed : undefined;
+  }, [playerPreview]);
+
+  const detailRouteMetadata = useMemo(() => {
+    const meta = playerPreview?.route_meta;
+    if (!meta) return null;
+    const distance = parseFloat(meta.distance_km);
+    const walkingMinutes = parseInt(meta.estimated_time_min, 10);
+    const outdoorPercent = parseFloat(meta.outdoor_ratio_percent);
+    return {
+      distanceKm: Number.isFinite(distance) ? distance : undefined,
+      walkingMinutes: Number.isFinite(walkingMinutes) ? walkingMinutes : undefined,
+      outdoorRatio: Number.isFinite(outdoorPercent) ? outdoorPercent / 100 : undefined,
+      startPoint: meta.area_start || undefined,
+      endPoint: meta.area_end || undefined,
+    };
+  }, [playerPreview]);
+
+  const detailDifficultyExplanation = useMemo(() => {
+    const reason = playerPreview?.route_meta?.difficulty_reason || "";
+    return reason.trim() ? reason : undefined;
+  }, [playerPreview]);
+
+  const handleSave = useCallback(() => {
+    if (isSaving) return;
+    if (!user) {
+      navigate("/auth");
+      return;
+    }
+    if (!creatorPayload || !playerPreview) {
+      toast({ title: "保存できません", description: "生成結果が見つかりませんでした。" });
+      return;
+    }
+    const performSave = async () => {
+      setIsSaving(true);
+      try {
+        const questId = savedQuestId || creatorPayload.quest_id || crypto.randomUUID();
+        const title = creatorPayload.quest_title || playerPreview.title || "無題のクエスト";
+        const description =
+          creatorPayload.main_plot?.premise ||
+          playerPreview.trailer ||
+          playerPreview.one_liner ||
+          "";
+        const areaName =
+          (playerPreview.route_meta as any)?.area_name ||
+          playerPreview.route_meta?.area_start ||
+          playerPreview.route_meta?.area_end ||
+          "";
+        const cover = coverImageUrl || null;
+
+        const { error: questErr } = await supabase
+          .from("quests")
+          .upsert(
+            {
+              id: questId,
+              creator_id: user.id,
+              title,
+              description,
+              area_name: areaName,
+              tags: playerPreview.tags || [],
+              cover_image_url: cover,
+              status: "draft",
+              mode: "PRIVATE",
+              main_plot: creatorPayload.main_plot || null,
+            },
+            { onConflict: "id" }
+          );
+        if (questErr) throw questErr;
+
+        const spotRows = (creatorPayload.spots || []).map((spot, idx) => ({
+          quest_id: questId,
+          name: spot.spot_name || spot.spot_id || `Spot ${idx + 1}`,
+          address: (spot as any).address || "",
+          lat: Number.isFinite(spot.lat) ? spot.lat : null,
+          lng: Number.isFinite(spot.lng) ? spot.lng : null,
+          order_index: idx + 1,
+        }));
+        if (spotRows.length > 0) {
+          await supabase.from("spots").delete().eq("quest_id", questId);
+          const { error: spotErr } = await supabase.from("spots").insert(spotRows);
+          if (spotErr) throw spotErr;
+        }
+
+        const { error: purchaseErr } = await supabase
+          .from("purchases")
+          .upsert({ user_id: user.id, quest_id: questId }, { onConflict: "user_id,quest_id" });
+        if (purchaseErr) throw purchaseErr;
+
+        setSavedQuestId(questId);
+        toast({ title: "保存しました", description: "プロフィールに追加しました。" });
+        navigate("/profile");
+      } catch (err) {
+        console.error("Save quest failed:", err);
+        toast({ title: "保存に失敗しました", description: "時間をおいて再試行してください。" });
+      } finally {
+        setIsSaving(false);
       }
     };
-    fetchPurchased();
-  }, [user]);
+    void performSave();
+  }, [
+    creatorPayload,
+    playerPreview,
+    savedQuestId,
+    user,
+    coverImageUrl,
+    toast,
+    navigate,
+    isSaving,
+  ]);
 
-  const displayQuests = useMemo(() => {
-    let filtered = quests;
+  const handleWizardComplete = useCallback(async (answers: Record<string, string>) => {
+    // Build prompt from wizard answers
+    const promptParts: string[] = [];
 
-    // Keyword filter
-    if (keyword) {
-      filtered = filtered.filter((q) =>
-        (q.title || "").toLowerCase().includes(keyword.toLowerCase())
-      );
+    if (answers.location) {
+      promptParts.push(`${answers.location}で`);
+    }
+    if (answers.genre) {
+      promptParts.push(`${answers.genre}のような雰囲気で`);
+    }
+    if (answers.purpose) {
+      promptParts.push(answers.purpose);
+    }
+    if (answers.duration) {
+      promptParts.push(`（${answers.duration}程度）`);
+    }
+    if (answers.playStyle) {
+      promptParts.push(`（${answers.playStyle}）`);
     }
 
-    return filtered;
-  }, [quests, keyword, activeTab]);
+    const finalPrompt = promptParts.join("");
+    setDraftPrompt(finalPrompt);
 
-  const heroQuest = displayQuests[0];
-  const featured = displayQuests.slice(1, 4);
-  const recentQuests = displayQuests.slice(0, 6);
-
-  const handleQuestClick = (id: string) => {
-    // Check if quest is purchased
-    if (purchasedIds.has(id)) {
-      // Navigate to gameplay screen for purchased quests
-      navigate(`/gameplay/${id}`);
-    } else {
-      // Navigate to quest detail/purchase screen for unpurchased quests
-      navigate(`/quest/${id}`);
-    }
-  };
-
-
+    // Wait for state to update, then trigger quest generation
+    setTimeout(() => {
+      handleIgnite();
+    }, 100);
+  }, [handleIgnite]);
 
   return (
-    <div className="space-y-6 pb-6 bg-[#FAFAFA] -mx-4 -mt-6 px-4 pt-6">
-      {/* Hero Section - Edgeless Design */}
-      <div
-        className="relative overflow-hidden -mx-4 cursor-pointer group"
-        onClick={() => heroQuest && handleQuestClick(heroQuest.id)}
-      >
-        {loading ? (
-          <div className="h-[280px] bg-gradient-to-br from-gray-100 to-gray-200 animate-pulse" />
-        ) : heroQuest ? (
-          <>
-            {/* Background Image - Edge to Edge */}
-            <div className="relative h-[280px]">
-              {heroQuest.cover_image_url ? (
-                <img
-                  src={heroQuest.cover_image_url}
-                  alt=""
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
-                />
+    <div className="h-full bg-gradient-to-b from-stone-50 to-amber-50/30">
+      <div className="h-full">
+        <AnimatePresence mode="wait">
+          {viewMode === "idle" && (
+            <motion.div
+              key="wizard"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.25 }}
+              className="h-full flex flex-col"
+            >
+              <div className="h-full flex flex-col relative bg-transparent">
+                {/* 3D Background - Retro Globe */}
+                <RetroGlobe />
+
+                {/* Quest Wizard */}
+                <div className="absolute inset-0 z-10">
+                  <QuestWizard onComplete={handleWizardComplete} />
+                </div>
+              </div>
+            </motion.div>
+          )}
+
+          {(viewMode === "generating" || viewMode === "preview") && (
+            <motion.div
+              key={viewMode}
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              transition={{ duration: 0.3 }}
+              className="h-full min-h-0"
+            >
+              {viewMode === "preview" ? (
+                <div className="relative h-full overflow-y-auto bg-white">
+                  <div className="pb-24">
+                    <PlayerPreview
+                      basicInfo={detailBasicInfo}
+                      spots={detailSpots}
+                      story={detailStory}
+                      estimatedDuration={detailDuration}
+                      playerPreviewData={playerPreview}
+                      routeMetadata={detailRouteMetadata || undefined}
+                      difficultyExplanation={detailDifficultyExplanation}
+                      showActions={false}
+                      onPlay={() => { }}
+                      onEdit={() => { }}
+                      onSaveDraft={() => { }}
+                    />
+                  </div>
+                  <div className="sticky bottom-0 z-20 bg-white/90 backdrop-blur-md border-t border-stone-200/70">
+                    <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={handleSave}
+                        disabled={isSaving}
+                        className="flex-1 rounded-full bg-gradient-to-r from-brand-gold to-amber-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-brand-gold/20 disabled:opacity-60 active:scale-95 transition-all"
+                      >
+                        {isSaving ? "保存中..." : "保存する"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleRegenerate}
+                        disabled={!canRegenerate}
+                        className="flex-1 rounded-full border border-stone-200 bg-white px-6 py-3 text-sm font-bold text-stone-600 hover:border-brand-gold/40 hover:text-brand-gold transition-all active:scale-95 disabled:opacity-50"
+                      >
+                        もう一度生成する
+                      </button>
+                    </div>
+                  </div>
+                </div>
               ) : (
-                <div className="w-full h-full bg-gradient-to-br from-[#2f1d0f] to-[#4a2f1d]" />
+                <JourneyMapPreview
+                  isGenerating={viewMode === "generating"}
+                  generationPhase={generationPhase}
+                  title={journeyTitle}
+                  teaser={journeyTeaser}
+                  badges={journeyBadges}
+                  spots={previewSpots}
+                  center={mapCenter}
+                  coverImageUrl={coverImageUrl || undefined}
+                />
               )}
-              {/* Smooth Gradient Overlay */}
-              <div className="absolute inset-0 gradient-overlay-smooth" />
-            </div>
-
-            {/* Content - Positioned over gradient */}
-            <div className="absolute bottom-0 left-0 right-0 p-5 space-y-3">
-              <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-[#F2994A]/90 text-white text-[10px] font-semibold uppercase tracking-wider">
-                <Crown className="w-3 h-3" />
-                今週のピックアップ
-              </div>
-
-              <h1 className="text-xl font-bold text-white leading-snug line-clamp-2 drop-shadow-sm">
-                {heroQuest.title}
-              </h1>
-
-              <div className="flex items-center gap-3">
-                <span className="flex items-center gap-1 text-xs text-white/80">
-                  <MapPin className="w-3.5 h-3.5" />
-                  {heroQuest.area_name || "エリア未設定"}
-                </span>
-              </div>
-
-              {/* Glass Morphism Button */}
-              <button
-                className="inline-flex items-center gap-2 px-4 py-2.5 mt-1 rounded-full bg-white/90 backdrop-blur-sm text-[#333333] text-sm font-semibold shadow-soft hover:bg-white transition-all min-h-[44px]"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleQuestClick(heroQuest.id);
-                }}
-              >
-                <Play className="w-4 h-4 fill-[#F2994A] text-[#F2994A]" />
-                詳細を見る
-              </button>
-            </div>
-          </>
-        ) : (
-          <div className="h-[240px] bg-gradient-to-br from-[#2f1d0f] to-[#4a2f1d] flex flex-col items-center justify-center text-center px-6">
-            <div className="w-14 h-14 rounded-full bg-white/10 flex items-center justify-center mb-4 animate-float">
-              <Compass className="w-7 h-7 text-[#F2994A]" />
-            </div>
-            <h2 className="text-lg font-bold text-white mb-2">冒険を始めよう</h2>
-            <p className="text-sm text-white/60 mb-4">現在公開中のクエストを準備しています</p>
-            <button
-              className="px-5 py-2.5 rounded-full bg-[#F2994A] text-white text-sm font-semibold min-h-[44px]"
-              onClick={() => navigate("/quests")}
-            >
-              クエストを探す
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Quick Search - Minimal Design */}
-      <div
-        className="flex items-center gap-3 rounded-2xl bg-[#F5F5F5] px-4 py-3.5 cursor-pointer hover:bg-[#EFEFEF] transition-colors min-h-[52px]"
-        onClick={() => navigate("/quests")}
-      >
-        <Search className="w-5 h-5 text-[#999999]" />
-        <span className="text-sm text-[#999999]">クエストを探す...</span>
-        <ChevronRight className="w-4 h-4 text-[#CCCCCC] ml-auto" />
-      </div>
-
-      {/* Category Tabs - Modern Chip Style */}
-      <div className="flex gap-2 overflow-x-auto pb-1 scrollbar-hide">
-        {tabs.map((tab) => {
-          const Icon = tab.icon;
-          const isActive = tab.id === activeTab;
-          return (
-            <button
-              key={tab.id}
-              onClick={() => setActiveTab(tab.id)}
-              className={`flex items-center gap-1.5 px-4 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-all min-h-[44px] ${isActive
-                ? "bg-[#FFF5EB] text-[#F2994A] border border-[#F2994A]/20"
-                : "bg-white text-[#666666] border border-[#EEEEEE] hover:border-[#DDDDDD]"
-                }`}
-            >
-              <Icon className={`w-4 h-4 ${isActive ? "text-[#F2994A]" : "text-[#999999]"}`} />
-              {tab.label}
-            </button>
-          );
-        })}
-      </div>
-
-      {/* Featured Quests - Horizontal Scroll */}
-      {featured.length > 0 && (
-        <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-base font-bold text-[#333333]">注目のクエスト</h2>
-            <button
-              onClick={() => navigate("/quests")}
-              className="text-xs text-[#F2994A] font-medium flex items-center gap-0.5 min-h-[44px] px-2"
-            >
-              すべて見る
-              <ChevronRight className="w-4 h-4" />
-            </button>
-          </div>
-
-          <div className="flex gap-4 overflow-x-auto pb-3 scrollbar-hide -mx-4 px-4">
-            {featured.map((quest) => (
-              <div
-                key={quest.id}
-                onClick={() => handleQuestClick(quest.id)}
-                className="relative w-[180px] shrink-0 rounded-3xl overflow-hidden bg-white shadow-soft cursor-pointer group hover:shadow-soft-lg transition-all duration-300"
-              >
-                {/* Image */}
-                <div className="relative h-[120px]">
-                  {quest.cover_image_url ? (
-                    <img
-                      src={quest.cover_image_url}
-                      alt={quest.title || "Quest"}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-[#F5F5F5] to-[#EEEEEE] flex items-center justify-center">
-                      <Target className="w-8 h-8 text-[#CCCCCC]" />
-                    </div>
-                  )}
-                  {/* Smooth overlay */}
-                  <div className="absolute inset-0 gradient-overlay-smooth" />
-                  {/* Purchased badge */}
-                  {purchasedIds.has(quest.id) && (
-                    <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-emerald-500/90 backdrop-blur-sm text-white text-[9px] font-semibold">
-                      購入済み
-                    </div>
-                  )}
-                </div>
-                {/* Content */}
-                <div className="p-3 space-y-1">
-                  <h3 className="text-sm font-bold text-[#333333] line-clamp-2 leading-snug">
-                    {quest.title || "タイトル未設定"}
-                  </h3>
-                  <span className="text-[11px] text-[#999999] flex items-center gap-1">
-                    <MapPin className="w-3 h-3" />
-                    {quest.area_name || "エリア未設定"}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Quest List */}
-      <div className="space-y-4">
-        <h2 className="text-base font-bold text-[#333333]">すべてのクエスト</h2>
-
-        {loading ? (
-          <div className="space-y-3">
-            {[...Array(3)].map((_, i) => (
-              <div key={i} className="flex gap-3 p-3 rounded-2xl bg-white shadow-soft">
-                <Skeleton className="w-20 h-20 rounded-xl" />
-                <div className="flex-1 space-y-2">
-                  <Skeleton className="h-4 w-3/4" />
-                  <Skeleton className="h-3 w-1/2" />
-                </div>
-              </div>
-            ))}
-          </div>
-        ) : error ? (
-          <div className="text-center py-8">
-            <p className="text-sm text-rose-600 mb-3">{error}</p>
-            <button
-              className="px-4 py-2.5 rounded-full border border-[#EEEEEE] text-[#666666] text-sm font-medium min-h-[44px]"
-              onClick={() => window.location.reload()}
-            >
-              再読み込み
-            </button>
-          </div>
-        ) : recentQuests.length === 0 ? (
-          <div className="text-center py-12 animate-fade-in">
-            <div className="w-16 h-16 rounded-full bg-[#F5F5F5] flex items-center justify-center mx-auto mb-4 animate-float">
-              <Sparkles className="w-8 h-8 text-[#F2994A]" />
-            </div>
-            <h3 className="text-base font-bold text-[#333333] mb-2">冒険の準備中</h3>
-            <p className="text-sm text-[#999999] mb-4">新しいクエストを準備しています<br />もう少しお待ちください</p>
-          </div>
-        ) : (
-          <div className="space-y-3">
-            {recentQuests.map((quest, index) => (
-              <div
-                key={quest.id}
-                onClick={() => handleQuestClick(quest.id)}
-                className="flex gap-3 p-3 rounded-2xl bg-white shadow-soft hover:shadow-soft-lg transition-all duration-300 cursor-pointer group animate-slide-up min-h-[88px]"
-                style={{ animationDelay: `${index * 50}ms` }}
-              >
-                {/* Thumbnail */}
-                <div className="w-20 h-20 rounded-xl overflow-hidden bg-[#F5F5F5] shrink-0">
-                  {quest.cover_image_url ? (
-                    <img
-                      src={quest.cover_image_url}
-                      alt={quest.title || "Quest"}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex items-center justify-center">
-                      <Target className="w-6 h-6 text-[#CCCCCC]" />
-                    </div>
-                  )}
-                </div>
-
-                {/* Info */}
-                <div className="flex-1 min-w-0 flex flex-col justify-between py-0.5">
-                  <div>
-                    <h3 className="text-sm font-bold text-[#333333] line-clamp-1 mb-1">
-                      {quest.title || "タイトル未設定"}
-                    </h3>
-                    {quest.area_name && (
-                      <span className="text-[11px] text-[#999999] flex items-center gap-0.5">
-                        <MapPin className="w-3 h-3" />
-                        {quest.area_name}
-                      </span>
-                    )}
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    {purchasedIds.has(quest.id) ? (
-                      <span className="px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-600 text-[10px] font-medium">
-                        購入済み
-                      </span>
-                    ) : (
-                      <span className="text-[11px] text-[#F2994A] font-medium">詳細を見る</span>
-                    )}
-                    <ChevronRight className="w-4 h-4 text-[#CCCCCC] group-hover:text-[#F2994A] group-hover:translate-x-0.5 transition-all" />
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* View More Button */}
-        {recentQuests.length > 0 && (
-          <button
-            className="w-full py-3 rounded-2xl border border-[#EEEEEE] bg-white text-[#666666] text-sm font-medium hover:bg-[#FAFAFA] hover:border-[#DDDDDD] transition-all min-h-[48px]"
-            onClick={() => navigate("/quests")}
-          >
-            すべてのクエストを見る
-            <ChevronRight className="w-4 h-4 ml-1 inline-block" />
-          </button>
-        )}
-      </div>
-    </div>
+            </motion.div>
+          )
+          }
+        </AnimatePresence >
+      </div >
+    </div >
   );
 };
 

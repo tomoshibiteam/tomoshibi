@@ -124,11 +124,11 @@ const Quests = () => {
     };
 
     return (
-        <div className="min-h-screen pb-8 bg-[#FAFAFA] -mx-4 -mt-6 px-4 pt-6">
+        <div className="min-h-full pb-24 bg-background px-4 pt-4">
             {/* Header */}
-            <div className="mb-6">
-                <h1 className="text-lg font-bold text-[#333333] mb-1">クエスト一覧</h1>
-                <p className="text-sm text-[#999999]">冒険が待っている街へ出かけよう</p>
+            <div className="mb-5">
+                <h1 className="text-xl font-bold text-foreground mb-1">クエスト一覧</h1>
+                <p className="text-sm text-muted-foreground">冒険が待っている街へ出かけよう</p>
             </div>
 
             {/* Search Bar - Minimal Design */}
@@ -139,7 +139,7 @@ const Quests = () => {
                     placeholder="クエストを検索..."
                     value={keyword}
                     onChange={(e) => setKeyword(e.target.value)}
-                    className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-[#F5F5F5] text-sm text-[#333333] placeholder:text-[#999999] focus:outline-none focus:ring-2 focus:ring-[#F2994A]/20 focus:bg-white transition-all min-h-[52px]"
+                    className="w-full pl-12 pr-4 py-3.5 rounded-2xl bg-[#F5F5F5] text-base text-[#333333] placeholder:text-[#999999] focus:outline-none focus:ring-2 focus:ring-[#F2994A]/20 focus:bg-white transition-all min-h-[52px]"
                 />
             </div>
 
@@ -151,7 +151,7 @@ const Quests = () => {
                         <button
                             key={area}
                             onClick={() => setSelectedArea(area)}
-                            className={`px-4 py-2 rounded-full text-xs font-medium whitespace-nowrap transition-all min-h-[36px] ${selectedArea === area
+                            className={`px-5 py-2.5 rounded-full text-sm font-medium whitespace-nowrap transition-all min-h-[40px] ${selectedArea === area
                                 ? "bg-[#FFF5EB] text-[#F2994A] border border-[#F2994A]/20"
                                 : "bg-white text-[#666666] border border-[#EEEEEE] hover:border-[#DDDDDD]"
                                 }`}
@@ -163,7 +163,7 @@ const Quests = () => {
 
                 {/* View Toggle */}
                 <div className="flex items-center justify-between">
-                    <p className="text-xs text-[#7c644c]">
+                    <p className="text-sm text-[#7c644c] pl-1">
                         {filteredQuests.length}件のクエスト
                     </p>
                     <div className="flex items-center gap-1 bg-[#f7efe5] rounded-lg p-1">
@@ -255,13 +255,13 @@ const Quests = () => {
                                     </div>
                                 )}
                             </div>
-                            <div className="p-3.5 space-y-1.5">
-                                <h3 className="text-sm font-bold text-[#333333] line-clamp-2 leading-snug min-h-[2.5em]">
+                            <div className="p-4 space-y-2">
+                                <h3 className="text-[15px] font-bold text-[#333333] line-clamp-2 leading-snug min-h-[3em]">
                                     {quest.title || "タイトル未設定"}
                                 </h3>
                                 {quest.area_name && (
-                                    <span className="text-[11px] text-[#999999] flex items-center gap-1">
-                                        <MapPin className="w-3 h-3" />
+                                    <span className="text-xs text-[#999999] flex items-center gap-1">
+                                        <MapPin className="w-3.5 h-3.5" />
                                         {quest.area_name}
                                     </span>
                                 )}
@@ -295,23 +295,23 @@ const Quests = () => {
                                 )}
                             </div>
 
-                            <div className="flex-1 min-w-0 flex flex-col justify-center py-0.5 gap-2">
+                            <div className="flex-1 min-w-0 flex flex-col justify-center py-1 gap-2">
                                 <div>
-                                    <h3 className="text-sm font-bold text-[#333333] line-clamp-2 leading-snug mb-1">
+                                    <h3 className="text-base font-bold text-[#333333] line-clamp-2 leading-snug mb-1.5">
                                         {quest.title || "タイトル未設定"}
                                     </h3>
                                     {quest.area_name && (
-                                        <span className="text-[11px] text-[#999999] flex items-center gap-1">
-                                            <MapPin className="w-3 h-3" />
+                                        <span className="text-xs text-[#999999] flex items-center gap-1">
+                                            <MapPin className="w-3.5 h-3.5" />
                                             {quest.area_name}
                                         </span>
                                     )}
                                 </div>
 
                                 <div className="flex items-center justify-end">
-                                    <span className="text-[10px] text-[#F2994A] font-medium flex items-center gap-0.5">
+                                    <span className="text-xs text-[#F2994A] font-bold flex items-center gap-0.5">
                                         詳細を見る
-                                        <ChevronRight className="w-3 h-3" />
+                                        <ChevronRight className="w-4 h-4" />
                                     </span>
                                 </div>
                             </div>

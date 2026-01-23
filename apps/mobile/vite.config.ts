@@ -12,9 +12,14 @@ export default defineConfig(({ mode }) => {
   return {
     base,
     server: {
-      host: "::",
+      host: "0.0.0.0",
       port: 4176,
       proxy: {
+        '/api/dify': {
+          target: 'http://127.0.0.1',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api\/dify/, ''),
+        },
         '/api': {
           target: 'http://localhost:3000',
           changeOrigin: true,

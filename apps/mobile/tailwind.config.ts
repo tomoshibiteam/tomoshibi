@@ -15,6 +15,8 @@ export default {
     extend: {
       fontFamily: {
         sans: ['"Noto Sans JP"', 'sans-serif'],
+        display: ['"Noto Serif JP"', '"Noto Sans JP"', 'serif'],
+        serif: ['"Noto Serif JP"', 'serif'],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -75,6 +77,14 @@ export default {
           beige: "hsl(var(--tomoshibi-beige))",
           "beige-dark": "hsl(var(--tomoshibi-beige-dark))",
           navy: "hsl(var(--tomoshibi-navy))",
+        },
+        brand: {
+          base: "#f7f0e5",
+          dark: "#484132",
+          text: "#44403c",
+          textLight: "#78716c",
+          gold: "#d97706",
+          goldLight: "#fbbf24",
         },
       },
       borderRadius: {

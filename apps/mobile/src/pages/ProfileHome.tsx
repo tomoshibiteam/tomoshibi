@@ -237,7 +237,7 @@ const ProfileHome = () => {
   // Not logged in state
   if (!user) {
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center px-6 text-center -mx-4 -mt-6 bg-[#FAFAFA]">
+      <div className="min-h-[70vh] flex flex-col items-center justify-center px-6 text-center bg-background">
         <div className="w-24 h-24 rounded-full bg-white flex items-center justify-center mb-6 shadow-soft animate-float">
           <User className="w-10 h-10 text-[#F2994A]" />
         </div>
@@ -257,7 +257,7 @@ const ProfileHome = () => {
   }
 
   return (
-    <div className="space-y-6 pb-20 bg-[#FAFAFA] -mx-4 -mt-6">
+    <div className="space-y-6 pb-24 bg-background">
       {/* Profile Header - Edgeless Hero */}
       <div className="relative h-[240px] overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-br from-[#2f1d0f] via-[#4a2f1d] to-[#1a1008]" />
@@ -281,15 +281,15 @@ const ProfileHome = () => {
               </div>
 
               <div className="mb-1">
-                <div className="flex items-center gap-2 mb-1">
-                  <span className="px-2 py-0.5 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-[10px] text-white/90 font-medium">
+                <div className="flex items-center gap-2 mb-2">
+                  <span className="px-3 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/10 text-xs text-white/90 font-bold">
                     見習い探偵
                   </span>
                 </div>
-                <h1 className="text-2xl font-bold text-white tracking-tight mb-0.5">
+                <h1 className="text-3xl font-bold text-white tracking-tight mb-1">
                   {user.email?.split("@")[0] || "探偵"}
                 </h1>
-                <p className="text-xs text-white/60 font-medium">{user.email}</p>
+                <p className="text-sm text-white/60 font-medium">{user.email}</p>
               </div>
             </div>
 
@@ -313,11 +313,11 @@ const ProfileHome = () => {
               <div className="w-8 h-8 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Trophy className="w-4 h-4" />
               </div>
-              <span className="text-xs font-bold text-[#999999]">クリア数</span>
+              <span className="text-sm font-bold text-[#999999]">クリア数</span>
             </div>
-            <p className="text-2xl font-bold text-[#333333]">
+            <p className="text-3xl font-bold text-[#333333]">
               {stats.completedQuests}
-              <span className="text-xs font-medium text-[#CCCCCC] ml-1">/ {stats.totalQuests}</span>
+              <span className="text-sm font-medium text-[#CCCCCC] ml-1">/ {stats.totalQuests}</span>
             </p>
           </div>
 
@@ -326,9 +326,9 @@ const ProfileHome = () => {
               <div className="w-8 h-8 rounded-2xl bg-blue-50 text-blue-600 flex items-center justify-center group-hover:scale-110 transition-transform">
                 <Clock className="w-4 h-4" />
               </div>
-              <span className="text-xs font-bold text-[#999999]">総プレイ時間</span>
+              <span className="text-sm font-bold text-[#999999]">総プレイ時間</span>
             </div>
-            <p className="text-2xl font-bold text-[#333333]">
+            <p className="text-3xl font-bold text-[#333333]">
               {formatDuration(stats.totalPlayTime)}
             </p>
           </div>
@@ -388,52 +388,52 @@ const ProfileHome = () => {
                     )}
                     {/* Status Badge Overlay */}
                     <div className={`absolute inset-0 opacity-20 ${q.progressStatus === "completed" ? "bg-emerald-500" :
-                        q.progressStatus === "in_progress" ? "bg-[#F2994A]" : ""
+                      q.progressStatus === "in_progress" ? "bg-[#F2994A]" : ""
                       }`} />
                   </div>
 
                   {/* Info */}
-                  <div className="flex-1 min-w-0 flex flex-col justify-center py-0.5 gap-2">
+                  <div className="flex-1 min-w-0 flex flex-col justify-center py-1 gap-2.5">
                     <div>
-                      <div className="flex items-start justify-between gap-2 mb-1">
-                        <h3 className="text-sm font-bold text-[#333333] line-clamp-1">{q.title}</h3>
+                      <div className="flex items-start justify-between gap-2 mb-1.5">
+                        <h3 className="text-base font-bold text-[#333333] line-clamp-1">{q.title}</h3>
                       </div>
                       <div className="flex items-center gap-2">
-                        <span className={`px-2 py-0.5 rounded-full text-[9px] font-bold ${q.progressStatus === "completed"
-                            ? "bg-emerald-50 text-emerald-600"
-                            : q.progressStatus === "in_progress"
-                              ? "bg-orange-50 text-orange-600"
-                              : "bg-gray-50 text-gray-500"
+                        <span className={`px-2.5 py-1 rounded-full text-[11px] font-bold ${q.progressStatus === "completed"
+                          ? "bg-emerald-50 text-emerald-600"
+                          : q.progressStatus === "in_progress"
+                            ? "bg-orange-50 text-orange-600"
+                            : "bg-gray-50 text-gray-500"
                           }`}>
                           {q.progressStatus === "completed" ? "クリア済" : q.progressStatus === "in_progress" ? "進行中" : "未開始"}
                         </span>
                         {q.area && (
-                          <span className="text-[10px] text-[#999999] flex items-center gap-0.5">
-                            <MapPin className="w-3 h-3" />
+                          <span className="text-xs text-[#999999] flex items-center gap-1">
+                            <MapPin className="w-3.5 h-3.5" />
                             {q.area}
                           </span>
                         )}
                       </div>
                     </div>
 
-                    <div className="flex items-center gap-2 mt-1">
+                    <div className="flex items-center gap-2 mt-0.5">
                       <Button
                         size="sm"
-                        className={`h-7 rounded-full text-[10px] px-3 font-bold shadow-sm transition-all ${q.progressStatus === "completed"
-                            ? "bg-[#F5F5F5] text-[#999999] hover:bg-[#EEEEEE]"
-                            : "bg-[#333333] text-white hover:bg-[#000000]"
+                        className={`h-9 rounded-full text-xs px-4 font-bold shadow-sm transition-all ${q.progressStatus === "completed"
+                          ? "bg-[#F5F5F5] text-[#999999] hover:bg-[#EEEEEE]"
+                          : "bg-[#333333] text-white hover:bg-[#000000]"
                           }`}
                         onClick={(e) => {
                           e.stopPropagation();
                           handlePlay(q);
                         }}
                       >
-                        <Play className="w-3 h-3 mr-1 fill-current" />
+                        <Play className="w-3.5 h-3.5 mr-1.5 fill-current" />
                         {q.progressStatus === "completed" ? "再プレイ" : "プレイ開始"}
                       </Button>
 
                       <button
-                        className="p-1.5 rounded-full text-[#CCCCCC] hover:bg-rose-50 hover:text-rose-500 transition-colors ml-auto"
+                        className="p-2.5 rounded-full text-[#CCCCCC] hover:bg-rose-50 hover:text-rose-500 transition-colors ml-auto"
                         onClick={(e) => handleDelete(q, e)}
                       >
                         <Trash2 className="w-4 h-4" />
@@ -455,10 +455,10 @@ const ProfileHome = () => {
               {recentSessions.map((s) => (
                 <div key={s.id} className="flex items-center justify-between p-4 rounded-2xl bg-white border border-[#F5F5F5]">
                   <div className="min-w-0 flex-1 mr-4">
-                    <h3 className="text-sm font-bold text-[#333333] line-clamp-1 mb-1">{s.questTitle}</h3>
-                    <div className="flex items-center gap-3 text-[10px] text-[#999999]">
+                    <h3 className="text-base font-bold text-[#333333] line-clamp-1 mb-1.5">{s.questTitle}</h3>
+                    <div className="flex items-center gap-3 text-xs text-[#999999]">
                       <span className="flex items-center gap-1">
-                        <Clock className="w-3 h-3" />
+                        <Clock className="w-3.5 h-3.5" />
                         {s.durationSec != null ? formatDuration(s.durationSec) : "—"}
                       </span>
                       <span>{s.endedAt ? new Date(s.endedAt).toLocaleDateString("ja-JP") : ""}</span>

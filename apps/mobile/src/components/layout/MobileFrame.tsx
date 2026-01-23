@@ -1,12 +1,15 @@
-import { ReactNode, useEffect } from "react";
+import { ReactNode, useEffect, useRef } from "react";
 
 interface MobileFrameProps {
   header?: ReactNode;
   content: ReactNode;
   bottomNav?: ReactNode;
+  enableFontScale?: boolean;
 }
 
-const MobileFrame = ({ header, content, bottomNav }: MobileFrameProps) => {
+const MobileFrame = ({ header, content, bottomNav, enableFontScale = false }: MobileFrameProps) => {
+  const frameRef = useRef<HTMLDivElement | null>(null);
+
   useEffect(() => {
     const html = document.documentElement;
     const body = document.body;
@@ -23,6 +26,7 @@ const MobileFrame = ({ header, content, bottomNav }: MobileFrameProps) => {
       bodyRight: body.style.right,
       bodyBottom: body.style.bottom,
       bodyOverscroll: body.style.overscrollBehavior,
+      htmlFontSize: html.style.fontSize,
     };
 
     html.style.overflow = "hidden";
@@ -37,7 +41,22 @@ const MobileFrame = ({ header, content, bottomNav }: MobileFrameProps) => {
     body.style.bottom = "0";
     body.style.overscrollBehavior = "none";
 
+    const updateFontScale = () => {
+      if (!enableFontScale) return;
+      const frame = frameRef.current;
+      if (!frame) return;
+      const { width } = frame.getBoundingClientRect();
+      if (!width) return;
+      const baselineWidth = 390;
+      const scale = Math.min(1, Math.max(0.9, width / baselineWidth));
+      html.style.fontSize = `${16 * scale}px`;
+    };
+
+    updateFontScale();
+    window.addEventListener("resize", updateFontScale);
+
     return () => {
+      window.removeEventListener("resize", updateFontScale);
       html.style.overflow = prev.htmlOverflow;
       html.style.height = prev.htmlHeight;
       body.style.overflow = prev.bodyOverflow;
@@ -49,25 +68,39 @@ const MobileFrame = ({ header, content, bottomNav }: MobileFrameProps) => {
       body.style.right = prev.bodyRight;
       body.style.bottom = prev.bodyBottom;
       body.style.overscrollBehavior = prev.bodyOverscroll;
+      html.style.fontSize = prev.htmlFontSize;
     };
-  }, []);
+  }, [enableFontScale]);
 
   return (
-    <div className="fixed inset-0 bg-white md:bg-[#f2f0ec] flex items-center justify-center md:px-3 md:py-6 overflow-hidden">
-      <div className="w-full max-w-[430px] h-screen md:h-[calc(100vh-48px)] bg-white md:rounded-[32px] md:shadow-[0_24px_48px_rgba(61,43,31,0.14)] md:border md:border-[#e7dfd3] overflow-hidden">
+    <div className="fixed inset-0 bg-background md:bg-[#f2f0ec] flex items-center justify-center md:px-3 md:py-0 overflow-hidden">
+      {/* Use dvh (dynamic viewport height) for mobile to account for browser chrome */}
+      <div
+        ref={frameRef}
+        className="mobile-frame w-full max-w-[430px] h-[100dvh] max-h-[100dvh] bg-background md:w-auto md:max-w-none md:h-[95dvh] md:aspect-[1170/2532] md:rounded-[40px] md:shadow-[0_24px_48px_rgba(61,43,31,0.14)] md:border-[8px] md:border-[#1a1a1a] overflow-hidden"
+      >
         <div className="flex flex-col h-full overflow-hidden">
-          {header && <div className="shrink-0">{header}</div>}
-          <div
-            className={
-              bottomNav
-                ? "flex-1 overflow-y-auto px-4 py-6 pb-24"
-                : "flex-1 overflow-y-auto"
-            }
-          >
+          {/* Header with safe area padding */}
+          {header && (
+            <div
+              className="shrink-0"
+              style={{ paddingTop: "env(safe-area-inset-top, 0px)" }}
+            >
+              {header}
+            </div>
+          )}
+
+          {/* Content area - scrollable */}
+          <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0 bg-background">
             {content}
           </div>
+
+          {/* Bottom nav with safe area padding */}
           {bottomNav && (
-            <div className="shrink-0 bg-white border-t border-[#ede1d2]">
+            <div
+              className="shrink-0 bg-[#f7efe5] border-t border-[#e9dccb]"
+              style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
+            >
               {bottomNav}
             </div>
           )}

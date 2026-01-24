@@ -30,8 +30,7 @@ import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import RetroGlobe from "@/components/home/RetroGlobe";
 import QuestShowcase from "@/components/home/QuestShowcase";
-
-type ViewMode = "idle" | "wizard" | "generating" | "preview";
+import { useQuest } from "@/contexts/QuestContext";
 
 const GENERATION_PHASES = [
   "モチーフを選定中...",
@@ -40,36 +39,27 @@ const GENERATION_PHASES = [
   "品質を検証中...",
 ];
 
-const EXAMPLE_SETS = [
-  [
-    "夕暮れの水辺で、静かなミステリーを歩きたい",
-    "週末に友達と、短時間で濃密な物語を体験したい"
-  ],
-  [
-    "レトロな街並みで、写真と謎解きを楽しみたい",
-    "雨の日に、カフェを巡りながら小説のような旅を"
-  ],
-  [
-    "誰も知らない裏路地で、猫を探す小さな冒険",
-    "夜の公園で、星空を見上げながら秘密を解き明かす"
-  ]
-];
-
 const LEGACY_SERIES = new Set(["灯りの回廊", "港町の手紙"]);
 const OFFICIAL_SERIES = "SPR探偵事務所の事件簿";
-const DEFAULT_SPOT_COUNT = 6;
+const DEFAULT_SPOT_COUNT = 7;
 const DEFAULT_DIFFICULTY: QuestGenerationRequest["difficulty"] = "medium";
 const DEFAULT_RADIUS_KM = 1.5;
 const FALLBACK_COORDS = { lat: 35.6812, lng: 139.7671 };
 
 const Home = () => {
-  const [viewMode, setViewMode] = useState<ViewMode>("idle");
+  // Use updated Context State
+  const {
+    viewMode, setViewMode,
+    draftPrompt, setDraftPrompt,
+    playerPreview, setPlayerPreview,
+    creatorPayload, setCreatorPayload,
+    resetQuestState
+  } = useQuest();
+
   const [generationPhase, setGenerationPhase] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
-  const [draftPrompt, setDraftPrompt] = useState("");
   const [generationError, setGenerationError] = useState("");
-  const [playerPreview, setPlayerPreview] = useState<PlayerPreviewOutput | null>(null);
-  const [creatorPayload, setCreatorPayload] = useState<QuestCreatorPayload | null>(null);
+
   const [locationStatus, setLocationStatus] = useState<"idle" | "loading" | "ready" | "error">(
     "idle"
   );
@@ -100,14 +90,6 @@ const Home = () => {
   const { toast } = useToast();
   const [isSaving, setIsSaving] = useState(false);
   const [savedQuestId, setSavedQuestId] = useState<string | null>(null);
-  const [currentExampleSet, setCurrentExampleSet] = useState(0);
-
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentExampleSet((prev) => (prev + 1) % EXAMPLE_SETS.length);
-    }, 10000);
-    return () => clearInterval(timer);
-  }, []);
 
   const canGenerate = Boolean(draftPrompt.trim()) && !isGenerating;
   const canRegenerate = Boolean(draftPrompt.trim()) && !isGenerating && !isSaving;
@@ -178,8 +160,9 @@ const Home = () => {
     setIsSeriesOpen(false);
   }, [newSeriesName]);
 
-  const handleIgnite = useCallback(async () => {
-    const trimmed = draftPrompt.trim();
+  const handleIgnite = useCallback(async (overridePrompt?: string) => {
+    const promptToUse = typeof overridePrompt === "string" ? overridePrompt : draftPrompt;
+    const trimmed = promptToUse.trim();
     if (!trimmed || isGenerating) return;
 
     if (!user) {
@@ -237,7 +220,7 @@ const Home = () => {
       setIsGenerating(false);
       setGenerationPhase("");
     }
-  }, [draftPrompt, isGenerating, locationCoords, selectedSeries]);
+  }, [draftPrompt, isGenerating, locationCoords, selectedSeries, user, navigate, toast, setViewMode, setPlayerPreview, setCreatorPayload]);
 
   const handleRegenerate = useCallback(() => {
     if (!canRegenerate) return;
@@ -250,11 +233,6 @@ const Home = () => {
     if (locationStatus === "error") return "現在地: 取得失敗";
     return "現在地を使う";
   })();
-
-  const promptPrefixes = [
-    ...(locationCoords ? ["現在地周辺で"] : []),
-    ...(selectedSeries ? [`シリーズ「${selectedSeries}」`] : []),
-  ];
 
   const previewSpots = useMemo(() => {
     const rawSpots = creatorPayload?.spots || [];
@@ -499,6 +477,8 @@ const Home = () => {
 
         setSavedQuestId(questId);
         toast({ title: "保存しました", description: "プロフィールに追加しました。" });
+        // After successful save, reset the quest state
+        resetQuestState();
         navigate("/profile");
       } catch (err) {
         console.error("Save quest failed:", err);
@@ -517,6 +497,7 @@ const Home = () => {
     toast,
     navigate,
     isSaving,
+    resetQuestState,
   ]);
 
   const handleWizardComplete = useCallback(async (answers: Record<string, string>) => {
@@ -542,11 +523,9 @@ const Home = () => {
     const finalPrompt = promptParts.join("");
     setDraftPrompt(finalPrompt);
 
-    // Wait for state to update, then trigger quest generation
-    setTimeout(() => {
-      handleIgnite();
-    }, 100);
-  }, [handleIgnite]);
+    // Trigger generation immediately with the calculated prompt
+    handleIgnite(finalPrompt);
+  }, [handleIgnite, setDraftPrompt]);
 
   return (
     <div className="h-full bg-gradient-to-b from-stone-50 to-amber-50/30">

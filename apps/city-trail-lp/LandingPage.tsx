@@ -9350,17 +9350,20 @@ ${(input.challengeTypes || []).length > 0 ? `- チャレンジタイプ: ${(inpu
                     </button>
                   </div>
                   <div className="relative">
+                    {/** Prefer mobile profile picture when available */}
                     <button
                       onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
-                      className="flex items-center gap-3 pl-3 pr-4 py-2 rounded-full border border-stone-300 bg-white/90 backdrop-blur text-sm font-bold text-brand-dark hover:border-brand-gold hover:text-brand-gold transition-all shadow-sm"
+                      className="w-10 h-10 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white shadow-md hover:shadow-lg hover:scale-105 transition-all active:scale-95 border border-amber-100 overflow-hidden"
                     >
-                      <span className="w-8 h-8 rounded-full bg-brand-dark text-white flex items-center justify-center font-bold overflow-hidden">
-                        {profile?.avatar_url ? (
-                          <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
-                        ) : (
-                          currentUserEmail.charAt(0).toUpperCase()
-                        )}
-                      </span>
+                      {profile?.profile_picture_url || profile?.avatar_url ? (
+                        <img
+                          src={profile?.profile_picture_url || profile?.avatar_url || ""}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-sm font-bold">{currentUserEmail.charAt(0).toUpperCase()}</span>
+                      )}
                     </button>
 
                     {isUserMenuOpen && (
@@ -9490,9 +9493,13 @@ ${(input.challengeTypes || []).length > 0 ? `- チャレンジタイプ: ${(inpu
                   {!loading && currentUserEmail ? (
                     <div className="flex flex-col gap-2 border border-stone-200 rounded-lg p-3 bg-white">
                       <div className="flex items-center gap-2">
-                        <span className="w-9 h-9 rounded-full bg-brand-dark text-white flex items-center justify-center font-bold overflow-hidden">
-                          {profile?.avatar_url ? (
-                            <img src={profile.avatar_url} alt="" className="w-full h-full object-cover" />
+                        <span className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 text-white flex items-center justify-center font-bold overflow-hidden border border-amber-100 shadow-sm">
+                          {profile?.profile_picture_url || profile?.avatar_url ? (
+                            <img
+                              src={profile?.profile_picture_url || profile?.avatar_url || ""}
+                              alt=""
+                              className="w-full h-full object-cover"
+                            />
                           ) : (
                             currentUserEmail.charAt(0).toUpperCase()
                           )}

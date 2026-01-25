@@ -241,7 +241,10 @@ const QuestDetail = () => {
                             </span>
                         )}
                     </div>
-                    <h1 className="text-xl font-bold text-white drop-shadow-lg leading-tight mb-2">
+                    <h1
+                        className="text-2xl font-black text-white drop-shadow-xl leading-tight mb-2"
+                        style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}
+                    >
                         {quest.title || "タイトル未設定"}
                     </h1>
                     <div className="flex items-center gap-3 text-white/80 text-xs">

@@ -194,32 +194,46 @@ const JourneyMapPreview = ({
       {!isGenerating && (
         <>
           <div className="absolute top-3 left-3 right-3 z-20 pointer-events-auto">
-            <div className="rounded-[24px] bg-gradient-to-r from-white/90 via-white/70 to-white/90 p-[1px] shadow-[0_16px_42px_rgba(28,25,23,0.14)]">
-              <div className="bg-white/92 backdrop-blur-2xl border border-stone-200/60 rounded-[22px] p-3">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-8 h-8 rounded-lg overflow-hidden bg-brand-gold/10 border border-white shadow-sm flex items-center justify-center">
+            {/* Dark Glass Card for Premium Feel & Readability */}
+            <div className="rounded-[24px] bg-gradient-to-r from-white/20 via-white/10 to-white/20 p-[1px] shadow-2xl backdrop-blur-md">
+              <div className="bg-black/80 backdrop-blur-xl border border-white/10 rounded-[22px] p-3.5 shadow-inner shadow-white/5">
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl overflow-hidden bg-stone-800 border border-white/20 shadow-lg flex items-center justify-center shrink-0 group">
                     {coverImageUrl ? (
                       <img
                         src={coverImageUrl}
                         alt={title}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700"
                       />
                     ) : (
-                      <Compass className="w-4 h-4 text-brand-gold" />
+                      <Compass className="w-5 h-5 text-amber-400" />
                     )}
                   </div>
-                  <div>
-                    <div className="text-[10px] font-bold text-stone-500 uppercase tracking-[0.22em]">
-                      旅の設計プレビュー
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center gap-2 mb-0.5">
+                      <span className="text-[10px] font-bold text-amber-400 uppercase tracking-widest bg-amber-400/10 px-1.5 py-0.5 rounded-sm border border-amber-400/20">
+                        PREVIEW
+                      </span>
+                      {badges.includes("🧭 現在地周辺") && (
+                        <span className="text-[10px] text-white/60 flex items-center gap-0.5">
+                          <MapPin size={10} /> 現在地周辺
+                        </span>
+                      )}
                     </div>
-                    <div className="text-sm font-extrabold text-brand-dark line-clamp-1">{title}</div>
+                    <div
+                      className="text-base font-extrabold !text-white leading-tight truncate drop-shadow-sm pr-2"
+                      style={{ color: '#FFFFFF' }}
+                    >
+                      {title}
+                    </div>
                   </div>
                 </div>
-                <div className="mt-2 space-y-1.5 max-h-[26vh] overflow-y-auto pr-1">
+
+                <div className="mt-3 space-y-2">
                   {teaser && (
-                    <div>
+                    <div className="bg-white/5 rounded-lg p-2.5 border border-white/5">
                       <p
-                        className={`text-xs text-stone-600 leading-[1.6] ${isTeaserExpanded ? "" : "max-h-[3.2em] overflow-hidden"}`}
+                        className={`text-xs text-stone-200 leading-relaxed font-medium ${isTeaserExpanded ? "" : "max-h-[3.6em] overflow-hidden"}`}
                       >
                         {teaser}
                       </p>
@@ -227,19 +241,19 @@ const JourneyMapPreview = ({
                         <button
                           type="button"
                           onClick={() => setIsTeaserExpanded((prev) => !prev)}
-                          className="mt-1.5 text-[10px] font-bold text-brand-gold hover:text-amber-600 transition-colors py-1"
+                          className="mt-1.5 w-full text-center text-[10px] font-bold text-amber-400 hover:text-amber-300 transition-colors py-1 border-t border-white/5"
                         >
-                          {isTeaserExpanded ? "閉じる" : "全文を見る"}
+                          {isTeaserExpanded ? "閉じる" : "すべて表示"}
                         </button>
                       )}
                     </div>
                   )}
                   {badges.length > 0 && (
-                    <div className="flex gap-2 overflow-x-auto scrollbar-hide">
-                      {badges.map((badge) => (
+                    <div className="flex gap-2 overflow-x-auto scrollbar-hide pt-1">
+                      {badges.filter(b => !b.includes("現在地")).map((badge) => (
                         <span
                           key={badge}
-                          className="flex-none px-2.5 py-1 rounded-lg bg-white/80 border border-stone-200 text-[10px] font-bold text-stone-700 shadow-[0_6px_16px_rgba(28,25,23,0.08)]"
+                          className="flex-none px-2.5 py-1 rounded-full bg-white/10 border border-white/10 text-[10px] font-bold text-stone-200 whitespace-nowrap"
                         >
                           {badge}
                         </span>

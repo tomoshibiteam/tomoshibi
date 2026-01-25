@@ -1,19 +1,18 @@
 import { useEffect, useMemo, useRef, useState, useCallback } from "react";
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import {
-  Loader2, Menu, X, ChevronUp, ChevronDown,
+  Loader2, Menu, X, ChevronUp,
   MapPin, Navigation, Target, CheckCircle2,
-  Footprints, Trophy, Sparkles, ChevronLeft,
+  Footprints, Sparkles, ChevronLeft,
   MessageCircle, HelpCircle, Eye, Lock, Globe, AlertCircle, Star
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { GameSession, GameSpot } from "@/types/gameplay";
-import { APIProvider, Map, AdvancedMarker, useMap, useMapsLibrary } from '@vis.gl/react-google-maps';
+import { APIProvider, Map as GoogleMap, AdvancedMarker, useMap, useMapsLibrary } from '@vis.gl/react-google-maps';
 import { DEFAULT_CENTER } from "@/lib/mapConfig";
 import { useTranslatedQuest } from "@/hooks/useTranslatedQuest";
 import { useAnalytics } from "@/hooks/useAnalytics";
@@ -41,81 +40,85 @@ type ChatMessage = {
   alignment: "left" | "center" | "right";
 };
 
-// Component to draw route polyline and auto-fit bounds
+// Component to draw route using Directions API and auto-fit bounds
 const RoutePathsHandler = ({
-  routePoints,
-  currentSpot,
-  nextSpot,
+  origin,
+  destination,
 }: {
-  routePoints: { lat: number; lng: number }[];
-  currentSpot: { lat: number; lng: number } | null;
-  nextSpot: { lat: number; lng: number } | null;
+  origin: { lat: number; lng: number } | null;
+  destination: { lat: number; lng: number } | null;
 }) => {
   const map = useMap();
-  const maps = useMapsLibrary('maps');
-  const [polyline, setPolyline] = useState<google.maps.Polyline | null>(null);
+  const routes = useMapsLibrary('routes');
+  const [directionsRenderer, setDirectionsRenderer] = useState<google.maps.DirectionsRenderer | null>(null);
   const hasFitBoundsRef = useRef<boolean>(false);
 
-  // Draw polyline for route trail
   useEffect(() => {
-    if (!map || !maps) return;
-
-    const pathPoints = routePoints.map(p => ({ lat: p.lat, lng: p.lng }));
-
-    if (polyline) {
-      polyline.setPath(pathPoints);
-    } else if (pathPoints.length >= 1) {
-      const line = new maps.Polyline({
-        path: pathPoints,
-        geodesic: true,
+    if (!map || !routes || directionsRenderer) return;
+    const renderer = new routes.DirectionsRenderer({
+      suppressMarkers: true,
+      preserveViewport: true,
+      polylineOptions: {
         strokeColor: '#e67a28',
-        strokeOpacity: 0.8,
+        strokeOpacity: 0.85,
         strokeWeight: 4,
-      });
-      line.setMap(map);
-      setPolyline(line);
-    }
-
+      },
+    });
+    renderer.setMap(map);
+    setDirectionsRenderer(renderer);
     return () => {
-      // Cleanup only when component unmounts
+      renderer.setMap(null);
     };
-  }, [map, maps, routePoints, polyline]);
+  }, [map, routes, directionsRenderer]);
 
-  // Cleanup polyline on unmount
   useEffect(() => {
-    return () => {
-      if (polyline) {
-        polyline.setMap(null);
-      }
-    };
-  }, []);
-
-  // Auto-fit bounds to show current and next spots
-  useEffect(() => {
-    if (!map || !currentSpot) return;
-
-    // Reset fit bounds flag when spots change
     hasFitBoundsRef.current = false;
+  }, [origin?.lat, origin?.lng, destination?.lat, destination?.lng]);
 
-    if (!hasFitBoundsRef.current) {
-      const bounds = new google.maps.LatLngBounds();
-      bounds.extend(currentSpot);
-
-      if (nextSpot) {
-        bounds.extend(nextSpot);
-      }
-
-      // Add some padding and fit
-      map.fitBounds(bounds, {
-        top: 80,
-        right: 40,
-        bottom: 200,
-        left: 40,
-      });
-
-      hasFitBoundsRef.current = true;
+  useEffect(() => {
+    if (!map || !routes || !directionsRenderer) return;
+    if (!origin || !destination) {
+      directionsRenderer.setMap(null);
+      return;
     }
-  }, [map, currentSpot?.lat, currentSpot?.lng, nextSpot?.lat, nextSpot?.lng]);
+
+    directionsRenderer.setMap(map);
+    const service = new routes.DirectionsService();
+    service.route(
+      {
+        origin,
+        destination,
+        travelMode: google.maps.TravelMode.WALKING,
+      },
+      (result, status) => {
+        if (status === google.maps.DirectionsStatus.OK && result) {
+          directionsRenderer.setDirections(result);
+          if (!hasFitBoundsRef.current) {
+            const bounds = result.routes?.[0]?.bounds;
+            if (bounds) {
+              map.fitBounds(bounds, {
+                top: 80,
+                right: 40,
+                bottom: 200,
+                left: 40,
+              });
+              hasFitBoundsRef.current = true;
+            }
+          }
+        } else {
+          console.warn("directions error", status);
+        }
+      }
+    );
+  }, [
+    map,
+    routes,
+    directionsRenderer,
+    origin?.lat,
+    origin?.lng,
+    destination?.lat,
+    destination?.lng,
+  ]);
 
   return null;
 };
@@ -149,11 +152,12 @@ const GamePlay = () => {
   const [mapError, setMapError] = useState<string | null>(null);
   const [mapReady, setMapReady] = useState(false);
   const [distance, setDistance] = useState<number | null>(null);
-  const [locError, setLocError] = useState<string | null>(null);
+  const [gpsEnabled, setGpsEnabled] = useState(false);
+  const [gpsRequesting, setGpsRequesting] = useState(false);
+  const [gpsPromptError, setGpsPromptError] = useState<string | null>(null);
   const [locationStatus, setLocationStatus] = useState<
     "locationUnavailable" | "tooFar" | "nearTarget"
   >("locationUnavailable");
-  const [puzzleMode, setPuzzleMode] = useState(false);
   const [puzzleLoading, setPuzzleLoading] = useState(false);
   const [puzzleQuestion, setPuzzleQuestion] = useState<string | null>(null);
   const [puzzleAnswer, setPuzzleAnswer] = useState<string | null>(null);
@@ -223,11 +227,6 @@ const GamePlay = () => {
   const [spotScores, setSpotScores] = useState<{ spotId: string, score: number, stars: number }[]>([]);
   const [currentSpotScore, setCurrentSpotScore] = useState<{ score: number, stars: number } | null>(null);
 
-  // Travel mode state for rescue logic
-  const [travelModeStartTime, setTravelModeStartTime] = useState<number | null>(null);
-  const [arrivalAttempts, setArrivalAttempts] = useState(0);
-  const [showRescueConfirm, setShowRescueConfirm] = useState(false);
-
   // Pre-Start state: game hasn't begun yet (at first spot, not arrived)
   const [hasArrivedAtFirstSpot, setHasArrivedAtFirstSpot] = useState(false);
 
@@ -244,11 +243,6 @@ const GamePlay = () => {
   // Pre-Start detection: at first spot, game not started yet
   const isPreStart = useMemo(() => {
     return session?.progressStep === 1 && !hasArrivedAtFirstSpot && gameMode === 'travel';
-  }, [session?.progressStep, hasArrivedAtFirstSpot, gameMode]);
-
-  // Ready to start: at first spot, arrived but not started
-  const isReadyToStart = useMemo(() => {
-    return session?.progressStep === 1 && hasArrivedAtFirstSpot && gameMode === 'travel';
   }, [session?.progressStep, hasArrivedAtFirstSpot, gameMode]);
 
   // Analytics hook for event tracking (after currentSpot is defined)
@@ -295,7 +289,7 @@ const GamePlay = () => {
         await Promise.all([
           supabase
             .from("quests")
-            .select("id, title, area_name, description, status")
+            .select("id, title, area_name, description, status, creator_id")
             .eq("id", questId)
             .maybeSingle(),
           supabase.from("purchases").select("id, quest_id").eq("user_id", userId),
@@ -316,14 +310,16 @@ const GamePlay = () => {
         throw new Error("クエスト情報の取得に失敗しました");
       }
 
-      if (questData.status && questData.status !== "published") {
+      const isOwner = questData.creator_id === userId;
+
+      if (questData.status && questData.status !== "published" && !isOwner) {
         setError("このクエストは公開されていません");
         setLoading(false);
         return;
       }
 
       const ownsQuest = (purchaseData || []).some((p: any) => p.quest_id === questId);
-      if (!ownsQuest) {
+      if (!ownsQuest && !isOwner) {
         setError("このクエストは未購入です。/cases から購入してください。");
         setLoading(false);
         return;
@@ -341,12 +337,41 @@ const GamePlay = () => {
         throw new Error(spotsErr.message || "スポットの取得に失敗しました");
       }
 
+      const spotIds = spotsData?.map((s: any) => s.id) || [];
+      let spotDetailsMap = new Map<string, { story_text?: string | null; nav_text?: string | null; question_text?: string | null; puzzle_question?: string | null }>();
+      if (spotIds.length > 0) {
+        const { data: spotDetailsData, error: spotDetailsErr } = await supabase
+          .from("spot_details")
+          .select("spot_id, story_text, nav_text, question_text, puzzle_question")
+          .in("spot_id", spotIds);
+        if (spotDetailsErr) {
+          console.warn("spot_details fetch error", spotDetailsErr);
+        } else {
+          spotDetailsMap = new Map(
+            (spotDetailsData || []).map((detail: any) => [
+              detail.spot_id,
+              {
+                story_text: detail.story_text,
+                nav_text: detail.nav_text,
+                question_text: detail.question_text,
+                puzzle_question: detail.puzzle_question,
+              },
+            ])
+          );
+        }
+      }
+
       const spots: GameSpot[] =
         spotsData?.map((s: any) => ({
           id: s.id,
           orderIndex: s.order_index ?? 0,
           name: s.name || "スポット",
-          description: s.description,
+          description:
+            spotDetailsMap.get(s.id)?.story_text ||
+            spotDetailsMap.get(s.id)?.nav_text ||
+            spotDetailsMap.get(s.id)?.question_text ||
+            spotDetailsMap.get(s.id)?.puzzle_question ||
+            null,
           lat: s.lat ?? null,
           lng: s.lng ?? null,
         })) || [];
@@ -626,9 +651,8 @@ const GamePlay = () => {
       if (!hasPuzzle) {
         setPuzzleQuestion("このスポットには謎が設定されていません。");
         setPuzzleAnswer(null);
-        setPuzzleMode(true);
-        return;
-      }
+      return;
+    }
       setPuzzleQuestion(data?.question_text || null);
       setPuzzleAnswer(data?.answer_text || null);
 
@@ -638,7 +662,6 @@ const GamePlay = () => {
         : [];
       setPuzzleHints(hints);
 
-      setPuzzleMode(true);
     } finally {
       setPuzzleLoading(false);
     }
@@ -656,7 +679,6 @@ const GamePlay = () => {
     setStoryStage("pre");
     setGameMode("story");
     track('mode_story', { spot_index: session.progressStep, stage: 'pre' });
-    setPuzzleMode(false);
     // ログに追加（表示開始時点で登録）
     setStoryLog((prev) => [
       ...prev,
@@ -675,6 +697,10 @@ const GamePlay = () => {
 
     // スポット1の場合は先にプロローグを表示（"任務を開始する"で実処理へ）
     if (session.progressStep === 1) {
+      setHasArrivedAtFirstSpot(true);
+      setPrologueVisibleCount(1);
+      setSpotStartTime(Date.now());
+      track('mode_story', { spot_index: 1, from_pre_start: true });
       setShowPrologueOverlay(true);
       return;
     }
@@ -838,7 +864,6 @@ const GamePlay = () => {
       });
     }
 
-    setPuzzleMode(false);
     setPuzzleError(null);
     setPuzzleInput("");
     setPuzzleState("idle");
@@ -927,38 +952,6 @@ const GamePlay = () => {
     return { score, stars };
   };
 
-  // Handle quest start from Pre-Start state
-  const handleStartQuest = () => {
-    if (!currentSpot) return;
-    // Mark as arrived and started
-    setHasArrivedAtFirstSpot(true);
-    // Trigger prologue
-    setPrologueVisibleCount(1);
-    setShowPrologueOverlay(true);
-    // Reset spot timer
-    setSpotStartTime(Date.now());
-    track('mode_story', { spot_index: 1, from_pre_start: true });
-  };
-
-  // 開発用: 距離や回答を無視して即進行
-  const devSkipCurrent = () => {
-    setPuzzleMode(false);
-    setPuzzleError(null);
-    setPuzzleInput("");
-    // スキップでも後日談メッセージを表示（無ければプレースホルダ）
-    (async () => {
-      if (session && currentSpot) {
-        await showPostStory();
-        return;
-      }
-      if (isLastSpot) {
-        handleComplete();
-      } else {
-        handleNext();
-      }
-    })();
-  };
-
   const haversineDistance = (
     lat1: number,
     lon1: number,
@@ -988,18 +981,21 @@ const GamePlay = () => {
 
   // 位置情報監視
   useEffect(() => {
+    if (!gpsEnabled) {
+      setDistance(null);
+      setLocationStatus("locationUnavailable");
+      return;
+    }
     if (!currentSpot || currentSpot.lat == null || currentSpot.lng == null) {
       setDistance(null);
       setLocationStatus("locationUnavailable");
       return;
     }
     if (!navigator.geolocation) {
-      setLocError("位置情報が取得できません");
       setLocationStatus("locationUnavailable");
       setDistance(null);
       return;
     }
-    setLocError(null);
     const watchId = navigator.geolocation.watchPosition(
       (pos) => {
         const d = haversineDistance(
@@ -1018,7 +1014,6 @@ const GamePlay = () => {
       },
       (err) => {
         console.warn("geo error", err);
-        setLocError("現在地を取得できませんでした");
         setLocationStatus("locationUnavailable");
         setDistance(null);
       },
@@ -1028,17 +1023,9 @@ const GamePlay = () => {
       navigator.geolocation.clearWatch(watchId);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentSpot?.id]);
+  }, [currentSpot?.id, gpsEnabled]);
 
   const isNear = locationStatus === "nearTarget";
-  const distanceLabel =
-    locationStatus === "tooFar" || locationStatus === "nearTarget"
-      ? distance != null
-        ? `目的地まで約 ${distance.toFixed(0)}m`
-        : ""
-      : locError || "";
-  const arrivalDisabled =
-    locationStatus === "tooFar" || !!session?.isCompleted || gameMode !== "travel";
 
   // Calculate ETA for walking (5 km/h average)
   const etaMinutes = distance != null ? Math.ceil((distance / 1000) / 5 * 60) : null;
@@ -1049,18 +1036,11 @@ const GamePlay = () => {
     return d < 1000 ? `${Math.round(d)}m` : `${(d / 1000).toFixed(1)}km`;
   };
 
-  // Rescue option visibility: show after 2 min travel OR 3+ failed attempts OR GPS unavailable
-  const travelDurationSec = travelModeStartTime ? Math.floor((Date.now() - travelModeStartTime) / 1000) : 0;
-  const showRescueOption = (
-    (travelDurationSec > 120 && distance != null && distance < 500) ||
-    arrivalAttempts >= 3 ||
-    locationStatus === "locationUnavailable"
-  );
-
   // Open external navigation app
-  const openNavigation = () => {
-    if (!currentSpot?.lat || !currentSpot?.lng) return;
-    const dest = `${currentSpot.lat},${currentSpot.lng}`;
+  const openNavigation = (spotOverride?: { lat: number | null; lng: number | null } | null) => {
+    const targetSpot = spotOverride ?? currentSpot;
+    if (!targetSpot?.lat || !targetSpot?.lng) return;
+    const dest = `${targetSpot.lat},${targetSpot.lng}`;
     const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
 
     // Track navigation open event
@@ -1075,22 +1055,32 @@ const GamePlay = () => {
     }
   };
 
-  // Handle manual/rescue arrival
-  const handleRescueArrive = () => {
-    setShowRescueConfirm(false);
-    track('arrival_manual', { spot_index: session?.progressStep || 0, distance });
-    handleArrive();
-  };
-
-  // Track travel mode start time
-  useEffect(() => {
-    if (gameMode === 'travel' && !travelModeStartTime) {
-      setTravelModeStartTime(Date.now());
-    } else if (gameMode !== 'travel') {
-      setTravelModeStartTime(null);
-      setArrivalAttempts(0);
+  const requestGpsPermission = () => {
+    if (!window.isSecureContext) {
+      setGpsPromptError("位置情報はHTTPSまたはlocalhostでのみ利用できます。");
+      return;
     }
-  }, [gameMode, travelModeStartTime]);
+    if (!navigator.geolocation) {
+      setGpsPromptError("この端末では位置情報を利用できません。");
+      return;
+    }
+    setGpsPromptError(null);
+    setGpsRequesting(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setGpsEnabled(true);
+        setGpsPromptError(null);
+        setUserLocation({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+        setGpsRequesting(false);
+      },
+      (err) => {
+        console.warn("geo permission error", err);
+        setGpsPromptError("位置情報の許可が必要です。");
+        setGpsRequesting(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000, maximumAge: 5000 }
+    );
+  };
 
   // Return to map/travel mode
   const returnToMap = () => {
@@ -1193,7 +1183,7 @@ const GamePlay = () => {
     setShowEpilogueOverlay(false);
     setShowPrologueOverlay(false); // 再プレイ時も最初は非表示（スポット1到着で表示）
     setPrologueVisibleCount(1);
-    setPuzzleMode(false);
+    setGameMode("travel");
 
     // Show mode selection for new sessions
     setScoreModeDecided(false);
@@ -1214,7 +1204,7 @@ const GamePlay = () => {
           .padStart(2, "0")}秒`
         : null;
     return (
-      <div className="absolute inset-0 z-40 flex items-center justify-center bg-white/95 backdrop-blur-sm p-4">
+      <div className="absolute inset-0 z-40 flex items-center justify-center bg-white/95 p-4">
         <div className="w-full max-w-[400px] max-h-[90vh] overflow-y-auto rounded-3xl bg-white shadow-2xl border border-[#eadfd0]">
           <div className="p-5 space-y-4">
             {/* Header */}
@@ -1352,14 +1342,6 @@ const GamePlay = () => {
       ? session.spots[session.progressStep]
       : null;
 
-    // Route points for polyline trail (visited + current spot)
-    const routePoints = [
-      ...visitedSpots.map(s => ({ lat: s.lat!, lng: s.lng! })),
-      ...(currentSpot?.lat != null && currentSpot?.lng != null
-        ? [{ lat: currentSpot.lat, lng: currentSpot.lng }]
-        : []),
-    ];
-
     // Current and next spot positions for bounds fitting
     const currentSpotPos = currentSpot?.lat != null && currentSpot?.lng != null
       ? { lat: currentSpot.lat, lng: currentSpot.lng }
@@ -1367,13 +1349,13 @@ const GamePlay = () => {
     const nextSpotPos = nextSpot
       ? { lat: nextSpot.lat!, lng: nextSpot.lng! }
       : null;
-
-    const progressPercent = (session.progressStep / session.spots.length) * 100;
+    const routeOrigin = currentSpotPos;
+    const routeDestination = nextSpotPos;
 
     return (
       <div className="relative flex-1 h-full bg-[#F7E7D3]">
-        <APIProvider apiKey={API_KEY}>
-          <Map
+        <APIProvider apiKey={API_KEY} libraries={["routes"]}>
+          <GoogleMap
             defaultCenter={mapCenter}
             defaultZoom={17}
             mapId="tomoshibi_mobile_game_map"
@@ -1384,9 +1366,8 @@ const GamePlay = () => {
           >
             {/* Route trail and bounds handler */}
             <RoutePathsHandler
-              routePoints={routePoints}
-              currentSpot={currentSpotPos}
-              nextSpot={nextSpotPos}
+              origin={routeOrigin}
+              destination={routeDestination}
             />
 
             {/* Visited spots - wax seal style, faded */}
@@ -1451,7 +1432,7 @@ const GamePlay = () => {
                 </div>
               </AdvancedMarker>
             )}
-          </Map>
+          </GoogleMap>
         </APIProvider>
 
 
@@ -1460,7 +1441,7 @@ const GamePlay = () => {
         <div className="absolute top-3 right-3 pointer-events-none">
           <button
             onClick={() => setMenuOpen(true)}
-            className="w-10 h-10 rounded-full bg-[#FEF9F3]/95 backdrop-blur-sm border-2 border-[#E8D5BE] flex items-center justify-center shadow-md hover:bg-[#F7E7D3] transition-colors pointer-events-auto"
+            className="w-10 h-10 rounded-full bg-[#FEF9F3]/95 border-2 border-[#E8D5BE] flex items-center justify-center shadow-md hover:bg-[#F7E7D3] transition-colors pointer-events-auto"
           >
             <Menu className="w-5 h-5 text-[#3D2E1F]" />
           </button>
@@ -1469,7 +1450,7 @@ const GamePlay = () => {
 
 
         {(!mapReady || loading) && (
-          <div className="absolute inset-0 flex items-center justify-center bg-[#f4efe8]/95 backdrop-blur-sm">
+          <div className="absolute inset-0 flex items-center justify-center bg-[#f4efe8]/95">
             <div className="flex flex-col items-center gap-3">
               <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center animate-pulse">
                 <MapPin className="w-8 h-8 text-white" />
@@ -1494,7 +1475,7 @@ const GamePlay = () => {
     if (!showEpilogueOverlay || !session) return null;
     const hasMessages = epilogueMessages.length > 0;
     return (
-      <div className="absolute inset-0 z-40 flex items-center justify-center bg-white/90 backdrop-blur-sm px-4">
+      <div className="absolute inset-0 z-40 flex items-center justify-center bg-white/90 px-4">
         <div className="w-full max-w-[420px] rounded-3xl bg-white shadow-2xl border border-[#eadfd0] p-5 space-y-4 text-center">
           <div className="text-xs font-semibold text-[#c35f1f] tracking-wide">
             エピローグ
@@ -1593,7 +1574,7 @@ const GamePlay = () => {
       className={`mx-auto max-w-[430px] bg-[#FEF9F3] shadow-xl rounded-2xl transition-all duration-300 border-2 border-[#E8D5BE] ${sheetCollapsed
         ? "px-4 pt-2 pb-2"
         : sheetExpanded
-          ? "px-4 pt-3 pb-4 h-[50%]"
+          ? "px-4 pt-3 pb-4 h-[50%] overflow-y-auto"
           : "px-4 pt-3 pb-4"
         }`}
       onTouchStart={handleSheetDragStart}
@@ -1628,226 +1609,138 @@ const GamePlay = () => {
       {/* Main content - hidden when collapsed */}
       {!sheetCollapsed && (
         <>
-          {/* Spot Info Card - Pre-Start vs In-Quest */}
-          <div className="flex items-start gap-3 mb-3">
-            {/* Wax seal spot icon - shows START for pre-start */}
-            <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-md flex-shrink-0 border-2 border-[#FEF9F3] ${isPreStart
-              ? 'bg-gradient-to-br from-[#2E5A5C] via-[#3A7478] to-[#2E5A5C] animate-pulse'
-              : 'bg-gradient-to-br from-[#F4A853] via-[#D87A32] to-[#B85A1F]'
-              }`}>
-              {isPreStart ? (
-                <span className="text-[#FEF9F3] text-[10px] font-bold">START</span>
-              ) : (
-                <Target className="w-4 h-4 text-[#FEF9F3]" />
-              )}
-            </div>
-
-            <div className="flex-1 min-w-0">
-              <h2 className="text-base font-bold text-[#3D2E1F] leading-tight line-clamp-1 mb-0.5 tracking-wide">
-                {isPreStart ? '開始地点' : (currentSpot?.name || "次のスポット")}
-              </h2>
-              <p className="text-[#7A6652] text-xs tracking-wide">
-                {isPreStart ? currentSpot?.name : (session.areaName || "エリア")}
-              </p>
-            </div>
-          </div>
-
-          {/* Pre-Start Guidance */}
-          {isPreStart && (
-            <div className="mb-3 p-3 bg-[#2E5A5C]/10 rounded-xl border border-[#2E5A5C]/30">
-              <p className="text-sm text-[#3D2E1F] leading-relaxed">
-                🚩 <span className="font-bold">クエスト開始前</span><br />
-                この地点から物語が始まります。まずは開始地点に到着してください。
-              </p>
-            </div>
-          )}
-
-          {/* Distance badge */}
-          {distance != null && (
-            <div className="flex items-center gap-2 mb-3">
-              <div className="flex items-center gap-2 px-3 py-1.5 bg-[#F7E7D3] border-2 border-[#E8D5BE] rounded-full">
-                <Footprints className="w-3.5 h-3.5 text-[#D87A32]" />
-                <span className="text-[#3D2E1F] text-xs font-bold tracking-wide">
-                  {distance < 1000 ? `${Math.round(distance)}m` : `${(distance / 1000).toFixed(1)}km`}
-                </span>
-              </div>
-            </div>
-          )}
-
-          {/* Expanded content - mission scroll */}
-          {sheetExpanded && currentSpot?.description && (
-            <div className="mb-3 p-3 bg-[#F7E7D3] rounded-xl border-2 border-[#E8D5BE]">
-              <div className="flex items-center gap-2 mb-1">
-                <MessageCircle className="w-3.5 h-3.5 text-[#D87A32]" />
-                <span className="text-[#D87A32] text-xs font-bold uppercase tracking-widest">ミッション</span>
-              </div>
-              <p className="text-[#3D2E1F] text-sm leading-relaxed whitespace-pre-wrap">
-                {currentSpot.description}
-              </p>
-            </div>
-          )}
-
-          {/* Progress and ETA Info */}
-          <div className="mb-3 px-3 py-2 bg-[#F7E7D3] rounded-xl border-2 border-[#E8D5BE]">
-            <div className="flex items-center justify-between">
-              <span className="text-xs text-[#7A6652] font-medium">次のスポット</span>
-              <span className="text-xs font-bold text-[#D87A32]">{session.progressStep}/{session.spots.length}</span>
-            </div>
-            <div className="flex items-center gap-2 mt-1 text-sm text-[#3D2E1F] font-medium">
-              <Footprints className="w-4 h-4 text-[#D87A32]" />
-              <span>{formatDistance(distance)}</span>
-              {etaMinutes != null && etaMinutes > 0 && (
-                <span className="text-[#7A6652]">• 徒歩約{etaMinutes}分</span>
-              )}
-            </div>
-          </div>
-
-          {/* Pre-Start Tips */}
-          {isPreStart && (
-            <div className="mb-3 space-y-1">
-              <div className="flex items-center gap-2 text-xs text-[#7A6652]">
-                <MapPin className="w-3 h-3" />
-                <span>GPSをONにしてください</span>
-              </div>
-              <div className="flex items-center gap-2 text-xs text-[#7A6652]">
-                <AlertCircle className="w-3 h-3" />
-                <span>歩行中の操作に注意</span>
-              </div>
-            </div>
-          )}
-
-          {/* Dual CTA Buttons - Pre-Start vs In-Quest */}
-          <div className="space-y-2">
-            {/* Primary: Navigation */}
-            <Button
-              className="relative w-full h-11 text-sm font-bold rounded-xl transition-all duration-200 tracking-wide active:scale-[0.98] bg-gradient-to-r from-[#F4A853] to-[#D87A32] text-[#FEF9F3] shadow-[0_4px_16px_rgba(216,122,50,0.3)]"
-              onClick={openNavigation}
-            >
-              <span className="flex items-center gap-2">
-                <Navigation className="w-4 h-4" />
-                {isPreStart ? '開始地点へナビ' : 'ナビを開く'}
-              </span>
-            </Button>
-
-            {/* Secondary: Start/Arrive - Conditional */}
-            {isPreStart ? (
-              // Pre-Start: "ここから始める" button
-              <Button
-                className={`relative w-full h-11 text-sm font-bold rounded-xl transition-all duration-200 tracking-wide active:scale-[0.98] ${isNear
-                  ? "bg-gradient-to-r from-[#4A8A8C] to-[#2E5A5C] text-[#FEF9F3] shadow-md"
-                  : "bg-[#E8D5BE] text-[#7A6652] border-2 border-[#D8C8B8]"
-                  }`}
-                onClick={isNear ? handleStartQuest : undefined}
-                disabled={!isNear && !isDev}
-              >
-                {isNear ? (
-                  <span className="flex items-center gap-2">
-                    <Sparkles className="w-4 h-4" />
-                    ここから始める
-                  </span>
-                ) : (
-                  <span className="flex items-center gap-2">
-                    <Lock className="w-3.5 h-3.5" />
-                    ここから始める（あと{formatDistance(distance)}）
-                  </span>
-                )}
-              </Button>
-            ) : (
-              // In-Quest: Normal arrival button
-              <Button
-                className={`relative w-full h-11 text-sm font-bold rounded-xl transition-all duration-200 tracking-wide active:scale-[0.98] ${isNear
-                  ? "bg-gradient-to-r from-[#4A8A8C] to-[#2E5A5C] text-[#FEF9F3] shadow-md"
-                  : "bg-[#E8D5BE] text-[#7A6652] border-2 border-[#D8C8B8]"
-                  }`}
-                onClick={() => {
-                  if (!isNear) {
-                    setArrivalAttempts(prev => prev + 1);
-                  }
-                  handleArrive();
-                }}
-                disabled={advancing || (!isNear && !isDev)}
-              >
-                <span className="flex items-center gap-2">
-                  {isNear ? (
-                    <>
-                      <Sparkles className="w-4 h-4" />
-                      {isLastSpot ? "✿ クエスト完了！" : "✿ 到着した！"}
-                    </>
+          {gameMode === "travel" && (
+            <>
+              <div className="flex items-start gap-3 mb-3">
+                <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-md flex-shrink-0 border-2 border-[#FEF9F3] ${isPreStart
+                  ? 'bg-gradient-to-br from-[#2E5A5C] via-[#3A7478] to-[#2E5A5C] animate-pulse'
+                  : 'bg-gradient-to-br from-[#F4A853] via-[#D87A32] to-[#B85A1F]'
+                  }`}>
+                  {isPreStart ? (
+                    <span className="text-[#FEF9F3] text-[10px] font-bold">START</span>
                   ) : (
-                    <>
-                      <Target className="w-4 h-4" />
-                      到着した（あと{formatDistance(distance)}）
-                    </>
+                    <Target className="w-4 h-4 text-[#FEF9F3]" />
                   )}
-                </span>
-              </Button>
-            )}
-          </div>
+                </div>
 
-          {/* Status / Rescue Messages */}
-          <div className="mt-2 text-center">
-            {isNear && (
-              <p className="text-[#2E5A5C] text-xs font-medium">
-                🎉 目的地付近に到着しました！
-              </p>
-            )}
-            {!isNear && locationStatus === "locationUnavailable" && (
-              <p className="text-rose-500 text-xs">
-                現在地を取得できませんでした
-              </p>
-            )}
-          </div>
-
-          {/* Rescue Option - GPS troubles fallback */}
-          {showRescueOption && !isNear && (
-            <div className="mt-3 pt-3 border-t border-[#E8D5BE]">
-              <button
-                className="w-full text-xs text-[#D87A32] hover:text-[#B85A1F] underline underline-offset-2 transition-colors flex items-center justify-center gap-1"
-                onClick={() => setShowRescueConfirm(true)}
-              >
-                <HelpCircle className="w-3.5 h-3.5" />
-                GPS問題？ 手動で到着する
-              </button>
-            </div>
-          )}
-
-          {/* Rescue Confirmation Modal */}
-          {showRescueConfirm && (
-            <div className="fixed inset-0 z-50 flex items-center justify-center bg-[#3D2E1F]/50 backdrop-blur-sm">
-              <div className="bg-[#FEF9F3] rounded-2xl p-5 mx-4 max-w-sm shadow-2xl border-2 border-[#E8D5BE]">
-                <h3 className="text-lg font-bold text-[#3D2E1F] mb-2">手動で到着する</h3>
-                <p className="text-sm text-[#7A6652] mb-4">
-                  GPSが不安定な場合、手動で到着処理を行えます。本当に目的地付近にいますか？
-                </p>
-                <div className="flex gap-2">
-                  <Button
-                    className="flex-1 bg-[#E8D5BE] text-[#7A6652] hover:bg-[#D8C8B8]"
-                    onClick={() => setShowRescueConfirm(false)}
-                  >
-                    キャンセル
-                  </Button>
-                  <Button
-                    className="flex-1 bg-gradient-to-r from-[#4A8A8C] to-[#2E5A5C] text-[#FEF9F3]"
-                    onClick={handleRescueArrive}
-                  >
-                    到着する
-                  </Button>
+                <div className="flex-1 min-w-0">
+                  <h2 className="text-base font-bold text-[#3D2E1F] leading-tight line-clamp-1 mb-0.5 tracking-wide">
+                    {isPreStart ? '開始地点' : (currentSpot?.name || "次のスポット")}
+                  </h2>
+                  <p className="text-[#7A6652] text-xs tracking-wide">
+                    {isPreStart ? currentSpot?.name : (session.areaName || "エリア")}
+                  </p>
                 </div>
               </div>
-            </div>
+
+              {isPreStart && (
+                <div className="mb-3 p-3 bg-[#2E5A5C]/10 rounded-xl border border-[#2E5A5C]/30">
+                  <p className="text-sm text-[#3D2E1F] leading-relaxed">
+                    🚩 <span className="font-bold">クエスト開始前</span><br />
+                    この地点から物語が始まります。まずは開始地点に到着してください。
+                  </p>
+                </div>
+              )}
+
+              {distance != null && (
+                <div className="flex items-center gap-2 mb-3">
+                  <div className="flex items-center gap-2 px-3 py-1.5 bg-[#F7E7D3] border-2 border-[#E8D5BE] rounded-full">
+                    <Footprints className="w-3.5 h-3.5 text-[#D87A32]" />
+                    <span className="text-[#3D2E1F] text-xs font-bold tracking-wide">
+                      {distance < 1000 ? `${Math.round(distance)}m` : `${(distance / 1000).toFixed(1)}km`}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {sheetExpanded && currentSpot?.description && (
+                <div className="mb-3 p-3 bg-[#F7E7D3] rounded-xl border-2 border-[#E8D5BE]">
+                  <div className="flex items-center gap-2 mb-1">
+                    <MessageCircle className="w-3.5 h-3.5 text-[#D87A32]" />
+                    <span className="text-[#D87A32] text-xs font-bold uppercase tracking-widest">ミッション</span>
+                  </div>
+                  <p className="text-[#3D2E1F] text-sm leading-relaxed whitespace-pre-wrap">
+                    {currentSpot.description}
+                  </p>
+                </div>
+              )}
+
+              <div className="mb-3 px-3 py-2 bg-[#F7E7D3] rounded-xl border-2 border-[#E8D5BE]">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-[#7A6652] font-medium">次のスポット</span>
+                  <span className="text-xs font-bold text-[#D87A32]">{session.progressStep}/{session.spots.length}</span>
+                </div>
+                <div className="flex items-center gap-2 mt-1 text-sm text-[#3D2E1F] font-medium">
+                  <Footprints className="w-4 h-4 text-[#D87A32]" />
+                  <span>{formatDistance(distance)}</span>
+                  {etaMinutes != null && etaMinutes > 0 && (
+                    <span className="text-[#7A6652]">• 徒歩約{etaMinutes}分</span>
+                  )}
+                </div>
+              </div>
+
+              <div className="space-y-2">
+                <Button
+                  className="relative w-full h-11 text-sm font-bold rounded-xl transition-all duration-200 tracking-wide active:scale-[0.98] bg-gradient-to-r from-[#F4A853] to-[#D87A32] text-[#FEF9F3] shadow-[0_4px_16px_rgba(216,122,50,0.3)]"
+                  onClick={openNavigation}
+                >
+                  <span className="flex items-center gap-2">
+                    <Navigation className="w-4 h-4" />
+                    {isPreStart ? '開始地点へナビ' : 'ナビを開く'}
+                  </span>
+                </Button>
+
+                <Button
+                  className={`relative w-full h-11 text-sm font-bold rounded-xl transition-all duration-200 tracking-wide active:scale-[0.98] ${isNear
+                    ? "bg-gradient-to-r from-[#4A8A8C] to-[#2E5A5C] text-[#FEF9F3] shadow-md"
+                    : "bg-[#E8D5BE] text-[#7A6652] border-2 border-[#D8C8B8]"
+                    }`}
+                  onClick={handleArrive}
+                  disabled={advancing || (!isNear && !isDev)}
+                >
+                  <span className="flex items-center gap-2">
+                    {isNear ? (
+                      <>
+                        <Sparkles className="w-4 h-4" />
+                        {isLastSpot ? "✿ クエスト完了！" : "✿ 到着した！"}
+                      </>
+                    ) : (
+                      <>
+                        <Target className="w-4 h-4" />
+                        到着した（あと{formatDistance(distance)}）
+                      </>
+                    )}
+                  </span>
+                </Button>
+              </div>
+
+              <div className="mt-2 text-center">
+                {isNear && (
+                  <p className="text-[#2E5A5C] text-xs font-medium">
+                    🎉 目的地付近に到着しました！
+                  </p>
+                )}
+                {!isNear && gpsEnabled && locationStatus === "locationUnavailable" && (
+                  <p className="text-rose-500 text-xs">
+                    現在地を取得できませんでした
+                  </p>
+                )}
+              </div>
+            </>
           )}
 
-          {/* Dev skip button */}
-          {isDev && (
-            <button
-              className="mt-2 text-xs text-[#D87A32]/60 hover:text-[#D87A32] underline underline-offset-2 block mx-auto transition-colors"
-              onClick={() => handleArrive()}
+          {gameMode === "story" && renderStory()}
+          {gameMode === "puzzle" && renderPuzzle()}
+
+          {gameMode !== "travel" && (
+            <Button
+              className="w-full h-10 rounded-xl border-2 border-[#E8D5BE] text-[#7A6652] hover:bg-[#F7E7D3] transition-colors mt-2"
+              onClick={handleSkip}
+              disabled={puzzleLoading || advancing}
             >
-              DEV: スキップ
-            </button>
+              スキップ
+            </Button>
           )}
-
-
         </>
       )}
     </div>
@@ -1891,127 +1784,105 @@ const GamePlay = () => {
     }
   };
 
+  const handleSkip = () => {
+    if (gameMode === "story") {
+      if (storyStage === "pre") {
+        startPuzzle();
+        return;
+      }
+      if (storyStage === "post") {
+        setGameMode("travel");
+        if (isLastSpot) {
+          handleComplete();
+        } else {
+          handleNext();
+        }
+      }
+      return;
+    }
+    if (gameMode === "puzzle") {
+      proceedAfterPuzzle();
+    }
+  };
+
   const renderStory = () => {
     if (gameMode !== "story") return null;
     return (
-      <div className="absolute inset-0 z-30 flex items-end pointer-events-none bg-[#3D2E1F]/30 backdrop-blur-sm">
-        <div className="pointer-events-auto w-full px-4 pb-4">
-          <div className="mx-auto max-w-[430px] rounded-2xl bg-[#FEF9F3] shadow-xl p-4 space-y-3 border-2 border-[#E8D5BE]">
-            {/* Mode Status Bar */}
-            {renderModeStatusBar()}
+        <div className="space-y-3">
+          {renderModeStatusBar()}
 
-            {/* Messages */}
-            <div className="space-y-2 max-h-52 overflow-auto pr-1">
-              {storyMessages.slice(0, storyVisibleCount).map((m) => (
-                <div
-                  key={m.id}
-                  className={`flex ${m.alignment === "right"
-                    ? "justify-end"
-                    : m.alignment === "center"
-                      ? "justify-center"
-                      : "justify-start"
-                    }`}
-                >
-                  <div
-                    className={`max-w-[85%] rounded-xl px-3 py-2 text-sm leading-relaxed ${m.alignment === "right"
-                      ? "bg-[#D87A32]/15 text-[#3D2E1F] border border-[#D87A32]/30"
-                      : m.alignment === "center"
-                        ? "bg-[#F7E7D3] text-[#7A6652] text-xs italic"
-                        : "bg-[#F7E7D3] text-[#3D2E1F] border border-[#E8D5BE]"
-                      }`}
-                  >
-                    {m.name && (
-                      <div className="text-xs font-bold text-[#D87A32] mb-1">
-                        {m.name}
-                      </div>
-                    )}
-                    <div className="whitespace-pre-wrap">{m.text}</div>
-                  </div>
-                </div>
-              ))}
-            </div>
-
-            {/* Next Spot Preview (only in post/epilogue stage) */}
-            {storyStage === "post" && !isLastSpot && storyVisibleCount >= storyMessages.length && (
-              <div className="p-3 rounded-xl bg-[#2E5A5C]/10 border border-[#2E5A5C]/30 mb-2">
-                <div className="flex items-center gap-2 mb-1">
-                  <Target className="w-4 h-4 text-[#2E5A5C]" />
-                  <span className="text-xs font-bold text-[#2E5A5C]">次のスポット</span>
-                </div>
-                <div className="text-sm font-medium text-[#3D2E1F]">
-                  {session?.spots[session.progressStep]?.name || "次のスポット"}
-                </div>
-                <div className="text-xs text-[#7A6652] mt-0.5 flex items-center gap-2">
-                  <Footprints className="w-3.5 h-3.5" />
-                  {formatDistance(distance)}
-                  {etaMinutes != null && etaMinutes > 0 && (
-                    <span>• 徒歩約{etaMinutes}分</span>
-                  )}
-                </div>
-              </div>
-            )}
-
-            {/* CTA Buttons - Enhanced for epilogue */}
-            {storyStage === "post" && storyVisibleCount >= storyMessages.length && !isLastSpot ? (
-              // Epilogue completed - show dual CTAs
-              <div className="space-y-2">
-                <Button
-                  className="w-full h-11 font-bold rounded-xl tracking-wide active:scale-[0.98] bg-gradient-to-r from-[#F4A853] to-[#D87A32] text-[#FEF9F3] shadow-[0_4px_16px_rgba(216,122,50,0.3)]"
-                  onClick={() => {
-                    openNavigation();
-                    handleNext();
-                  }}
-                >
-                  <span className="flex items-center gap-2">
-                    <Navigation className="w-4 h-4" />
-                    ナビを開いて次へ
-                  </span>
-                </Button>
-                <Button
-                  className="w-full h-10 font-medium rounded-xl tracking-wide active:scale-[0.98] bg-[#E8D5BE] text-[#7A6652] border-2 border-[#D8C8B8]"
-                  onClick={handleNext}
-                >
-                  スキップして進む
-                </Button>
-              </div>
-            ) : (
-              // Regular story navigation
-              <Button
-                className={`w-full h-11 font-bold rounded-xl tracking-wide active:scale-[0.98] ${storyStage === "post"
-                  ? "bg-gradient-to-r from-[#4A8A8C] to-[#2E5A5C] text-[#FEF9F3] shadow-md"
-                  : "bg-gradient-to-r from-[#F4A853] to-[#D87A32] text-[#FEF9F3] shadow-[0_4px_16px_rgba(216,122,50,0.3)]"
+        <div
+          className={`space-y-2 overflow-auto pr-1 ${sheetExpanded ? "max-h-[40vh]" : "max-h-40"
+            }`}
+        >
+          {storyMessages.slice(0, storyVisibleCount).map((m) => (
+            <div
+              key={m.id}
+              className={`flex ${m.alignment === "right"
+                ? "justify-end"
+                : m.alignment === "center"
+                  ? "justify-center"
+                  : "justify-start"
+                }`}
+            >
+              <div
+                className={`max-w-[85%] rounded-xl px-3 py-2 text-sm leading-relaxed ${m.alignment === "right"
+                  ? "bg-[#D87A32]/15 text-[#3D2E1F] border border-[#D87A32]/30"
+                  : m.alignment === "center"
+                    ? "bg-[#F7E7D3] text-[#7A6652] text-xs italic"
+                    : "bg-[#F7E7D3] text-[#3D2E1F] border border-[#E8D5BE]"
                   }`}
-                onClick={handleStoryAdvance}
               >
-                {storyVisibleCount < storyMessages.length
-                  ? "次へ"
-                  : storyStage === "post"
-                    ? isLastSpot
-                      ? "✿ クエストクリア"
-                      : "次のスポットへ"
-                    : "謎解きへ"}
-              </Button>
-            )}
-
-            {/* Secondary actions - less intrusive */}
-            <div className="flex items-center justify-between pt-1">
-              <button
-                className="text-xs text-[#7A6652] hover:text-[#D87A32] transition-colors flex items-center gap-1"
-                onClick={() => setShowStoryLog(true)}
-              >
-                <Eye className="w-3 h-3" />
-                これまでの会話
-              </button>
-              {storyStage === "pre" && (
-                <button
-                  className="text-xs text-[#7A6652] hover:text-[#D87A32] transition-colors"
-                  onClick={() => startPuzzle()}
-                >
-                  スキップ →
-                </button>
-              )}
+                {m.name && (
+                  <div className="text-xs font-bold text-[#D87A32] mb-1">
+                    {m.name}
+                  </div>
+                )}
+                <div className="whitespace-pre-wrap">{m.text}</div>
+              </div>
             </div>
-          </div>
+          ))}
+        </div>
+
+        {storyStage === "post" && storyVisibleCount >= storyMessages.length && !isLastSpot ? (
+          <Button
+            className="w-full h-11 font-bold rounded-xl tracking-wide active:scale-[0.98] bg-gradient-to-r from-[#F4A853] to-[#D87A32] text-[#FEF9F3] shadow-[0_4px_16px_rgba(216,122,50,0.3)]"
+            onClick={() => {
+              openNavigation(session?.spots[session.progressStep] ?? null);
+              handleNext();
+            }}
+          >
+            <span className="flex items-center gap-2">
+              <Navigation className="w-4 h-4" />
+              ナビを開いて次へ
+            </span>
+          </Button>
+        ) : (
+          <Button
+            className={`w-full h-11 font-bold rounded-xl tracking-wide active:scale-[0.98] ${storyStage === "post"
+              ? "bg-gradient-to-r from-[#4A8A8C] to-[#2E5A5C] text-[#FEF9F3] shadow-md"
+              : "bg-gradient-to-r from-[#F4A853] to-[#D87A32] text-[#FEF9F3] shadow-[0_4px_16px_rgba(216,122,50,0.3)]"
+              }`}
+            onClick={handleStoryAdvance}
+          >
+            {storyVisibleCount < storyMessages.length
+              ? "次へ"
+              : storyStage === "post"
+                ? isLastSpot
+                  ? "✿ クエストクリア"
+                  : "次のスポットへ"
+                : "謎解きへ"}
+          </Button>
+        )}
+
+        <div className="flex items-center justify-between pt-1">
+          <button
+            className="text-xs text-[#7A6652] hover:text-[#D87A32] transition-colors flex items-center gap-1"
+            onClick={() => setShowStoryLog(true)}
+          >
+            <Eye className="w-3 h-3" />
+            これまでの会話
+          </button>
         </div>
       </div>
     );
@@ -2020,164 +1891,142 @@ const GamePlay = () => {
   const renderPuzzle = () => {
     if (gameMode !== "puzzle") return null;
     return (
-      <div className="absolute inset-0 z-30 flex items-end pointer-events-none bg-[#3D2E1F]/30 backdrop-blur-sm">
-        <div className="pointer-events-auto w-full px-4 pb-4">
-          <div className="mx-auto max-w-[430px] rounded-2xl bg-[#FEF9F3] shadow-xl p-4 space-y-3 border-2 border-[#E8D5BE]">
-            {/* Mode Status Bar */}
-            {renderModeStatusBar()}
+      <div className="space-y-3">
+        {renderModeStatusBar()}
 
-            {/* Question Card */}
-            <div className="p-3 rounded-xl bg-[#F7E7D3] border-2 border-[#E8D5BE]">
-              <h3 className="text-base font-bold text-[#3D2E1F] mb-1 tracking-wide">
-                {currentSpot?.name || "スポット"}
-              </h3>
-              <p className="text-[#7A6652] text-sm whitespace-pre-wrap leading-relaxed">
-                {puzzleQuestion || "このスポットには謎が設定されていません"}
-              </p>
-            </div>
+        <div className="p-3 rounded-xl bg-[#F7E7D3] border-2 border-[#E8D5BE]">
+          <h3 className="text-base font-bold text-[#3D2E1F] mb-1 tracking-wide">
+            {currentSpot?.name || "スポット"}
+          </h3>
+          <p className={`text-[#7A6652] text-sm whitespace-pre-wrap leading-relaxed overflow-auto ${sheetExpanded ? "max-h-[28vh]" : "max-h-32"
+            }`}>
+            {puzzleQuestion || "このスポットには謎が設定されていません"}
+          </p>
+        </div>
 
-            {/* Answer Input */}
-            <div className="space-y-2">
-              <input
-                type="text"
-                value={puzzleInput}
-                onChange={(e) => setPuzzleInput(e.target.value)}
-                className={`w-full rounded-xl px-4 py-2.5 text-base font-medium transition-all ${puzzleState === "correct"
-                  ? "bg-[#2E5A5C]/10 border-2 border-[#2E5A5C] text-[#2E5A5C]"
-                  : puzzleState === "incorrect"
-                    ? "bg-red-50 border-2 border-red-300 text-[#3D2E1F]"
-                    : "bg-[#F7E7D3] border-2 border-[#E8D5BE] text-[#3D2E1F] placeholder:text-[#9B8A7A]"
-                  }`}
-                placeholder="答えを入力してください..."
-                disabled={puzzleState === "correct"}
-              />
+        <div className="space-y-2">
+          <input
+            type="text"
+            value={puzzleInput}
+            onChange={(e) => setPuzzleInput(e.target.value)}
+            className={`w-full rounded-xl px-4 py-2.5 text-base font-medium transition-all ${puzzleState === "correct"
+              ? "bg-[#2E5A5C]/10 border-2 border-[#2E5A5C] text-[#2E5A5C]"
+              : puzzleState === "incorrect"
+                ? "bg-red-50 border-2 border-red-300 text-[#3D2E1F]"
+                : "bg-[#F7E7D3] border-2 border-[#E8D5BE] text-[#3D2E1F] placeholder:text-[#9B8A7A]"
+              }`}
+            placeholder="答えを入力してください..."
+            disabled={puzzleState === "correct"}
+          />
 
-              {puzzleError && (
-                <p className="text-red-500 text-sm flex items-center gap-1.5">
-                  × {puzzleError}
-                </p>
-              )}
+          {puzzleError && (
+            <p className="text-red-500 text-sm flex items-center gap-1.5">
+              × {puzzleError}
+            </p>
+          )}
 
-              {puzzleState === "incorrect" && (
-                <p className="text-[#7A6652] text-xs">
-                  試行回数: {attemptCount} 回
-                </p>
-              )}
+          {puzzleState === "incorrect" && (
+            <p className="text-[#7A6652] text-xs">
+              試行回数: {attemptCount} 回
+            </p>
+          )}
 
-              {puzzleState === "correct" && (
-                <p className="text-[#2E5A5C] text-xs font-medium flex items-center gap-1">
-                  <CheckCircle2 className="w-3.5 h-3.5" />
-                  正解！
-                </p>
-              )}
-            </div>
+          {puzzleState === "correct" && (
+            <p className="text-[#2E5A5C] text-xs font-medium flex items-center gap-1">
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              正解！
+            </p>
+          )}
+        </div>
 
-            {/* Tiered Hints Section */}
-            {puzzleHints.length > 0 && puzzleState !== "correct" && (
-              <div className="space-y-2">
-                {/* Revealed hints */}
-                {puzzleHints.slice(0, revealedHintLevel).map((hint, idx) => (
-                  <div key={idx} className="p-2.5 rounded-xl bg-amber-50 border border-amber-200">
-                    <div className="text-xs font-bold text-amber-700 mb-0.5">💡 ヒント {idx + 1}</div>
-                    <div className="text-sm text-amber-900">{hint}</div>
-                  </div>
-                ))}
-
-                {/* Reveal next hint button */}
-                {revealedHintLevel < puzzleHints.length && (
-                  <button
-                    onClick={revealNextHint}
-                    className="w-full py-2 px-3 rounded-xl bg-amber-100 border border-amber-300 text-amber-800 text-sm font-medium hover:bg-amber-200 transition-colors flex items-center justify-center gap-2"
-                  >
-                    💡 ヒント{revealedHintLevel + 1}を見る（{puzzleHints.length - revealedHintLevel}個残り）
-                  </button>
-                )}
+        {puzzleHints.length > 0 && puzzleState !== "correct" && (
+          <div className="space-y-2">
+            {puzzleHints.slice(0, revealedHintLevel).map((hint, idx) => (
+              <div key={idx} className="p-2.5 rounded-xl bg-amber-50 border border-amber-200">
+                <div className="text-xs font-bold text-amber-700 mb-0.5">💡 ヒント {idx + 1}</div>
+                <div className="text-sm text-amber-900">{hint}</div>
               </div>
-            )}
+            ))}
 
-            {/* Answer Format Help */}
-            {showAnswerHelp && puzzleState !== "correct" && (
-              <div className="p-3 rounded-xl bg-violet-50 border border-violet-200">
-                <h4 className="font-bold text-violet-700 text-sm mb-2 flex items-center gap-1.5">
-                  <HelpCircle className="w-4 h-4" />
-                  答えが通らない？
-                </h4>
-                <ul className="text-xs text-violet-600 space-y-1">
-                  <li>• <b>ひらがな/カタカナ</b>を変えてみる</li>
-                  <li>• <b>スペース</b>を入れない</li>
-                  <li>• 英語は<b>大文字/小文字</b>を変えてみる</li>
-                  <li>• 数字は<b>半角</b>で入力</li>
-                  <li>• 句読点（。、）は入れない</li>
-                </ul>
-              </div>
-            )}
-
-            {/* Revealed Answer */}
-            {puzzleState === "revealedAnswer" && (
-              <div className="rounded-xl bg-[#2E5A5C]/10 border-2 border-[#2E5A5C]/30 px-3 py-2">
-                <div className="text-[#2E5A5C] text-xs font-bold mb-1">答え</div>
-                <div className="text-[#3D2E1F] whitespace-pre-wrap text-sm">
-                  {puzzleAnswer || "答えは未設定です"}
-                </div>
-              </div>
-            )}
-
-            {/* Submit Button - Unified wording */}
-            <Button
-              className={`w-full h-11 font-bold rounded-xl tracking-wide active:scale-[0.98] ${puzzleState === "correct" || puzzleState === "revealedAnswer"
-                ? "bg-gradient-to-r from-[#4A8A8C] to-[#2E5A5C] text-[#FEF9F3] shadow-md"
-                : "bg-gradient-to-r from-[#F4A853] to-[#D87A32] text-[#FEF9F3] shadow-[0_4px_16px_rgba(216,122,50,0.3)]"
-                }`}
-              onClick={handleSubmitAnswer}
-              disabled={puzzleLoading}
-            >
-              {puzzleState === "correct" || puzzleState === "revealedAnswer"
-                ? isLastSpot
-                  ? "✿ クエストクリア"
-                  : "次のスポットへ"
-                : "回答する"}
-            </Button>
-
-            {/* Secondary actions - less intrusive */}
-            <div className="flex items-center justify-between pt-1">
+            {revealedHintLevel < puzzleHints.length && (
               <button
-                className="text-xs text-[#7A6652] hover:text-[#D87A32] transition-colors flex items-center gap-1"
-                onClick={() => {
-                  setStoryMessages(lastStoryMessages);
-                  setStoryVisibleCount(lastStoryMessages.length || 1);
-                  setStoryStage("pre");
-                  setGameMode("story");
-                  setPuzzleMode(false);
-                }}
+                onClick={revealNextHint}
+                className="w-full py-2 px-3 rounded-xl bg-amber-100 border border-amber-300 text-amber-800 text-sm font-medium hover:bg-amber-200 transition-colors flex items-center justify-center gap-2"
               >
-                <Eye className="w-3 h-3" />
-                会話を見る
+                💡 ヒント{revealedHintLevel + 1}を見る（{puzzleHints.length - revealedHintLevel}個残り）
               </button>
+            )}
+          </div>
+        )}
 
-              {/* Hint shortcut when not all revealed */}
-              {puzzleHints.length > revealedHintLevel && puzzleState !== "correct" && (
-                <button
-                  className="text-xs text-amber-600 hover:text-amber-700 transition-colors flex items-center gap-1"
-                  onClick={revealNextHint}
-                >
-                  💡 ヒント
-                </button>
-              )}
+        {showAnswerHelp && puzzleState !== "correct" && (
+          <div className="p-3 rounded-xl bg-violet-50 border border-violet-200">
+            <h4 className="font-bold text-violet-700 text-sm mb-2 flex items-center gap-1.5">
+              <HelpCircle className="w-4 h-4" />
+              答えが通らない？
+            </h4>
+            <ul className="text-xs text-violet-600 space-y-1">
+              <li>• <b>ひらがな/カタカナ</b>を変えてみる</li>
+              <li>• <b>スペース</b>を入れない</li>
+              <li>• 英語は<b>大文字/小文字</b>を変えてみる</li>
+              <li>• 数字は<b>半角</b>で入力</li>
+              <li>• 句読点（。、）は入れない</li>
+            </ul>
+          </div>
+        )}
 
-              {isDev && (
-                <button
-                  className="text-xs text-[#D87A32]/60 hover:text-[#D87A32] transition-colors"
-                  onClick={devSkipCurrent}
-                >
-                  DEV: スキップ
-                </button>
-              )}
+        {puzzleState === "revealedAnswer" && (
+          <div className="rounded-xl bg-[#2E5A5C]/10 border-2 border-[#2E5A5C]/30 px-3 py-2">
+            <div className="text-[#2E5A5C] text-xs font-bold mb-1">答え</div>
+            <div className="text-[#3D2E1F] whitespace-pre-wrap text-sm">
+              {puzzleAnswer || "答えは未設定です"}
             </div>
           </div>
+        )}
+
+        <Button
+          className={`w-full h-11 font-bold rounded-xl tracking-wide active:scale-[0.98] ${puzzleState === "correct" || puzzleState === "revealedAnswer"
+            ? "bg-gradient-to-r from-[#4A8A8C] to-[#2E5A5C] text-[#FEF9F3] shadow-md"
+            : "bg-gradient-to-r from-[#F4A853] to-[#D87A32] text-[#FEF9F3] shadow-[0_4px_16px_rgba(216,122,50,0.3)]"
+            }`}
+          onClick={handleSubmitAnswer}
+          disabled={puzzleLoading}
+        >
+          {puzzleState === "correct" || puzzleState === "revealedAnswer"
+            ? isLastSpot
+              ? "✿ クエストクリア"
+              : "次のスポットへ"
+            : "回答する"}
+        </Button>
+
+        <div className="flex items-center justify-between pt-1">
+          <button
+            className="text-xs text-[#7A6652] hover:text-[#D87A32] transition-colors flex items-center gap-1"
+            onClick={() => {
+              setStoryMessages(lastStoryMessages);
+              setStoryVisibleCount(lastStoryMessages.length || 1);
+              setStoryStage("pre");
+              setGameMode("story");
+            }}
+          >
+            <Eye className="w-3 h-3" />
+            会話を見る
+          </button>
+
+          {puzzleHints.length > revealedHintLevel && puzzleState !== "correct" && (
+            <button
+              className="text-xs text-amber-600 hover:text-amber-700 transition-colors flex items-center gap-1"
+              onClick={revealNextHint}
+            >
+              💡 ヒント
+            </button>
+          )}
         </div>
       </div>
     );
   };
+
+  const showGpsPrompt = !gpsEnabled && !showModeSelection;
 
   return (
     <div className="flex flex-col h-full bg-[#F7E7D3] relative overflow-hidden">
@@ -2185,7 +2034,7 @@ const GamePlay = () => {
       {showModeSelection && (
         <div className="absolute inset-0 z-[60] flex items-center justify-center pointer-events-none">
           <div
-            className="absolute inset-0 bg-[#3D2E1F]/60 backdrop-blur-md"
+            className="absolute inset-0 bg-[#3D2E1F]/60"
             style={{ pointerEvents: "auto" }}
           />
           <div className="relative bg-[#FEF9F3] rounded-2xl shadow-2xl p-6 mx-6 max-w-[380px] w-full border-2 border-[#E8D5BE] pointer-events-auto">
@@ -2237,11 +2086,32 @@ const GamePlay = () => {
         </div>
       )}
 
+      {showGpsPrompt && (
+        <div className="absolute inset-0 z-[55] flex items-center justify-center bg-[#3D2E1F]/60 px-4">
+          <div className="w-full max-w-[360px] rounded-3xl bg-[#FEF9F3] shadow-2xl border-2 border-[#E8D5BE] p-5 space-y-4 text-center">
+            <div className="text-sm font-semibold text-[#c35f1f] tracking-wide">GPSを有効にしてください</div>
+            <p className="text-xs text-[#7A6652] leading-relaxed">
+              位置情報を使ってスポット到着を判定します。開始前にGPSの許可をお願いします。
+            </p>
+            {gpsPromptError && (
+              <p className="text-xs text-rose-500">{gpsPromptError}</p>
+            )}
+            <Button
+              className="w-full h-11 bg-gradient-to-r from-[#4A8A8C] to-[#2E5A5C] text-white font-bold rounded-xl"
+              onClick={requestGpsPermission}
+              disabled={gpsRequesting}
+            >
+              {gpsRequesting ? "GPSを確認中..." : "GPSを有効にする"}
+            </Button>
+          </div>
+        </div>
+      )}
+
       {/* Side menu overlay */}
       {menuOpen && (
         <div className="absolute inset-0 z-50 flex justify-end pointer-events-none">
           <div
-            className="absolute inset-0 bg-[#3D2E1F]/40 backdrop-blur-sm"
+            className="absolute inset-0 bg-[#3D2E1F]/40"
             onClick={() => setMenuOpen(false)}
             style={{ pointerEvents: "auto" }}
           />
@@ -2362,7 +2232,7 @@ const GamePlay = () => {
       <div className="flex-1 relative flex flex-col overflow-hidden">
         {/* Prologue overlay */}
         {showPrologueOverlay && (
-          <div className="absolute inset-0 z-40 flex items-center justify-center bg-white/90 backdrop-blur-sm px-4">
+      <div className="absolute inset-0 z-40 flex items-center justify-center bg-white/90 px-4">
             <div className="w-full max-w-[420px] rounded-3xl bg-white shadow-2xl border border-[#eadfd0] p-5 space-y-4 text-center">
               <div className="text-xs font-semibold text-[#c35f1f] uppercase tracking-wide">
                 Mission Briefing
@@ -2400,45 +2270,32 @@ const GamePlay = () => {
                   {prologueText || "プロローグは未設定です。準備ができたら任務を開始してください。"}
                 </div>
               )}
-              <div className="flex items-center gap-2">
-                {prologueMessages.length > 0 && (
-                  <Button
-                    variant="outline"
-                    className="flex-1"
-                    onClick={() => setShowPrologueOverlay(false)}
-                  >
-                    スキップ
-                  </Button>
-                )}
-                <Button
-                  className="flex-1 bg-gradient-to-r from-[#ffb566] to-[#e67a28] text-white"
-                  onClick={() => {
-                    if (prologueMessages.length > 0 && prologueVisibleCount < prologueMessages.length) {
-                      setPrologueVisibleCount((c) => Math.min(c + 1, prologueMessages.length));
-                    } else {
-                      setShowPrologueOverlay(false);
-                      // スポット1の場合はプロローグ終了後に実到着処理へ
-                      if (session?.progressStep === 1) {
-                        executeSpotArrival();
-                      }
+              <Button
+                className="w-full bg-gradient-to-r from-[#ffb566] to-[#e67a28] text-white"
+                onClick={() => {
+                  if (prologueMessages.length > 0 && prologueVisibleCount < prologueMessages.length) {
+                    setPrologueVisibleCount((c) => Math.min(c + 1, prologueMessages.length));
+                  } else {
+                    setShowPrologueOverlay(false);
+                    // スポット1の場合はプロローグ終了後に実到着処理へ
+                    if (session?.progressStep === 1) {
+                      executeSpotArrival();
                     }
-                  }}
-                >
-                  {prologueMessages.length > 0 && prologueVisibleCount < prologueMessages.length
-                    ? "次へ"
-                    : "任務を開始する"}
-                </Button>
-              </div>
+                  }
+                }}
+              >
+                {prologueMessages.length > 0 && prologueVisibleCount < prologueMessages.length
+                  ? "次へ"
+                  : "任務を開始する"}
+              </Button>
             </div>
           </div>
         )}
         {renderEpilogueOverlay()}
         {renderMapUI()}
         {renderCompletedOverlay()}
-        {renderStory()}
-        {puzzleMode && renderPuzzle()}
         {showStoryLog && (
-          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/30 backdrop-blur-sm px-4">
+          <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
             <div className="w-full max-w-[430px] rounded-3xl bg-white shadow-2xl border border-[#eadfd0] p-5 space-y-4 max-h-[90vh] overflow-auto">
               <div className="flex items-center justify-between">
                 <div className="text-base font-semibold text-[#2f1d0f]">ストーリーログ</div>
@@ -2508,7 +2365,7 @@ const GamePlay = () => {
 
       {/* Language Switcher Modal */}
       {showLanguageSwitcher && (
-        <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#3D2E1F]/60 backdrop-blur-sm">
+        <div className="absolute inset-0 z-50 flex items-center justify-center bg-[#3D2E1F]/60">
           <div className="w-[90%] max-w-[360px] bg-[#FEF9F3] rounded-3xl shadow-2xl border-2 border-[#E8D5BE] overflow-hidden">
             <div className="px-6 py-5 bg-gradient-to-r from-[#3D2E1F] to-[#D87A32] text-center">
               <Globe className="w-8 h-8 text-white mx-auto mb-2" />

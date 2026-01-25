@@ -101,9 +101,21 @@ export function useTranslatedQuest(questId: string | null, lang: string): UseTra
                 // 3. Fetch spots and translations
                 const { data: spotsData } = await supabase
                     .from('spots')
-                    .select('id, name, description')
+                    .select('id, name')
                     .eq('quest_id', questId)
                     .order('order_index', { ascending: true });
+
+                let spotDetailMap = new Map<string, string>();
+                if (spotsData && spotsData.length > 0) {
+                    const spotIds = spotsData.map((s) => s.id);
+                    const { data: spotDetailsData } = await supabase
+                        .from('spot_details')
+                        .select('spot_id, story_text')
+                        .in('spot_id', spotIds);
+                    spotDetailMap = new Map(
+                        (spotDetailsData || []).map((detail) => [detail.spot_id, detail.story_text || ''])
+                    );
+                }
 
                 if (spotsData && lang !== 'ja') {
                     const spotIds = spotsData.map((s) => s.id);
@@ -119,7 +131,7 @@ export function useTranslatedQuest(questId: string | null, lang: string): UseTra
                         spotsData.map((s) => ({
                             id: s.id,
                             name: transMap.get(s.id)?.name || s.name || '',
-                            description: transMap.get(s.id)?.description || s.description || '',
+                            description: transMap.get(s.id)?.description || spotDetailMap.get(s.id) || '',
                         }))
                     );
                 } else {
@@ -127,7 +139,7 @@ export function useTranslatedQuest(questId: string | null, lang: string): UseTra
                         spotsData?.map((s) => ({
                             id: s.id,
                             name: s.name || '',
-                            description: s.description || '',
+                            description: spotDetailMap.get(s.id) || '',
                         })) || []
                     );
                 }

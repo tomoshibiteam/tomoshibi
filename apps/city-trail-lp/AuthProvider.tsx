@@ -6,6 +6,7 @@ type Profile = {
   id: string;
   username: string | null;
   avatar_url: string | null;
+  profile_picture_url?: string | null;
   role: string;
   subscription_status: 'free' | 'pro' | 'cancelled' | null;
 };

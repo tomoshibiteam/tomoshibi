@@ -24,7 +24,8 @@ const Auth = () => {
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [loading, setLoading] = useState(false);
-  const returnTo = location.state?.returnTo || "/";
+  // Default to profile page after login unless a specific return path is set
+  const returnTo = location.state?.returnTo || "/profile";
 
   useEffect(() => {
     if (user) {
@@ -109,7 +110,7 @@ const Auth = () => {
             <CardTitle className="text-lg">{isSignUp ? "新規登録" : "ログイン"}</CardTitle>
             <CardDescription className="text-sm text-muted-foreground">
               {isSignUp
-                ? "アカウントを作成して探偵活動を始めましょう"
+                ? "アカウントを作成して冒険を始めましょう"
                 : "アカウントにログインしてください"}
             </CardDescription>
           </CardHeader>
@@ -123,7 +124,7 @@ const Auth = () => {
                     type="text"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    placeholder="探偵太郎"
+                    placeholder="氏名"
                     required
                   />
                 </div>
@@ -135,7 +136,7 @@ const Auth = () => {
                   type="email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  placeholder="detective@example.com"
+                  placeholder="name@example.com"
                   required
                 />
               </div>

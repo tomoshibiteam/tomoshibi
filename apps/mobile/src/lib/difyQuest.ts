@@ -66,6 +66,10 @@ export interface QuestSpotScene {
   lat?: number;
   lng?: number;
   scene_role?: string;
+  question_text?: string;
+  answer_text?: string;
+  hint_text?: string;
+  explanation_text?: string;
 }
 
 export interface QuestCreatorPayload {
@@ -115,8 +119,8 @@ const convertRequestToInputs = (request: QuestGenerationRequest) => ({
   where: request.prompt_support?.where || "",
   purpose: request.prompt_support?.purpose || "",
   with_whom: request.prompt_support?.withWhom || "",
-  center_lat: request.center_location?.lat?.toString() || "",
-  center_lng: request.center_location?.lng?.toString() || "",
+  center_lat: request.center_location?.lat?.toString() || "35.6812",
+  center_lng: request.center_location?.lng?.toString() || "139.7671",
   radius_km: request.radius_km?.toString() || "1",
 });
 

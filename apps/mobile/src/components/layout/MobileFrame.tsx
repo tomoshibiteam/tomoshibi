@@ -77,6 +77,7 @@ const MobileFrame = ({ header, content, bottomNav, enableFontScale = false }: Mo
       {/* Use dvh (dynamic viewport height) for mobile to account for browser chrome */}
       <div
         ref={frameRef}
+        style={{ transform: "translate3d(0, 0, 0)" }}
         className="mobile-frame w-full max-w-[430px] h-[100dvh] max-h-[100dvh] bg-background md:w-auto md:max-w-none md:h-[95dvh] md:aspect-[1170/2532] md:rounded-[40px] md:shadow-[0_24px_48px_rgba(61,43,31,0.14)] md:border-[8px] md:border-[#1a1a1a] overflow-hidden"
       >
         <div className="flex flex-col h-full overflow-hidden">

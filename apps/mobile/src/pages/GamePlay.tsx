@@ -6,7 +6,7 @@ import {
   Loader2, Menu, X, ChevronUp,
   MapPin, Navigation, Target, CheckCircle2,
   Footprints, Sparkles, ChevronLeft,
-  MessageCircle, HelpCircle, Eye, Lock, Globe, AlertCircle, Star
+  MessageCircle, HelpCircle, Eye, Lock, Globe, AlertCircle, Star, Flame
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -227,6 +227,13 @@ const GamePlay = () => {
   const [spotScores, setSpotScores] = useState<{ spotId: string, score: number, stars: number }[]>([]);
   const [currentSpotScore, setCurrentSpotScore] = useState<{ score: number, stars: number } | null>(null);
 
+  const storyScrollRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (gameMode === "story" && storyScrollRef.current) {
+      storyScrollRef.current.scrollTop = storyScrollRef.current.scrollHeight;
+    }
+  }, [storyVisibleCount, gameMode]);
+
   // Pre-Start state: game hasn't begun yet (at first spot, not arrived)
   const [hasArrivedAtFirstSpot, setHasArrivedAtFirstSpot] = useState(false);
 
@@ -414,20 +421,37 @@ const GamePlay = () => {
         }
       }
 
-      // Story texts
-      const prologue =
-        storyData?.prologue ||
-        storyData?.prologue_body ||
-        storyData?.prologue_text ||
-        null;
-      const epilogue =
-        storyData?.epilogue ||
-        storyData?.epilogue_body ||
-        storyData?.epilogue_text ||
-        null;
+      // Sanitize epilogue text to remove puzzle logic/debug info
+      const sanitizeEpilogue = (text: string | null): string | null => {
+        if (!text) return null;
+        // Split by common headers that indicate the start of puzzle explanation/logic
+        const patterns = [
+          "キーワードを以下のように変換します",
+          "謎の解説",
+          "【解説】",
+          "謎解き解説",
+          "合計すると",
+          "アルファベットの順番に",
+          "**解説**"
+        ];
+
+        let cleanText = text;
+        for (const pattern of patterns) {
+          const index = cleanText.indexOf(pattern);
+          if (index !== -1) {
+            cleanText = cleanText.substring(0, index).trim();
+          }
+        }
+        return cleanText;
+      };
+
+      const prologue = storyData?.prologue || null;
+      const rawEpilogue = storyData?.epilogue || null;
+      const epilogue = sanitizeEpilogue(rawEpilogue);
+
       setPrologueText(prologue);
       setEpilogueText(epilogue);
-      const resolvedPrologue = prologue
+      const resolvedPrologue: ChatMessage[] = prologue
         ? [
           {
             id: "prologue-1",
@@ -446,7 +470,7 @@ const GamePlay = () => {
             alignment: "left",
           },
         ];
-      const resolvedEpilogue = epilogue
+      const resolvedEpilogue: ChatMessage[] = epilogue
         ? [
           {
             id: "epilogue-1",
@@ -651,8 +675,8 @@ const GamePlay = () => {
       if (!hasPuzzle) {
         setPuzzleQuestion("このスポットには謎が設定されていません。");
         setPuzzleAnswer(null);
-      return;
-    }
+        return;
+      }
       setPuzzleQuestion(data?.question_text || null);
       setPuzzleAnswer(data?.answer_text || null);
 
@@ -1203,123 +1227,156 @@ const GamePlay = () => {
           .toString()
           .padStart(2, "0")}秒`
         : null;
-    return (
-      <div className="absolute inset-0 z-40 flex items-center justify-center bg-white/95 p-4">
-        <div className="w-full max-w-[400px] max-h-[90vh] overflow-y-auto rounded-3xl bg-white shadow-2xl border border-[#eadfd0]">
-          <div className="p-5 space-y-4">
-            {/* Header */}
-            <div className="text-center">
-              <div className="inline-block px-3 py-1 rounded-full bg-gradient-to-r from-[#ffb566] to-[#e67a28] text-white text-xs font-bold uppercase tracking-wide mb-2">
-                🎉 Mission Clear
-              </div>
-              <h2 className="text-xl font-bold text-[#2f1d0f] leading-tight">
-                {session.title}
-              </h2>
-              <p className="text-sm text-[#7c644c] mt-1">
-                全スポットをクリアしました！
-              </p>
-            </div>
 
-            {/* Stats */}
-            <div className="grid grid-cols-2 gap-3">
-              <div className="rounded-2xl bg-gradient-to-br from-[#fff8f0] to-[#f7efe5] border border-[#eadfd0] p-3 text-center">
-                <div className="text-[10px] text-[#7c644c] uppercase tracking-wide mb-1">プレイ時間</div>
-                <div className="text-lg font-bold text-[#2f1d0f]">{durationText ?? "—"}</div>
-              </div>
-              <div className="rounded-2xl bg-gradient-to-br from-[#fff8f0] to-[#f7efe5] border border-[#eadfd0] p-3 text-center">
-                <div className="text-[10px] text-[#7c644c] uppercase tracking-wide mb-1">クリアスポット</div>
-                <div className="text-lg font-bold text-[#2f1d0f]">
-                  {session.spots.length} / {session.spots.length}
+    return (
+      <div className="absolute inset-0 z-[100] flex flex-col items-center justify-center overflow-hidden transition-all duration-500">
+        {/* Semi-transparent Light Paper Background with Blur to show Map */}
+        <div className="absolute inset-0 bg-[#FEF9F3]/90 backdrop-blur-md z-0" />
+
+        {/* Vignette for cinematic focus - Sepia Tone */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_20%,_#E8D5BE_120%)] z-0 pointer-events-none opacity-60" />
+
+        <div className="relative z-10 w-full h-full max-w-xl px-6 py-8 flex flex-col items-center overflow-y-auto">
+
+          {/* Header Section */}
+          <div
+            className="flex flex-col items-center gap-6 mt-4 w-full animate-in fade-in slide-in-from-bottom-4 duration-1000 fill-mode-both"
+            style={{ animationDelay: '200ms' }}
+          >
+            {/* Title with decorative lines to match Prologue style */}
+            <div className="flex items-center gap-4 shrink-0">
+              <div className="h-px w-8 md:w-12 bg-[#7A6652]/40" />
+              <div className="flex items-center gap-3">
+                <Star className="w-6 h-6 text-[#D87A32] animate-pulse" fill="currentColor" />
+                <div
+                  className="text-xl md:text-2xl font-medium text-center font-serif text-[#3D2E1F] tracking-[0.2em] whitespace-nowrap"
+                  style={{ textShadow: '0 0 1px rgba(61, 46, 31, 0.1)' }}
+                >
+                  Quest Clear
                 </div>
               </div>
+              <div className="h-px w-8 md:w-12 bg-[#7A6652]/40" />
             </div>
 
-            {/* Action Buttons */}
-            <div className="space-y-2 pt-2">
-              <Button
-                className="w-full h-12 bg-gradient-to-r from-[#ffb566] to-[#e67a28] text-white font-bold text-base rounded-xl shadow-lg"
-                onClick={() => {
-                  setShowCompletion(false);
-                  navigate("/");
-                }}
-              >
-                ホームに戻る
-              </Button>
-              <div className="grid grid-cols-2 gap-2">
-                <Button
-                  variant="outline"
-                  className="h-10 border-[#eadfd0] text-[#7c644c] hover:bg-[#f7efe5] rounded-xl"
-                  onClick={() => {
-                    setShowCompletion(false);
-                    navigate("/profile");
-                  }}
-                >
-                  プロフィール
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-10 border-[#e67a28] text-[#e67a28] hover:bg-[#fff8f0] rounded-xl"
-                  onClick={handleReplay}
-                >
-                  もう一度プレイ
-                </Button>
-              </div>
+            <div className="text-sm font-serif text-[#7A6652] tracking-widest text-center">
+              全スポットをクリアしました！
             </div>
 
-            {/* Review Section */}
-            <div className="rounded-2xl border border-[#eadfd0] bg-[#faf8f5] p-4 space-y-3">
-              <div className="text-sm font-bold text-[#2f1d0f]">クエストの評価</div>
-              <div className="flex items-center justify-center gap-2">
-                {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    onClick={() => setReviewRating(star)}
-                    className={`text-3xl transition-transform hover:scale-110 ${reviewRating && reviewRating >= star ? "text-[#e67a28]" : "text-[#e0d6ca]"}`}
-                  >
-                    ★
-                  </button>
-                ))}
+            <h2 className="text-xl font-bold font-serif text-[#3D2E1F] leading-tight text-center tracking-wide px-4">
+              {session.title}
+            </h2>
+          </div>
+
+          {/* Stats Section */}
+          <div
+            className="grid grid-cols-2 gap-4 w-full mt-8 animate-in fade-in slide-in-from-bottom-8 duration-1000 fill-mode-both"
+            style={{ animationDelay: '500ms' }}
+          >
+            <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-[#FEF9F3] border border-[#7A6652]/20 shadow-sm">
+              <div className="text-[10px] text-[#7A6652] uppercase tracking-[0.2em] mb-2 font-serif">Play Time</div>
+              <div className="text-xl font-medium font-serif text-[#3D2E1F] tracking-widest">
+                {durationText ?? "—"}
               </div>
-              <textarea
-                value={reviewComment}
-                onChange={(e) => setReviewComment(e.target.value)}
-                className="w-full rounded-xl border border-[#eadfd0] bg-white px-3 py-2 text-sm text-[#2f1d0f] placeholder:text-[#b5a99a] focus:outline-none focus:ring-2 focus:ring-[#e67a28]/30 focus:border-[#e67a28]"
-                placeholder="感想をお聞かせください（任意）"
-                rows={2}
-              />
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-[#7c644c]">
-                  {reviewSubmitted ? "✓ 送信済み" : ""}
-                </span>
-                <Button
-                  size="sm"
-                  disabled={!reviewRating || reviewSubmitting || reviewSubmitted}
-                  className="bg-[#e67a28] hover:bg-[#d26216] text-white rounded-lg px-4"
-                  onClick={async () => {
-                    if (!user || !session) return;
-                    if (!reviewRating) return;
-                    setReviewSubmitting(true);
-                    try {
-                      await supabase.from("quest_reviews").upsert({
-                        user_id: user.id,
-                        quest_id: session.questId,
-                        rating: reviewRating,
-                        comment: reviewComment || null,
-                      });
-                      setReviewSubmitted(true);
-                    } catch (e) {
-                      console.warn("review submit failed", e);
-                      toast({ title: "送信に失敗しました", description: "通信状況をご確認ください", variant: "destructive" });
-                    } finally {
-                      setReviewSubmitting(false);
-                    }
-                  }}
-                >
-                  {reviewSubmitting ? "送信中..." : reviewSubmitted ? "送信済み" : "送信"}
-                </Button>
+            </div>
+            <div className="flex flex-col items-center justify-center p-4 rounded-2xl bg-[#FEF9F3] border border-[#7A6652]/20 shadow-sm">
+              <div className="text-[10px] text-[#7A6652] uppercase tracking-[0.2em] mb-2 font-serif">Total Spots</div>
+              <div className="text-xl font-medium font-serif text-[#3D2E1F] tracking-widest">
+                {session.spots.length} / {session.spots.length}
               </div>
             </div>
           </div>
+
+          {/* Review Section */}
+          <div
+            className="w-full mt-8 p-6 rounded-2xl bg-[#FEF9F3] border border-[#7A6652]/20 shadow-sm animate-in fade-in slide-in-from-bottom-8 duration-1000 fill-mode-both"
+            style={{ animationDelay: '800ms' }}
+          >
+            <div className="text-sm font-medium font-serif text-[#3D2E1F] text-center tracking-widest mb-4">
+              クエストの評価
+            </div>
+            <div className="flex items-center justify-center gap-3 mb-4">
+              {[1, 2, 3, 4, 5].map((star) => (
+                <button
+                  key={star}
+                  onClick={() => setReviewRating(star)}
+                  className={`text-3xl transition-transform hover:scale-110 active:scale-95 ${reviewRating && reviewRating >= star ? "text-[#D87A32]" : "text-[#E8D5BE]"}`}
+                >
+                  ★
+                </button>
+              ))}
+            </div>
+            <textarea
+              value={reviewComment}
+              onChange={(e) => setReviewComment(e.target.value)}
+              className="w-full rounded-xl border border-[#7A6652]/30 bg-white/80 px-3 py-2 text-sm text-[#3D2E1F] placeholder:text-[#3D2E1F]/40 focus:outline-none focus:ring-2 focus:ring-[#D87A32]/30 focus:border-[#D87A32] font-serif"
+              placeholder="感想をお聞かせください（任意）"
+              rows={2}
+            />
+            <div className="flex items-center justify-between mt-2">
+              <span className="text-xs text-[#7A6652] font-serif">
+                {reviewSubmitted ? "✓ 送信済み" : ""}
+              </span>
+              <Button
+                size="sm"
+                disabled={!reviewRating || reviewSubmitting || reviewSubmitted}
+                className="bg-gradient-to-r from-[#D87A32] to-[#B85A1F] hover:from-[#E88B43] hover:to-[#C96B30] text-white rounded-lg px-4 font-serif font-medium shadow-md"
+                onClick={async () => {
+                  if (!user || !session) return;
+                  if (!reviewRating) return;
+                  setReviewSubmitting(true);
+                  try {
+                    await supabase.from("quest_reviews").upsert({
+                      user_id: user.id,
+                      quest_id: session.questId,
+                      rating: reviewRating,
+                      comment: reviewComment || null,
+                    });
+                    setReviewSubmitted(true);
+                  } catch (e) {
+                    console.warn("review submit failed", e);
+                    toast({ title: "送信に失敗しました", description: "通信状況をご確認ください", variant: "destructive" });
+                  } finally {
+                    setReviewSubmitting(false);
+                  }
+                }}
+              >
+                {reviewSubmitting ? "送信中..." : reviewSubmitted ? "送信済み" : "送信"}
+              </Button>
+            </div>
+          </div>
+
+          {/* Action Buttons */}
+          <div className="w-full mt-8 grid gap-3 animate-in fade-in slide-in-from-bottom-8 duration-1000 fill-mode-both" style={{ animationDelay: '1000ms' }}>
+            <Button
+              className="w-full h-12 bg-gradient-to-r from-[#D87A32] to-[#B85A1F] hover:from-[#E88B43] hover:to-[#C96B30] text-white font-serif font-medium text-base rounded-full shadow-xl tracking-widest"
+              onClick={() => {
+                setShowCompletion(false);
+                navigate("/");
+              }}
+            >
+              ホームに戻る
+            </Button>
+            <div className="grid grid-cols-2 gap-3">
+              <Button
+                variant="outline"
+                className="h-10 border-[#7A6652]/30 bg-white/50 text-[#7A6652] hover:bg-[#FEF9F3] hover:text-[#5C4532] rounded-full font-serif font-medium tracking-wide"
+                onClick={() => {
+                  setShowCompletion(false);
+                  navigate("/profile");
+                }}
+              >
+                プロフィール
+              </Button>
+              <Button
+                variant="outline"
+                className="h-10 border-[#7A6652]/30 bg-white/50 text-[#7A6652] hover:bg-[#FEF9F3] hover:text-[#5C4532] rounded-full font-serif font-medium tracking-wide"
+                onClick={handleReplay}
+              >
+                もう一度プレイ
+              </Button>
+            </div>
+          </div>
+
         </div>
       </div>
     );
@@ -1370,46 +1427,62 @@ const GamePlay = () => {
               destination={routeDestination}
             />
 
-            {/* Visited spots - wax seal style, faded */}
+
+            {/* Visited spots - clean numbered style */}
             {visitedSpots.map((spot, idx) => (
               <AdvancedMarker
                 key={`visited-${spot.id}`}
                 position={{ lat: spot.lat!, lng: spot.lng! }}
+                className="z-10"
               >
-                <div className="relative">
+                <div className="relative group">
                   <div className="w-8 h-8 bg-gradient-to-br from-[#C9B8A3] to-[#A89888] rounded-full border-2 border-[#E8D5BE] shadow-md flex items-center justify-center">
                     <CheckCircle2 className="w-4 h-4 text-[#7A6652]" />
                   </div>
-                  <div className="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[10px] font-bold text-[#7A6652] bg-[#E8D5BE] px-1.5 py-0.5 rounded-full shadow-sm">
-                    {idx + 1}
+                  {/* Tooltip */}
+                  <div className="absolute -bottom-8 left-1/2 -translate-x-1/2 whitespace-nowrap z-50 hidden group-hover:block pointer-events-none">
+                    <div className="bg-[#3D2E1F] text-[#FEF9F3] text-[10px] font-bold px-2 py-1 rounded shadow-lg">
+                      {spot.name}
+                    </div>
                   </div>
                 </div>
               </AdvancedMarker>
             ))}
 
-            {/* Current spot marker - wax seal / lantern style */}
+            {/* Current spot marker - Circular Style with Progress */}
             {currentSpot?.lat != null && currentSpot?.lng != null && (
-              <AdvancedMarker position={{ lat: currentSpot.lat, lng: currentSpot.lng }}>
-                <div className="relative flex items-center justify-center">
-                  {/* Outer glow rings - lantern effect */}
+              <AdvancedMarker
+                position={{ lat: currentSpot.lat, lng: currentSpot.lng }}
+                className="z-30"
+              >
+                <div className="relative flex flex-col items-center justify-center">
+                  {/* Pulsing Effect */}
                   <div className="absolute w-16 h-16 bg-[#D87A32]/20 rounded-full animate-ping" style={{ animationDuration: '3s' }} />
                   <div className="absolute w-12 h-12 bg-[#D87A32]/30 rounded-full animate-pulse" style={{ animationDuration: '2s' }} />
-                  {/* Wax seal marker */}
+
+                  {/* Main Circular Marker */}
                   <div className="relative w-11 h-11 bg-gradient-to-br from-[#F4A853] via-[#D87A32] to-[#B85A1F] rounded-full border-2 border-[#FEF9F3] shadow-[0_4px_20px_rgba(216,122,50,0.5)] flex items-center justify-center">
                     <Target className="w-5 h-5 text-[#FEF9F3]" />
                   </div>
-                  {/* Progress badge */}
-                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 text-xs font-bold text-[#3D2E1F] bg-[#FEF9F3] px-2 py-0.5 rounded-full shadow-md border border-[#E8D5BE]">
-                    {session.progressStep}/{session.spots.length}
+
+                  {/* Spot Name Label (Below) */}
+                  <div className="absolute -bottom-9 flex flex-col items-center z-40 whitespace-nowrap">
+                    <div className="w-0 h-0 border-l-[5px] border-l-transparent border-r-[5px] border-r-transparent border-b-[6px] border-b-white/95" />
+                    <div className="bg-white/95 backdrop-blur-sm text-[#3D2E1F] text-xs font-bold px-2.5 py-1 rounded-lg border border-[#E8D5BE] shadow-md">
+                      {currentSpot.name}
+                    </div>
                   </div>
                 </div>
               </AdvancedMarker>
             )}
 
-            {/* Next spot marker - locked, faded ink style */}
+            {/* Next spot marker - simple locked style */}
             {nextSpot && (
-              <AdvancedMarker position={{ lat: nextSpot.lat!, lng: nextSpot.lng! }}>
-                <div className="relative opacity-50">
+              <AdvancedMarker
+                position={{ lat: nextSpot.lat!, lng: nextSpot.lng! }}
+                className="z-20"
+              >
+                <div className="relative">
                   <div className="w-8 h-8 bg-gradient-to-br from-[#9B8A7A] to-[#7A6652] rounded-full border-2 border-[#E8D5BE] shadow-md flex items-center justify-center">
                     <Lock className="w-4 h-4 text-[#E8D5BE]" />
                   </div>
@@ -1437,13 +1510,43 @@ const GamePlay = () => {
 
 
 
+
+
+        {/* Distance & Progress Indicator Overlay */}
+        {/* Distance & Progress Indicator Overlay */}
+        {distance != null && (
+          <div className="absolute top-4 left-4 pointer-events-none z-10">
+            <div className="flex flex-col bg-[#FEF9F3]/90 border border-[#E8D5BE] rounded-xl shadow-[0_4px_20px_rgba(61,46,31,0.1)] backdrop-blur-md pointer-events-auto px-5 py-3 min-w-[120px]">
+              <div className="flex items-center justify-between mb-1">
+                <div className="flex items-center gap-1.5">
+                  <div className="w-1.5 h-1.5 rounded-full bg-[#D87A32] animate-pulse shadow-[0_0_8px_#D87A32]" />
+                  <span className="text-[10px] font-bold font-serif text-[#7A6652] uppercase tracking-[0.2em]">
+                    Next Spot
+                  </span>
+                </div>
+                <span className="text-[10px] font-bold font-serif text-[#D87A32] bg-[#F7E7D3] px-2 py-0.5 rounded-full border border-[#D87A32]/20">
+                  {session.progressStep} / {session.spots.length}
+                </span>
+              </div>
+              <div className="flex items-baseline gap-1 mt-1">
+                <span className="text-[#3D2E1F] text-2xl font-black font-serif tracking-tighter leading-none decoration-clone">
+                  {distance < 1000 ? Math.round(distance) : (distance / 1000).toFixed(1)}
+                </span>
+                <span className="text-[#7A6652] text-xs font-bold font-serif ml-0.5">
+                  {distance < 1000 ? 'm' : 'km'}
+                </span>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Menu button only */}
-        <div className="absolute top-3 right-3 pointer-events-none">
+        <div className="absolute top-3 right-3 pointer-events-none z-20">
           <button
             onClick={() => setMenuOpen(true)}
-            className="w-10 h-10 rounded-full bg-[#FEF9F3]/95 border-2 border-[#E8D5BE] flex items-center justify-center shadow-md hover:bg-[#F7E7D3] transition-colors pointer-events-auto"
+            className="w-11 h-11 rounded-full bg-[#FEF9F3]/90 border border-[#E8D5BE] flex items-center justify-center shadow-[0_4px_16px_rgba(61,46,31,0.1)] hover:bg-[#F7E7D3] transition-all duration-300 pointer-events-auto backdrop-blur-sm group"
           >
-            <Menu className="w-5 h-5 text-[#3D2E1F]" />
+            <Menu className="w-5 h-5 text-[#3D2E1F] group-hover:scale-110 transition-transform" />
           </button>
         </div>
 
@@ -1473,64 +1576,130 @@ const GamePlay = () => {
 
   const renderEpilogueOverlay = () => {
     if (!showEpilogueOverlay || !session) return null;
-    const hasMessages = epilogueMessages.length > 0;
+
     return (
-      <div className="absolute inset-0 z-40 flex items-center justify-center bg-white/90 px-4">
-        <div className="w-full max-w-[420px] rounded-3xl bg-white shadow-2xl border border-[#eadfd0] p-5 space-y-4 text-center">
-          <div className="text-xs font-semibold text-[#c35f1f] tracking-wide">
-            エピローグ
+      <div
+        className="absolute inset-0 z-[100] flex flex-col items-center justify-center overflow-hidden transition-all duration-500"
+        onClick={() => {
+          if (epilogueVisibleCount <= epilogueMessages.length) {
+            setEpilogueVisibleCount(c => c + 1);
+          }
+        }}
+      >
+        {/* Semi-transparent Light Paper Background with Blur to show Map */}
+        <div className="absolute inset-0 bg-[#FEF9F3]/85 backdrop-blur-sm z-0" />
+
+        {/* Vignette for cinematic focus - Sepia Tone */}
+        <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_20%,_#E8D5BE_120%)] z-0 pointer-events-none opacity-60" />
+
+        <div className="relative z-10 w-full h-full max-w-xl px-8 py-10 flex flex-col items-center justify-between pointer-events-none">
+
+          {/* Quest Title - Top Section */}
+          <div
+            className="flex flex-col items-center gap-2 mt-4 shrink-0 animate-in fade-in slide-in-from-bottom-4 duration-1000 fill-mode-both"
+            style={{ animationDelay: '500ms' }}
+          >
+            <div className="text-xs font-serif tracking-[0.3em] text-[#7A6652] uppercase text-center opacity-90">
+              {session.title}
+            </div>
+            <div className="w-16 h-px bg-gradient-to-r from-transparent via-[#7A6652]/50 to-transparent" />
           </div>
-          <div className="text-xl font-bold text-[#2f1d0f] leading-tight">
-            {session.title}
-          </div>
-          {hasMessages ? (
-            <div className="bg-[#f9f4ec] border border-[#eadfd0] rounded-2xl px-3 py-3 max-h-72 overflow-auto space-y-3 text-left">
-              {epilogueMessages.slice(0, epilogueVisibleCount).map((m) => (
-                <div
-                  key={m.id}
-                  className={`flex ${m.alignment === "right"
-                    ? "justify-end"
-                    : m.alignment === "center"
-                      ? "justify-center"
-                      : "justify-start"
-                    }`}
-                >
-                  <div
-                    className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${m.alignment === "right"
-                      ? "bg-[#ffe3c4] text-[#3b2615]"
-                      : m.alignment === "center"
-                        ? "bg-[#f1e8dc] text-[#3b2615]"
-                        : "bg-white text-[#3b2615] border border-[#eadfd0]"
-                      }`}
-                  >
-                    {m.name && (
-                      <div className="text-xs font-semibold text-[#c35f1f] mb-1">
-                        {m.name}
+
+          {/* Main Content Area - Center Section */}
+          <div
+            className="flex-1 w-full min-h-0 my-4 animate-in fade-in slide-in-from-bottom-8 duration-1000 fill-mode-both flex flex-col"
+            style={{ animationDelay: '1500ms' }}
+          >
+            <div className="flex-1 overflow-y-auto px-1 scrollbar-hide">
+              {epilogueVisibleCount <= epilogueMessages.length ? (
+                // Message Display Phase
+                (() => {
+                  const msg = epilogueMessages[epilogueVisibleCount - 1];
+                  // Fallback for empty/single message case if array is weird, though usually covered
+                  if (!msg && epilogueMessages.length === 0) {
+                    return (
+                      <div className="text-[#3D2E1F] font-serif text-lg text-center mt-10">
+                        {epilogueText || "Epilogue"}
                       </div>
-                    )}
-                    <div className="whitespace-pre-wrap">{m.text}</div>
+                    )
+                  }
+                  const isNarrator = msg?.speakerType === "narrator" || !msg?.speakerType;
+                  return (
+                    <div
+                      key={msg?.id || epilogueVisibleCount}
+                      className="flex flex-col items-center space-y-6 animate-in fade-in zoom-in-95 duration-700 fill-mode-both min-h-full justify-center py-4"
+                    >
+                      {/* Speaker Name */}
+                      {msg?.name && (
+                        <div className="flex items-center gap-3 shrink-0">
+                          <div className="h-px w-8 bg-[#7A6652]/40" />
+                          <div className="text-[#5C4532] text-sm font-bold tracking-widest uppercase py-0.5">
+                            {msg.name}
+                          </div>
+                          <div className="h-px w-8 bg-[#7A6652]/40" />
+                        </div>
+                      )}
+
+                      {/* Main Text - High Contrast */}
+                      <div
+                        className={`text-base md:text-lg leading-loose font-medium text-center font-serif tracking-wide whitespace-pre-wrap ${isNarrator ? "text-[#7A6652] italic" : "text-[#3D2E1F]"
+                          }`}
+                        style={{
+                          textShadow: '0 0 1px rgba(61, 46, 31, 0.1)'
+                        }}
+                      >
+                        {msg?.text?.replace(/([。！？]+)/g, "$1\n")}
+                      </div>
+                    </div>
+                  );
+                })()
+              ) : (
+                // Mission Clear Phase
+                <div className="flex flex-col items-center justify-center min-h-full space-y-8 animate-in zoom-in-95 duration-700 pointer-events-auto py-4">
+                  {/* Title with decorative lines */}
+                  <div className="flex items-center gap-4 shrink-0">
+                    <div className="h-px w-8 md:w-12 bg-[#7A6652]/40" />
+                    <div className="flex items-center gap-3">
+                      <Star className="w-5 h-5 text-[#D87A32] animate-pulse" fill="currentColor" />
+                      <div
+                        className="text-lg md:text-xl font-medium text-center font-serif text-[#3D2E1F] tracking-[0.2em] whitespace-nowrap"
+                        style={{ textShadow: '0 0 1px rgba(61, 46, 31, 0.1)' }}
+                      >
+                        物語の結末
+                      </div>
+                    </div>
+                    <div className="h-px w-8 md:w-12 bg-[#7A6652]/40" />
+                  </div>
+
+                  <div className="relative group shrink-0">
+                    <div className="absolute -inset-1 rounded-full bg-[#D87A32] opacity-30 blur-lg animate-pulse" />
+                    <Button
+                      className="relative h-14 px-12 bg-gradient-to-r from-[#D87A32] to-[#B85A1F] hover:from-[#E88B43] hover:to-[#C96B30] text-[#FEF9F3] text-base md:text-lg font-medium font-serif rounded-full shadow-xl tracking-[0.2em] transition-all hover:scale-105 active:scale-95 border border-[#FEF9F3]/20"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setShowEpilogueOverlay(false);
+                        setShowCompletion(true);
+                      }}
+                    >
+                      Quest Clear
+                    </Button>
                   </div>
                 </div>
-              ))}
+              )}
             </div>
-          ) : (
-            <div className="text-sm text-[#7c644c] max-h-60 overflow-auto whitespace-pre-wrap leading-relaxed text-left bg-[#f9f4ec] border border-[#eadfd0] rounded-2xl px-3 py-3">
-              {epilogueText || "エピローグはまだ設定されていません。"}
-            </div>
-          )}
-          <Button
-            className="w-full bg-gradient-to-r from-[#ffb566] to-[#e67a28] text-white"
-            onClick={() => {
-              if (hasMessages && epilogueVisibleCount < epilogueMessages.length) {
-                setEpilogueVisibleCount((c) => Math.min(c + 1, epilogueMessages.length));
-              } else {
-                setShowEpilogueOverlay(false);
-                setShowCompletion(true);
-              }
-            }}
+          </div>
+
+          {/* Tap Prompt - Bottom Section */}
+          <div
+            className="h-10 flex items-center justify-center shrink-0 animate-in fade-in duration-1000 fill-mode-both"
+            style={{ animationDelay: '3000ms' }}
           >
-            {hasMessages && epilogueVisibleCount < epilogueMessages.length ? "次へ" : "Mission Clear へ"}
-          </Button>
+            {epilogueVisibleCount <= epilogueMessages.length && (
+              <div className="animate-pulse text-xs text-[#7A6652] tracking-widest border-b border-[#7A6652]/30 pb-0.5">
+                Tap to continue
+              </div>
+            )}
+          </div>
         </div>
       </div>
     );
@@ -1571,11 +1740,11 @@ const GamePlay = () => {
 
   const renderSheet = () => (
     <div
-      className={`mx-auto max-w-[430px] bg-[#FEF9F3] shadow-xl rounded-2xl transition-all duration-300 border-2 border-[#E8D5BE] ${sheetCollapsed
-        ? "px-4 pt-2 pb-2"
+      className={`mx-auto max-w-[430px] bg-[#FEF9F3] shadow-[0_-8px_30px_rgba(61,46,31,0.15)] rounded-t-3xl transition-all duration-300 border border-[#E8D5BE] relative z-30 ${sheetCollapsed
+        ? "px-5 pt-3 pb-3"
         : sheetExpanded
-          ? "px-4 pt-3 pb-4 h-[50%] overflow-y-auto"
-          : "px-4 pt-3 pb-4"
+          ? "px-6 pt-4 pb-6 h-[60%] overflow-y-auto"
+          : "px-6 pt-4 pb-6"
         }`}
       onTouchStart={handleSheetDragStart}
       onTouchMove={handleSheetDragMove}
@@ -1586,142 +1755,122 @@ const GamePlay = () => {
       style={{ touchAction: 'none' }}
     >
       {/* Drag handle */}
-      <div
-        className="w-8 h-1 rounded-full bg-[#E8D5BE] mx-auto mb-2 cursor-grab active:cursor-grabbing hover:bg-[#D87A32]/40 transition-colors"
-        onClick={() => {
-          if (sheetCollapsed) {
-            setSheetCollapsed(false);
-          } else {
-            setSheetExpanded((prev) => !prev);
-          }
-        }}
-      />
+      <div className="w-full flex justify-center mb-3">
+        <div
+          className="w-12 h-1.5 rounded-full bg-[#E8D5BE] cursor-grab active:cursor-grabbing hover:bg-[#D87A32]/40 transition-colors"
+          onClick={() => {
+            if (sheetCollapsed) {
+              setSheetCollapsed(false);
+            } else {
+              setSheetExpanded((prev) => !prev);
+            }
+          }}
+        />
+      </div>
 
       {/* Collapsed peek */}
       {sheetCollapsed && (
-        <div className="flex items-center justify-center gap-2 py-1">
+        <div className="flex items-center justify-center gap-2 py-1 animate-in fade-in">
           <ChevronUp className="w-4 h-4 text-[#7A6652]" />
-          <span className="text-[#3D2E1F] text-xs tracking-wide">スワイプして表示</span>
+          <span className="text-[#3D2E1F] text-xs font-serif font-bold tracking-widest uppercase">Swipe Up</span>
           <ChevronUp className="w-4 h-4 text-[#7A6652]" />
         </div>
       )}
 
       {/* Main content - hidden when collapsed */}
       {!sheetCollapsed && (
-        <>
+        <div className="animate-in fade-in slide-in-from-bottom-4 duration-500">
           {gameMode === "travel" && (
             <>
-              <div className="flex items-start gap-3 mb-3">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center shadow-md flex-shrink-0 border-2 border-[#FEF9F3] ${isPreStart
-                  ? 'bg-gradient-to-br from-[#2E5A5C] via-[#3A7478] to-[#2E5A5C] animate-pulse'
-                  : 'bg-gradient-to-br from-[#F4A853] via-[#D87A32] to-[#B85A1F]'
+              {/* Header Section */}
+              <div className="flex items-center gap-4 mb-5 pb-4 border-b border-[#E8D5BE]/50">
+                <div className={`w-12 h-12 rounded-full flex items-center justify-center shadow-lg shrink-0 border-2 border-[#FEF9F3] relative overflow-hidden ${isPreStart
+                  ? 'bg-[#2E5A5C]'
+                  : 'bg-[#D87A32]'
                   }`}>
+                  <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent" />
                   {isPreStart ? (
-                    <span className="text-[#FEF9F3] text-[10px] font-bold">START</span>
+                    <span className="text-[#FEF9F3] text-[10px] font-serif font-bold tracking-widest">START</span>
                   ) : (
-                    <Target className="w-4 h-4 text-[#FEF9F3]" />
+                    <div className="text-[#FEF9F3] font-serif font-bold text-lg">{session.progressStep}</div>
                   )}
                 </div>
 
                 <div className="flex-1 min-w-0">
-                  <h2 className="text-base font-bold text-[#3D2E1F] leading-tight line-clamp-1 mb-0.5 tracking-wide">
-                    {isPreStart ? '開始地点' : (currentSpot?.name || "次のスポット")}
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-[10px] font-bold font-serif text-[#D87A32] tracking-[0.2em] uppercase">
+                      {isPreStart ? 'Mission Start' : `Target Spot ${session.progressStep}`}
+                    </span>
+                    <div className="h-px flex-1 bg-gradient-to-r from-[#D87A32]/30 to-transparent" />
+                  </div>
+                  <h2 className="text-lg font-bold font-serif text-[#3D2E1F] leading-tight line-clamp-1 tracking-wide">
+                    {currentSpot?.name || "未知の場所"}
                   </h2>
-                  <p className="text-[#7A6652] text-xs tracking-wide">
-                    {isPreStart ? currentSpot?.name : (session.areaName || "エリア")}
+                  <p className="text-[#7A6652] text-xs font-serif mt-1 flex items-center gap-1 opacity-80">
+                    <MapPin className="w-3 h-3" />
+                    {isPreStart ? currentSpot?.name : (session.areaName || "Area Unknown")}
                   </p>
                 </div>
               </div>
 
               {isPreStart && (
-                <div className="mb-3 p-3 bg-[#2E5A5C]/10 rounded-xl border border-[#2E5A5C]/30">
-                  <p className="text-sm text-[#3D2E1F] leading-relaxed">
-                    🚩 <span className="font-bold">クエスト開始前</span><br />
-                    この地点から物語が始まります。まずは開始地点に到着してください。
+                <div className="mb-4 p-4 bg-[#2E5A5C]/5 rounded-xl border border-[#2E5A5C]/20 relative overflow-hidden">
+                  <div className="absolute top-0 right-0 p-2 opacity-10"><Footprints className="w-12 h-12 text-[#2E5A5C]" /></div>
+                  <p className="text-sm text-[#3D2E1F] font-serif leading-loose relative z-10">
+                    <span className="text-[#2E5A5C] font-bold tracking-wider text-xs block mb-1">CURRENT OBJECTIVE</span>
+                    この地点から物語が始まります。<br />まずは開始地点へ向かってください。
                   </p>
                 </div>
               )}
 
-              {distance != null && (
-                <div className="flex items-center gap-2 mb-3">
-                  <div className="flex items-center gap-2 px-3 py-1.5 bg-[#F7E7D3] border-2 border-[#E8D5BE] rounded-full">
-                    <Footprints className="w-3.5 h-3.5 text-[#D87A32]" />
-                    <span className="text-[#3D2E1F] text-xs font-bold tracking-wide">
-                      {distance < 1000 ? `${Math.round(distance)}m` : `${(distance / 1000).toFixed(1)}km`}
-                    </span>
-                  </div>
-                </div>
-              )}
-
               {sheetExpanded && currentSpot?.description && (
-                <div className="mb-3 p-3 bg-[#F7E7D3] rounded-xl border-2 border-[#E8D5BE]">
-                  <div className="flex items-center gap-2 mb-1">
-                    <MessageCircle className="w-3.5 h-3.5 text-[#D87A32]" />
-                    <span className="text-[#D87A32] text-xs font-bold uppercase tracking-widest">ミッション</span>
+                <div className="mb-4 p-4 bg-[#F7E7D3]/50 rounded-xl border border-[#E8D5BE]">
+                  <div className="flex items-center gap-2 mb-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-[#D87A32]" />
+                    <span className="text-[#7A6652] text-[10px] font-bold font-serif uppercase tracking-widest">Mission Detail</span>
                   </div>
-                  <p className="text-[#3D2E1F] text-sm leading-relaxed whitespace-pre-wrap">
+                  <p className="text-[#3D2E1F] text-sm font-serif leading-relaxed whitespace-pre-wrap opacity-90">
                     {currentSpot.description}
                   </p>
                 </div>
               )}
 
-              <div className="mb-3 px-3 py-2 bg-[#F7E7D3] rounded-xl border-2 border-[#E8D5BE]">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs text-[#7A6652] font-medium">次のスポット</span>
-                  <span className="text-xs font-bold text-[#D87A32]">{session.progressStep}/{session.spots.length}</span>
-                </div>
-                <div className="flex items-center gap-2 mt-1 text-sm text-[#3D2E1F] font-medium">
-                  <Footprints className="w-4 h-4 text-[#D87A32]" />
-                  <span>{formatDistance(distance)}</span>
-                  {etaMinutes != null && etaMinutes > 0 && (
-                    <span className="text-[#7A6652]">• 徒歩約{etaMinutes}分</span>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-2">
+              <div className="space-y-3 mt-2">
                 <Button
-                  className="relative w-full h-11 text-sm font-bold rounded-xl transition-all duration-200 tracking-wide active:scale-[0.98] bg-gradient-to-r from-[#F4A853] to-[#D87A32] text-[#FEF9F3] shadow-[0_4px_16px_rgba(216,122,50,0.3)]"
-                  onClick={openNavigation}
-                >
-                  <span className="flex items-center gap-2">
-                    <Navigation className="w-4 h-4" />
-                    {isPreStart ? '開始地点へナビ' : 'ナビを開く'}
-                  </span>
-                </Button>
-
-                <Button
-                  className={`relative w-full h-11 text-sm font-bold rounded-xl transition-all duration-200 tracking-wide active:scale-[0.98] ${isNear
-                    ? "bg-gradient-to-r from-[#4A8A8C] to-[#2E5A5C] text-[#FEF9F3] shadow-md"
-                    : "bg-[#E8D5BE] text-[#7A6652] border-2 border-[#D8C8B8]"
+                  className={`relative w-full h-14 text-sm font-bold font-serif rounded-full transition-all duration-300 tracking-[0.15em] shadow-lg hover:shadow-xl active:scale-[0.98] border border-[#FEF9F3]/20 ${isNear
+                    ? "bg-gradient-to-r from-[#4A8A8C] to-[#2E5A5C] text-[#FEF9F3]"
+                    : "bg-[#E8D5BE] text-[#7A6652] opacity-80 hover:opacity-100"
                     }`}
                   onClick={handleArrive}
                   disabled={advancing || (!isNear && !isDev)}
                 >
-                  <span className="flex items-center gap-2">
+                  <span className="flex items-center justify-center gap-3">
                     {isNear ? (
                       <>
-                        <Sparkles className="w-4 h-4" />
-                        {isLastSpot ? "✿ クエスト完了！" : "✿ 到着した！"}
+                        <Sparkles className="w-5 h-5 animate-pulse" />
+                        {isLastSpot ? "クエストを完了する" : "ミッションを開始する"}
                       </>
                     ) : (
                       <>
                         <Target className="w-4 h-4" />
-                        到着した（あと{formatDistance(distance)}）
+                        <div>
+                          <span className="block text-[10px] opacity-70 tracking-normal font-sans">あと {formatDistance(distance)}</span>
+                          到着まで移動してください
+                        </div>
                       </>
                     )}
                   </span>
                 </Button>
               </div>
 
-              <div className="mt-2 text-center">
+              <div className="mt-3 text-center min-h-[20px]">
                 {isNear && (
-                  <p className="text-[#2E5A5C] text-xs font-medium">
-                    🎉 目的地付近に到着しました！
+                  <p className="text-[#2E5A5C] text-xs font-serif font-bold animate-pulse tracking-wide">
+                    目的地付近です。開始ボタンを押してください。
                   </p>
                 )}
                 {!isNear && gpsEnabled && locationStatus === "locationUnavailable" && (
-                  <p className="text-rose-500 text-xs">
+                  <p className="text-rose-500 text-xs font-serif">
                     現在地を取得できませんでした
                   </p>
                 )}
@@ -1729,19 +1878,8 @@ const GamePlay = () => {
             </>
           )}
 
-          {gameMode === "story" && renderStory()}
-          {gameMode === "puzzle" && renderPuzzle()}
-
-          {gameMode !== "travel" && (
-            <Button
-              className="w-full h-10 rounded-xl border-2 border-[#E8D5BE] text-[#7A6652] hover:bg-[#F7E7D3] transition-colors mt-2"
-              onClick={handleSkip}
-              disabled={puzzleLoading || advancing}
-            >
-              スキップ
-            </Button>
-          )}
-        </>
+          {/* Story and Puzzle modes are handled by top-level overlays now */}
+        </div>
       )}
     </div>
   );
@@ -1805,281 +1943,544 @@ const GamePlay = () => {
     }
   };
 
-  const renderStory = () => {
-    if (gameMode !== "story") return null;
-    return (
-        <div className="space-y-3">
-          {renderModeStatusBar()}
+  /* New Full Screen Story Renderer */
+  const renderStoryScreen = () => {
+    // Generate a consistent color for character names
+    const getCharacterColor = (name: string) => {
+      const colors = [
+        "#C0392B", // Deep Red
+        "#2980B9", // Strong Blue
+        "#16A085", // Teal
+        "#8E44AD", // Wisteria Purple
+        "#D35400", // Pumpkin Orange
+        "#2C3E50", // Midnight Blue
+        "#27AE60", // Nephritis Green
+      ];
+      let hash = 0;
+      for (let i = 0; i < name.length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+      }
+      return colors[Math.abs(hash) % colors.length];
+    };
 
+    // Find the latest character image to use as background
+    const getCurrentBackgroundImage = () => {
+      // Look backwards from current visible message
+      for (let i = storyVisibleCount - 1; i >= 0; i--) {
+        const msg = storyMessages[i];
+        if (msg.speakerType === 'character' && msg.avatarUrl) {
+          return msg.avatarUrl;
+        }
+      }
+      return null;
+    };
+
+    const bgImage = getCurrentBackgroundImage();
+
+    return (
+      <div
+        className="absolute inset-0 z-50 flex flex-col bg-[#0F0F0F]"
+        onClick={handleStoryAdvance}
+      >
+        {/* Background Image Layer */}
+        {bgImage ? (
+          <div className="absolute inset-0 transition-opacity duration-700 ease-in-out">
+            <img
+              src={bgImage}
+              alt="Character"
+              className="w-full h-full object-cover opacity-100" // Keep full opacity, assume image is high quality
+            />
+            {/* Cinematic Gradients */}
+            <div className="absolute inset-0 bg-gradient-to-b from-black/40 via-transparent to-black/80" />
+            <div className="absolute inset-0 bg-gradient-to-t from-[#3D2E1F] via-transparent to-transparent opacity-60" />
+          </div>
+        ) : (
+          <div className="absolute inset-0 bg-[#FEF9F3]">
+            {/* Vignette for cinematic focus - Sepia Tone (Prologue Style) */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_20%,_#E8D5BE_120%)] opacity-60" />
+          </div>
+        )}
+
+        {/* Header Area */}
+        <div className="relative z-10 px-6 pt-14 pb-4 flex flex-col items-start gap-2 pointer-events-none">
+          <div className="flex-1 min-w-0 pr-12">
+            <div className={`text-[10px] font-serif tracking-[0.2em] uppercase mb-1 truncate ${bgImage ? "text-white/60" : "text-[#7A6652]/80"}`}>
+              {session?.title}
+            </div>
+            <div className={`text-lg font-bold font-serif tracking-widest break-words mb-2 ${bgImage ? "text-white" : "text-[#3D2E1F]"}`}>
+              {currentSpot?.name}
+            </div>
+            {/* Mode Badge - Moved to left */}
+            <div className={`inline-flex px-3 py-1 rounded-full backdrop-blur-md border text-[10px] font-serif tracking-wider whitespace-nowrap ${bgImage
+              ? "bg-white/10 border-white/20 text-white"
+              : "bg-[#D87A32]/10 border-[#D87A32]/20 text-[#D87A32]"
+              }`}>
+              物語
+            </div>
+          </div>
+        </div>
+
+        {/* Menu Button (Absolute Top-Right) */}
+        <div className="absolute top-4 right-4 z-50">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setMenuOpen(true);
+            }}
+            className="w-11 h-11 rounded-full bg-[#FEF9F3]/90 border border-[#E8D5BE] flex items-center justify-center shadow-[0_4px_16px_rgba(61,46,31,0.1)] hover:bg-[#F7E7D3] transition-all duration-300 pointer-events-auto backdrop-blur-sm group"
+          >
+            <Menu className="w-5 h-5 text-[#3D2E1F] group-hover:scale-110 transition-transform" />
+          </button>
+        </div>
+
+        {/* Chat Area */}
         <div
-          className={`space-y-2 overflow-auto pr-1 ${sheetExpanded ? "max-h-[40vh]" : "max-h-40"
-            }`}
+          ref={storyScrollRef}
+          className="flex-1 overflow-y-auto px-4 py-4 space-y-6 relative z-10 scrollbar-hide mask-gradient-top"
+          style={{ maskImage: 'linear-gradient(to bottom, transparent, black 15%, black 85%, transparent)' }}
         >
-          {storyMessages.slice(0, storyVisibleCount).map((m) => (
-            <div
-              key={m.id}
-              className={`flex ${m.alignment === "right"
-                ? "justify-end"
-                : m.alignment === "center"
-                  ? "justify-center"
-                  : "justify-start"
-                }`}
-            >
+          {/* Add top spacing */}
+          <div className="h-4" />
+
+          {storyMessages.slice(0, storyVisibleCount).map((m, idx) => {
+            const isLast = idx === storyVisibleCount - 1;
+            const isUser = m.alignment === 'right'; // Assuming alignment matches role
+            const isSystem = m.speakerType === 'system' || m.alignment === 'center';
+            const isNarrator = m.speakerType === 'narrator';
+
+            return (
               <div
-                className={`max-w-[85%] rounded-xl px-3 py-2 text-sm leading-relaxed ${m.alignment === "right"
-                  ? "bg-[#D87A32]/15 text-[#3D2E1F] border border-[#D87A32]/30"
-                  : m.alignment === "center"
-                    ? "bg-[#F7E7D3] text-[#7A6652] text-xs italic"
-                    : "bg-[#F7E7D3] text-[#3D2E1F] border border-[#E8D5BE]"
-                  }`}
+                key={m.id}
+                className={`flex flex-col ${isUser
+                  ? "items-end"
+                  : isSystem || isNarrator
+                    ? "items-center"
+                    : "items-start"
+                  } animate-in fade-in slide-in-from-bottom-4 duration-500 fill-mode-both`}
               >
-                {m.name && (
-                  <div className="text-xs font-bold text-[#D87A32] mb-1">
+                {/* Character Name Label */}
+                {m.name && !isSystem && !isNarrator && !isUser && (
+                  <div
+                    className="text-[10px] font-bold ml-2 mb-1 tracking-wider"
+                    style={{
+                      color: getCharacterColor(m.name),
+                      textShadow: "1px 1px 0 #fff, -1px -1px 0 #fff, 1px -1px 0 #fff, -1px 1px 0 #fff" // White stroke effect for visibility
+                    }}
+                  >
                     {m.name}
                   </div>
                 )}
-                <div className="whitespace-pre-wrap">{m.text}</div>
+
+                {/* Bubble */}
+                <div
+                  className={`max-w-[85%] px-5 py-3 relative shadow-lg backdrop-blur-sm ${isUser
+                    ? "bg-[#D87A32]/90 text-white rounded-2xl rounded-tr-sm border border-[#F4A853]/30"
+                    : isSystem || isNarrator
+                      ? "bg-black/40 text-white/90 text-xs italic text-center px-8 py-2 rounded-full border border-white/10"
+                      : "bg-white/90 text-[#3D2E1F] rounded-2xl rounded-tl-sm border border-white/40"
+                    }`}
+                >
+                  <div className={`text-sm font-serif leading-relaxed whitespace-pre-wrap ${isSystem || isNarrator ? "tracking-widest" : "tracking-wide"}`}>
+                    {m.text}
+                  </div>
+
+                  {/* Triangle for speech bubble */}
+                  {!isSystem && !isNarrator && (
+                    <div className={`absolute top-0 w-0 h-0 border-8 ${isUser
+                      ? "right-[-8px] border-t-[#D87A32]/90 border-r-transparent border-l-transparent border-b-transparent"
+                      : "left-[-8px] border-t-white/90 border-l-transparent border-r-transparent border-b-transparent"
+                      }`} />
+                  )}
+                </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
+
+          {/* Bottom Spacer */}
+          <div className="h-32" />
         </div>
 
-        {storyStage === "post" && storyVisibleCount >= storyMessages.length && !isLastSpot ? (
-          <Button
-            className="w-full h-11 font-bold rounded-xl tracking-wide active:scale-[0.98] bg-gradient-to-r from-[#F4A853] to-[#D87A32] text-[#FEF9F3] shadow-[0_4px_16px_rgba(216,122,50,0.3)]"
-            onClick={() => {
-              openNavigation(session?.spots[session.progressStep] ?? null);
-              handleNext();
-            }}
-          >
-            <span className="flex items-center gap-2">
-              <Navigation className="w-4 h-4" />
-              ナビを開いて次へ
-            </span>
-          </Button>
-        ) : (
-          <Button
-            className={`w-full h-11 font-bold rounded-xl tracking-wide active:scale-[0.98] ${storyStage === "post"
-              ? "bg-gradient-to-r from-[#4A8A8C] to-[#2E5A5C] text-[#FEF9F3] shadow-md"
-              : "bg-gradient-to-r from-[#F4A853] to-[#D87A32] text-[#FEF9F3] shadow-[0_4px_16px_rgba(216,122,50,0.3)]"
-              }`}
-            onClick={handleStoryAdvance}
-          >
-            {storyVisibleCount < storyMessages.length
-              ? "次へ"
-              : storyStage === "post"
-                ? isLastSpot
-                  ? "✿ クエストクリア"
-                  : "次のスポットへ"
-                : "謎解きへ"}
-          </Button>
-        )}
-
-        <div className="flex items-center justify-between pt-1">
-          <button
-            className="text-xs text-[#7A6652] hover:text-[#D87A32] transition-colors flex items-center gap-1"
-            onClick={() => setShowStoryLog(true)}
-          >
-            <Eye className="w-3 h-3" />
-            これまでの会話
-          </button>
-        </div>
-      </div>
-    );
-  };
-
-  const renderPuzzle = () => {
-    if (gameMode !== "puzzle") return null;
-    return (
-      <div className="space-y-3">
-        {renderModeStatusBar()}
-
-        <div className="p-3 rounded-xl bg-[#F7E7D3] border-2 border-[#E8D5BE]">
-          <h3 className="text-base font-bold text-[#3D2E1F] mb-1 tracking-wide">
-            {currentSpot?.name || "スポット"}
-          </h3>
-          <p className={`text-[#7A6652] text-sm whitespace-pre-wrap leading-relaxed overflow-auto ${sheetExpanded ? "max-h-[28vh]" : "max-h-32"
-            }`}>
-            {puzzleQuestion || "このスポットには謎が設定されていません"}
-          </p>
-        </div>
-
-        <div className="space-y-2">
-          <input
-            type="text"
-            value={puzzleInput}
-            onChange={(e) => setPuzzleInput(e.target.value)}
-            className={`w-full rounded-xl px-4 py-2.5 text-base font-medium transition-all ${puzzleState === "correct"
-              ? "bg-[#2E5A5C]/10 border-2 border-[#2E5A5C] text-[#2E5A5C]"
-              : puzzleState === "incorrect"
-                ? "bg-red-50 border-2 border-red-300 text-[#3D2E1F]"
-                : "bg-[#F7E7D3] border-2 border-[#E8D5BE] text-[#3D2E1F] placeholder:text-[#9B8A7A]"
-              }`}
-            placeholder="答えを入力してください..."
-            disabled={puzzleState === "correct"}
-          />
-
-          {puzzleError && (
-            <p className="text-red-500 text-sm flex items-center gap-1.5">
-              × {puzzleError}
-            </p>
-          )}
-
-          {puzzleState === "incorrect" && (
-            <p className="text-[#7A6652] text-xs">
-              試行回数: {attemptCount} 回
-            </p>
-          )}
-
-          {puzzleState === "correct" && (
-            <p className="text-[#2E5A5C] text-xs font-medium flex items-center gap-1">
-              <CheckCircle2 className="w-3.5 h-3.5" />
-              正解！
-            </p>
-          )}
-        </div>
-
-        {puzzleHints.length > 0 && puzzleState !== "correct" && (
-          <div className="space-y-2">
-            {puzzleHints.slice(0, revealedHintLevel).map((hint, idx) => (
-              <div key={idx} className="p-2.5 rounded-xl bg-amber-50 border border-amber-200">
-                <div className="text-xs font-bold text-amber-700 mb-0.5">💡 ヒント {idx + 1}</div>
-                <div className="text-sm text-amber-900">{hint}</div>
-              </div>
-            ))}
-
-            {revealedHintLevel < puzzleHints.length && (
-              <button
-                onClick={revealNextHint}
-                className="w-full py-2 px-3 rounded-xl bg-amber-100 border border-amber-300 text-amber-800 text-sm font-medium hover:bg-amber-200 transition-colors flex items-center justify-center gap-2"
-              >
-                💡 ヒント{revealedHintLevel + 1}を見る（{puzzleHints.length - revealedHintLevel}個残り）
-              </button>
-            )}
-          </div>
-        )}
-
-        {showAnswerHelp && puzzleState !== "correct" && (
-          <div className="p-3 rounded-xl bg-violet-50 border border-violet-200">
-            <h4 className="font-bold text-violet-700 text-sm mb-2 flex items-center gap-1.5">
-              <HelpCircle className="w-4 h-4" />
-              答えが通らない？
-            </h4>
-            <ul className="text-xs text-violet-600 space-y-1">
-              <li>• <b>ひらがな/カタカナ</b>を変えてみる</li>
-              <li>• <b>スペース</b>を入れない</li>
-              <li>• 英語は<b>大文字/小文字</b>を変えてみる</li>
-              <li>• 数字は<b>半角</b>で入力</li>
-              <li>• 句読点（。、）は入れない</li>
-            </ul>
-          </div>
-        )}
-
-        {puzzleState === "revealedAnswer" && (
-          <div className="rounded-xl bg-[#2E5A5C]/10 border-2 border-[#2E5A5C]/30 px-3 py-2">
-            <div className="text-[#2E5A5C] text-xs font-bold mb-1">答え</div>
-            <div className="text-[#3D2E1F] whitespace-pre-wrap text-sm">
-              {puzzleAnswer || "答えは未設定です"}
-            </div>
-          </div>
-        )}
-
-        <Button
-          className={`w-full h-11 font-bold rounded-xl tracking-wide active:scale-[0.98] ${puzzleState === "correct" || puzzleState === "revealedAnswer"
-            ? "bg-gradient-to-r from-[#4A8A8C] to-[#2E5A5C] text-[#FEF9F3] shadow-md"
-            : "bg-gradient-to-r from-[#F4A853] to-[#D87A32] text-[#FEF9F3] shadow-[0_4px_16px_rgba(216,122,50,0.3)]"
-            }`}
-          onClick={handleSubmitAnswer}
-          disabled={puzzleLoading}
-        >
-          {puzzleState === "correct" || puzzleState === "revealedAnswer"
-            ? isLastSpot
-              ? "✿ クエストクリア"
-              : "次のスポットへ"
-            : "回答する"}
-        </Button>
-
-        <div className="flex items-center justify-between pt-1">
-          <button
-            className="text-xs text-[#7A6652] hover:text-[#D87A32] transition-colors flex items-center gap-1"
-            onClick={() => {
-              setStoryMessages(lastStoryMessages);
-              setStoryVisibleCount(lastStoryMessages.length || 1);
-              setStoryStage("pre");
-              setGameMode("story");
-            }}
-          >
-            <Eye className="w-3 h-3" />
-            会話を見る
-          </button>
-
-          {puzzleHints.length > revealedHintLevel && puzzleState !== "correct" && (
-            <button
-              className="text-xs text-amber-600 hover:text-amber-700 transition-colors flex items-center gap-1"
-              onClick={revealNextHint}
+        {/* Footer / Controls */}
+        <div className="relative z-20 p-6 pb-12 bg-gradient-to-t from-[#FEF9F3] via-[#FEF9F3]/90 to-transparent">
+          {/* If end of story */}
+          {(storyStage === "post" && storyVisibleCount >= storyMessages.length && !isLastSpot) ||
+            (storyStage === "pre" && storyVisibleCount >= storyMessages.length) ? (
+            <Button
+              className="w-full h-14 font-bold font-serif rounded-full tracking-[0.2em] active:scale-[0.95] transition-all shadow-[0_0_20px_rgba(216,122,50,0.5)] bg-gradient-to-r from-[#D87A32] to-[#B85A1F] text-white border border-[#F4A853]/20 animate-pulse"
+              onClick={(e) => {
+                e.stopPropagation();
+                if (storyStage === "pre") {
+                  startPuzzle();
+                } else {
+                  const nextSpot = session?.spots[session.progressStep];
+                  openNavigation(nextSpot ? { lat: nextSpot.lat ?? null, lng: nextSpot.lng ?? null } : null);
+                  handleNext();
+                }
+              }}
             >
-              💡 ヒント
+              {storyStage === "pre" ? "ミッションを開始" : "次のスポットへ移動"}
+            </Button>
+          ) : storyVisibleCount >= storyMessages.length && isLastSpot && storyStage === "post" ? (
+            <Button
+              className="w-full h-14 font-bold font-serif rounded-full tracking-[0.2em] shadow-[0_0_20px_rgba(255,255,255,0.3)] bg-gradient-to-r from-[#4A8A8C] to-[#2E5A5C] text-white border border-white/20"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleComplete();
+              }}
+            >
+              クエストを完了
+            </Button>
+          ) : (
+            // Tap prompt
+            <div className="flex flex-col items-center gap-2 opacity-80">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#7A6652] animate-bounce" />
+              <span className="text-[10px] font-serif tracking-[0.3em] text-[#7A6652] uppercase">タップして次へ</span>
+            </div>
+          )}
+
+          {/* Skip button logic */}
+          <div className="absolute top-4 right-4">
+            <button
+              className="text-[10px] text-[#7A6652]/60 hover:text-[#7A6652] transition-colors bg-[#7A6652]/10 px-3 py-1 rounded-full backdrop-blur-md"
+              onClick={(e) => {
+                e.stopPropagation();
+                handleSkip();
+              }}
+            >
+              スキップ
             </button>
+          </div>
+        </div>
+      </div >
+    );
+  };
+
+  /* New Full Screen Puzzle Renderer */
+  const renderPuzzleScreen = () => {
+    return (
+      <div className="absolute inset-0 z-50 flex flex-col bg-[#F7E7D3]">
+        {/* Background pattern */}
+        <div className="absolute inset-0 bg-[#3D2E1F]/5 pointer-events-none"
+          style={{ backgroundImage: 'radial-gradient(#3D2E1F 0.5px, transparent 0.5px)', backgroundSize: '24px 24px' }}
+        />
+
+        {/* Header */}
+        <div className="relative z-10 px-6 pt-14 pb-4 flex justify-between items-center border-b border-[#3D2E1F]/10 bg-[#F7E7D3]/80 backdrop-blur-md">
+          <div className="flex items-center gap-2">
+            <div className="h-8 w-8 rounded-full bg-[#3D2E1F] flex items-center justify-center text-white">
+              <span className="font-serif font-bold text-lg">?</span>
+            </div>
+            <div>
+              <div className="text-[10px] font-bold text-[#D87A32] uppercase tracking-widest">謎解きミッション</div>
+              <div className="text-sm font-bold text-[#3D2E1F] font-serif tracking-wide">{currentSpot?.name}</div>
+            </div>
+          </div>
+          {/* Give Up / Skip - positioned left of menu */}
+          <button
+            className="text-xs font-serif text-[#7A6652] underline underline-offset-2 opacity-60 hover:opacity-100 whitespace-nowrap pr-2"
+            onClick={() => proceedAfterPuzzle()}
+          >
+            スキップ
+          </button>
+        </div>
+
+        {/* Menu Button (Absolute Top-Right) */}
+        <div className="absolute top-4 right-4 z-50">
+          <button
+            onClick={() => setMenuOpen(true)}
+            className="w-11 h-11 rounded-full bg-[#FEF9F3]/90 border border-[#E8D5BE] flex items-center justify-center shadow-[0_4px_16px_rgba(61,46,31,0.1)] hover:bg-[#F7E7D3] transition-all duration-300 pointer-events-auto backdrop-blur-sm group"
+          >
+            <Menu className="w-5 h-5 text-[#3D2E1F] group-hover:scale-110 transition-transform" />
+          </button>
+        </div>
+
+        {/* Content - Scrollable */}
+        <div className="flex-1 overflow-y-auto p-6 space-y-8 relative z-10 w-full max-w-lg mx-auto">
+
+          {/* Question Card */}
+          <div className="bg-[#FEF9F3] p-6 rounded-2xl shadow-[0_4px_20px_rgba(61,46,31,0.08)] border border-[#E8D5BE] relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[#D87A32] to-[#F4A853]" />
+            <h3 className="text-xs font-bold text-[#9B8A7A] uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
+              <MessageCircle className="w-3 h-3" />
+              問題
+            </h3>
+            <div className="text-[#3D2E1F] font-serif font-medium leading-loose text-base whitespace-pre-wrap">
+              {puzzleQuestion || "問題文が設定されていません"}
+            </div>
+          </div>
+
+          {/* Answer & Inputs */}
+          <div className="bg-white/50 p-6 rounded-2xl border border-[#E8D5BE] space-y-6">
+            <div className="space-y-2">
+              <label className="text-[10px] font-bold text-[#7A6652] uppercase tracking-[0.2em] ml-1">回答を入力</label>
+              <div className="relative">
+                <input
+                  type="text"
+                  value={puzzleInput}
+                  onChange={(e) => setPuzzleInput(e.target.value)}
+                  className={`w-full bg-[#FEF9F3] border-2 px-4 py-4 text-xl font-serif font-bold text-center tracking-widest rounded-xl transition-all placeholder:text-[#9B8A7A]/30 focus:outline-none focus:ring-4 focus:ring-[#D87A32]/10 ${puzzleState === "correct"
+                    ? "border-[#2E5A5C] text-[#2E5A5C] bg-[#2E5A5C]/5"
+                    : puzzleState === "incorrect"
+                      ? "border-red-300 text-red-800 bg-red-50"
+                      : "border-[#E8D5BE] focus:border-[#D87A32] text-[#3D2E1F]"
+                    }`}
+                  placeholder="答えを入力"
+                  disabled={puzzleState === "correct"}
+                />
+                {puzzleState === "correct" && (
+                  <div className="absolute right-3 top-1/2 -translate-y-1/2 text-[#2E5A5C] animate-in zoom-in spin-in-90 duration-500">
+                    <CheckCircle2 className="w-6 h-6" />
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* Error Message */}
+            {puzzleError && (
+              <div className="flex items-center gap-2 justify-center text-rose-500 bg-rose-50 py-2 rounded-lg animate-in shake">
+                <AlertCircle className="w-4 h-4" />
+                <span className="text-xs font-bold font-serif">{puzzleError}</span>
+              </div>
+            )}
+
+            {/* Submit Button */}
+            <Button
+              className={`w-full h-14 font-bold font-serif rounded-full tracking-[0.2em] text-base shadow-lg transition-all active:scale-[0.98] ${puzzleState === "correct" || puzzleState === "revealedAnswer"
+                ? "bg-gradient-to-r from-[#4A8A8C] to-[#2E5A5C] text-[#FEF9F3] hover:brightness-105"
+                : "bg-gradient-to-r from-[#3D2E1F] to-[#281d12] text-[#FEF9F3] hover:from-[#4a3623] hover:to-[#382819]"
+                }`}
+              onClick={handleSubmitAnswer}
+              disabled={puzzleLoading}
+            >
+              {puzzleState === "correct" || puzzleState === "revealedAnswer"
+                ? isLastSpot ? "クエスト完了" : "正解！次へ進む"
+                : "回答する"
+              }
+            </Button>
+          </div>
+
+          {/* Hint Section */}
+          {(puzzleHints.length > 0) && puzzleState !== "correct" && (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-[10px] font-bold text-[#9B8A7A] uppercase tracking-[0.2em]">ヒント</span>
+                <span className="text-[10px] font-medium text-[#D87A32]">使用数: {revealedHintLevel}/{puzzleHints.length}</span>
+              </div>
+
+              {/* Active Hints */}
+              <div className="space-y-2">
+                {puzzleHints.slice(0, revealedHintLevel).map((hint, idx) => (
+                  <div key={idx} className="p-4 rounded-xl bg-amber-100/50 border border-amber-200 text-amber-900 text-sm font-serif flex gap-3 animate-in fade-in slide-in-from-top-2">
+                    <span className="text-lg">💡</span>
+                    <span className="leading-relaxed">{hint}</span>
+                  </div>
+                ))}
+              </div>
+
+              {/* Reveal Button */}
+              {revealedHintLevel < puzzleHints.length && (
+                <button
+                  onClick={revealNextHint}
+                  className="w-full py-4 rounded-xl border-2 border-dashed border-[#D87A32]/30 text-[#D87A32] text-xs font-bold font-serif tracking-widest hover:bg-[#D87A32]/5 hover:border-[#D87A32]/50 transition-all flex items-center justify-center gap-2 group"
+                >
+                  <span className="group-hover:scale-110 transition-transform duration-300">🔓</span>
+                  ヒントを開く (残り {puzzleHints.length - revealedHintLevel})
+                </button>
+              )}
+            </div>
           )}
         </div>
       </div>
     );
   };
+
 
   const showGpsPrompt = !gpsEnabled && !showModeSelection;
 
+  /* Sidebar Renderer */
+  const RenderSidebar = () => {
+    if (!menuOpen) return null;
+    return (
+      <div className="absolute inset-0 z-[100] flex justify-end pointer-events-none">
+        <div
+          className="absolute inset-0 bg-[#3D2E1F]/40 backdrop-blur-sm transition-opacity"
+          onClick={() => setMenuOpen(false)}
+          style={{ pointerEvents: "auto" }}
+        />
+        <div
+          className="relative h-full w-3/4 max-w-[280px] bg-[#FEF9F3] shadow-2xl p-6 space-y-6 border-l border-[#E8D5BE] pointer-events-auto overflow-y-auto animate-in slide-in-from-right duration-300"
+          style={{ minWidth: "260px" }}
+        >
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-lg font-bold font-serif text-[#3D2E1F] tracking-[0.2em] border-b-2 border-[#D87A32]/20 pb-1">MENU</h3>
+            <button
+              onClick={() => setMenuOpen(false)}
+              aria-label="閉じる"
+              className="w-8 h-8 rounded-full bg-transparent border border-[#7A6652]/20 flex items-center justify-center hover:bg-[#D87A32] hover:text-white hover:border-transparent transition-all"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          <div className="space-y-3">
+            <button
+              className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl bg-white/50 border border-[#E8D5BE] hover:border-[#D87A32]/50 hover:bg-white transition-all text-[#3D2E1F] font-serif font-bold tracking-wide group"
+              onClick={() => {
+                setMenuOpen(false);
+                navigate("/");
+              }}
+            >
+              <ChevronLeft className="w-4 h-4 text-[#D87A32] group-hover:-translate-x-1 transition-transform" />
+              ホームに戻る
+            </button>
+
+            <button
+              className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl bg-white/50 border border-[#E8D5BE] hover:border-[#D87A32]/50 hover:bg-white transition-all text-[#7A6652] font-serif font-bold tracking-wide group"
+              onClick={() => {
+                setMenuOpen(false);
+                navigate("/profile");
+              }}
+            >
+              <MapPin className="w-4 h-4 text-[#2E5A5C] group-hover:scale-110 transition-transform" />
+              クエスト一覧
+            </button>
+
+            <button
+              className="w-full flex items-center gap-4 px-4 py-3.5 rounded-xl bg-white/50 border border-[#E8D5BE] hover:border-[#D87A32]/50 hover:bg-white transition-all text-[#7A6652] font-serif font-bold tracking-wide group"
+              onClick={() => {
+                setMenuOpen(false);
+                setShowStoryLog(true);
+              }}
+            >
+              <MessageCircle className="w-4 h-4 text-[#D87A32] group-hover:scale-110 transition-transform" />
+              ストーリーログ
+            </button>
+          </div>
+
+          <div className="pt-6 border-t border-[#E8D5BE]/30">
+            <p className="text-[10px] text-center text-[#7A6652]/40 font-serif tracking-widest">TOMOSHIBI &copy; 2024</p>
+          </div>
+
+          {/* Language Switch Button */}
+          <button
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-[#F7E7D3] border-2 border-[#E8D5BE] hover:border-[#D87A32]/50 transition-colors text-[#7A6652] font-medium tracking-wide"
+            onClick={() => {
+              setMenuOpen(false);
+              setShowLanguageSwitcher(true);
+            }}
+          >
+            <Globe className="w-5 h-5 text-[#2E5A5C]" />
+            {selectedLanguage === 'ja' ? '言語' : selectedLanguage === 'ko' ? '언어' : 'Language'}: {selectedLanguage.toUpperCase()}
+          </button>
+
+          {/* Score Mode Status / Disable (opt-out only) */}
+          {scoreModeEnabled ? (
+            <button
+              className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl border-2 transition-colors font-medium tracking-wide bg-amber-50 border-amber-300 text-amber-800 hover:border-amber-400"
+              onClick={() => {
+                setMenuOpen(false);
+                disableScoreMode();
+              }}
+            >
+              <div className="flex items-center gap-3">
+                <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
+                スコアモード
+              </div>
+              <span className="px-2 py-0.5 text-xs rounded-full bg-amber-200 text-amber-800">
+                解除する
+              </span>
+            </button>
+          ) : scoreModeDecided && (
+            <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border-2 bg-[#F7E7D3] border-[#E8D5BE] text-[#9B8A7A] font-medium tracking-wide">
+              <div className="flex items-center gap-3">
+                <Star className="w-5 h-5 text-[#9B8A7A]" />
+                スコアモード
+              </div>
+              <span className="px-2 py-0.5 text-xs rounded-full bg-[#E8D5BE] text-[#9B8A7A]">
+                OFF
+              </span>
+            </div>
+          )}
+
+          {/* Report Issue Button */}
+          <button
+            className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-[#F7E7D3] border-2 border-[#E8D5BE] hover:border-rose-300 transition-colors text-[#7A6652] font-medium tracking-wide"
+            onClick={() => {
+              setMenuOpen(false);
+              setShowFeedbackModal(true);
+              track('feedback_submit', { opened: true });
+            }}
+          >
+            <AlertCircle className="w-5 h-5 text-rose-500" />
+            {selectedLanguage === 'ja' ? '困っている・報告' : selectedLanguage === 'ko' ? '문제 신고' : 'Report Issue'}
+          </button>
+
+          {/* Quest info */}
+          <div className="mt-auto pt-6 border-t-2 border-[#E8D5BE]">
+            <div className="text-[#7A6652] text-xs uppercase tracking-widest mb-2">現在のクエスト</div>
+            <div className="text-[#3D2E1F] font-medium text-sm tracking-wide">{session?.title || "クエスト"}</div>
+            <div className="text-[#7A6652] text-xs mt-1 tracking-wide">
+              進捗: {session?.progressStep || 0}/{session?.spots.length || 0} スポット
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div className="flex flex-col h-full bg-[#F7E7D3] relative overflow-hidden">
+    <div className="flex flex-col h-full bg-[#F7E7D3] relative overflow-hidden font-serif">
       {/* Game Mode Selection Dialog (shown at session start) */}
       {showModeSelection && (
         <div className="absolute inset-0 z-[60] flex items-center justify-center pointer-events-none">
           <div
-            className="absolute inset-0 bg-[#3D2E1F]/60"
+            className="absolute inset-0 bg-[#3D2E1F]/60 backdrop-blur-sm"
             style={{ pointerEvents: "auto" }}
           />
-          <div className="relative bg-[#FEF9F3] rounded-2xl shadow-2xl p-6 mx-6 max-w-[380px] w-full border-2 border-[#E8D5BE] pointer-events-auto">
-            <h2 className="text-xl font-bold text-[#3D2E1F] text-center mb-2 tracking-wide">
-              🎮 ゲームモード選択
+          <div className="relative bg-[#FEF9F3] rounded-2xl shadow-[0_8px_40px_rgba(61,46,31,0.2)] p-6 mx-6 max-w-[380px] w-full border border-[#E8D5BE] pointer-events-auto animate-in zoom-in-95 duration-500">
+            <h2 className="text-xl font-bold font-serif text-[#3D2E1F] text-center mb-1 tracking-[0.2em] uppercase">
+              Game Mode
             </h2>
-            <p className="text-sm text-[#7A6652] text-center mb-5">
+            <div className="w-12 h-px bg-[#D87A32]/30 mx-auto mb-4" />
+            <p className="text-sm font-serif text-[#7A6652] text-center mb-6 leading-relaxed">
               プレイスタイルを選んでください
             </p>
 
             {/* Story Mode Option */}
             <button
-              className="w-full p-4 rounded-xl border-2 border-[#E8D5BE] bg-[#F7E7D3] hover:border-[#D87A32] transition-all mb-3 text-left"
+              className="w-full p-4 rounded-xl border border-[#E8D5BE] bg-[#F7E7D3]/50 hover:bg-[#F7E7D3] hover:border-[#D87A32]/50 transition-all mb-3 text-left group shadow-sm hover:shadow-md"
               onClick={() => selectGameMode(false)}
             >
-              <div className="flex items-center gap-3 mb-1">
-                <div className="w-10 h-10 rounded-full bg-[#2E5A5C]/10 flex items-center justify-center">
-                  <MessageCircle className="w-5 h-5 text-[#2E5A5C]" />
+              <div className="flex items-center gap-4 mb-2">
+                <div className="w-10 h-10 rounded-full bg-[#2E5A5C] flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                  <MessageCircle className="w-5 h-5 text-[#FEF9F3]" />
                 </div>
                 <div>
-                  <div className="font-bold text-[#3D2E1F]">ストーリーモード</div>
-                  <div className="text-xs text-[#7A6652]">おすすめ</div>
+                  <div className="font-bold font-serif text-[#3D2E1F] text-lg tracking-wide">ストーリーモード</div>
+                  <div className="text-[10px] font-bold text-[#2E5A5C] uppercase tracking-widest border border-[#2E5A5C]/20 px-1.5 py-0.5 rounded inline-block bg-white/50">Recommended</div>
                 </div>
               </div>
-              <p className="text-xs text-[#7A6652] ml-13 pl-13">
-                じっくり物語と謎解きを楽しむ。スコアは記録しません。
+              <p className="text-xs text-[#7A6652] pl-14 font-serif leading-relaxed opacity-90">
+                物語と謎解きをじっくり楽しむ。<br />スコアは記録しません。
               </p>
             </button>
 
             {/* Score Mode Option */}
             <button
-              className="w-full p-4 rounded-xl border-2 border-amber-200 bg-amber-50 hover:border-amber-400 transition-all text-left"
+              className="w-full p-4 rounded-xl border border-amber-200 bg-amber-50/50 hover:bg-amber-50 hover:border-amber-400 transition-all text-left group shadow-sm hover:shadow-md"
               onClick={() => selectGameMode(true)}
             >
-              <div className="flex items-center gap-3 mb-1">
-                <div className="w-10 h-10 rounded-full bg-amber-100 flex items-center justify-center">
-                  <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
+              <div className="flex items-center gap-4 mb-2">
+                <div className="w-10 h-10 rounded-full bg-amber-500 flex items-center justify-center shadow-md group-hover:scale-110 transition-transform">
+                  <Star className="w-5 h-5 text-white fill-white" />
                 </div>
                 <div>
-                  <div className="font-bold text-amber-800">スコアモード</div>
-                  <div className="text-xs text-amber-600">⭐ チャレンジ</div>
+                  <div className="font-bold font-serif text-amber-900 text-lg tracking-wide">スコアモード</div>
+                  <div className="text-[10px] font-bold text-amber-600 uppercase tracking-widest border border-amber-600/20 px-1.5 py-0.5 rounded inline-block bg-white/50">Challenge</div>
                 </div>
               </div>
-              <p className="text-xs text-amber-700 ml-13 pl-13">
-                時間・ヒント・正解率でスコアを計測。達成感を味わう！
+              <p className="text-xs text-amber-800 pl-14 font-serif leading-relaxed opacity-90">
+                時間・ヒント使用数でスコアを計測。<br />達成感を味わいたい方へ。
               </p>
             </button>
           </div>
@@ -2087,212 +2488,157 @@ const GamePlay = () => {
       )}
 
       {showGpsPrompt && (
-        <div className="absolute inset-0 z-[55] flex items-center justify-center bg-[#3D2E1F]/60 px-4">
-          <div className="w-full max-w-[360px] rounded-3xl bg-[#FEF9F3] shadow-2xl border-2 border-[#E8D5BE] p-5 space-y-4 text-center">
-            <div className="text-sm font-semibold text-[#c35f1f] tracking-wide">GPSを有効にしてください</div>
-            <p className="text-xs text-[#7A6652] leading-relaxed">
-              位置情報を使ってスポット到着を判定します。開始前にGPSの許可をお願いします。
+        <div className="absolute inset-0 z-[55] flex items-center justify-center bg-[#3D2E1F]/60 backdrop-blur-sm px-4">
+          <div className="w-full max-w-[360px] rounded-2xl bg-[#FEF9F3] shadow-2xl border border-[#E8D5BE] p-6 space-y-4 text-center animate-in zoom-in-95">
+            <div className="w-14 h-14 rounded-full bg-[#FEF9F3] border-2 border-[#D87A32] flex items-center justify-center mx-auto mb-2 shadow-lg">
+              <Navigation className="w-6 h-6 text-[#D87A32]" />
+            </div>
+            <h3 className="text-lg font-bold font-serif text-[#3D2E1F] tracking-widest uppercase">GPS Required</h3>
+            <p className="text-xs font-serif text-[#7A6652] leading-loose">
+              このゲームは位置情報を使って進行します。<br />GPSの利用を許可してください。
             </p>
             {gpsPromptError && (
-              <p className="text-xs text-rose-500">{gpsPromptError}</p>
+              <p className="text-xs font-serif text-rose-500 bg-rose-50 py-1 px-2 rounded">{gpsPromptError}</p>
             )}
             <Button
-              className="w-full h-11 bg-gradient-to-r from-[#4A8A8C] to-[#2E5A5C] text-white font-bold rounded-xl"
+              className="w-full h-12 bg-gradient-to-r from-[#4A8A8C] to-[#2E5A5C] text-white font-bold font-serif rounded-full shadow-lg tracking-widest hover:brightness-110"
               onClick={requestGpsPermission}
               disabled={gpsRequesting}
             >
-              {gpsRequesting ? "GPSを確認中..." : "GPSを有効にする"}
+              {gpsRequesting ? "確認中..." : "許可する"}
             </Button>
           </div>
         </div>
       )}
 
-      {/* Side menu overlay */}
-      {menuOpen && (
-        <div className="absolute inset-0 z-50 flex justify-end pointer-events-none">
-          <div
-            className="absolute inset-0 bg-[#3D2E1F]/40"
-            onClick={() => setMenuOpen(false)}
-            style={{ pointerEvents: "auto" }}
-          />
-          <div
-            className="relative h-full w-3/4 max-w-[280px] bg-[#FEF9F3] shadow-2xl p-5 space-y-4 border-l-2 border-[#E8D5BE] pointer-events-auto"
-            style={{ minWidth: "240px" }}
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-lg font-bold text-[#3D2E1F] tracking-wide">メニュー</h3>
-              <button
-                onClick={() => setMenuOpen(false)}
-                aria-label="閉じる"
-                className="w-8 h-8 rounded-full bg-[#F7E7D3] border-2 border-[#E8D5BE] flex items-center justify-center hover:bg-[#E8D5BE] transition-colors"
-              >
-                <X className="w-5 h-5 text-[#7A6652]" />
-              </button>
-            </div>
-
-            <button
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-[#F7E7D3] border-2 border-[#E8D5BE] hover:border-[#D87A32]/50 transition-colors text-[#3D2E1F] font-medium tracking-wide"
-              onClick={() => {
-                setMenuOpen(false);
-                navigate("/");
-              }}
-            >
-              <ChevronLeft className="w-5 h-5 text-[#D87A32]" />
-              ホームに戻る
-            </button>
-
-            <button
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-[#F7E7D3] border-2 border-[#E8D5BE] hover:border-[#D87A32]/50 transition-colors text-[#7A6652] font-medium tracking-wide"
-              onClick={() => {
-                setMenuOpen(false);
-                navigate("/profile");
-              }}
-            >
-              <MapPin className="w-5 h-5 text-[#2E5A5C]" />
-              クエスト一覧
-            </button>
-
-            <button
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-[#F7E7D3] border-2 border-[#E8D5BE] hover:border-[#D87A32]/50 transition-colors text-[#7A6652] font-medium tracking-wide"
-              onClick={() => {
-                setMenuOpen(false);
-                setShowStoryLog(true);
-              }}
-            >
-              <MessageCircle className="w-5 h-5 text-[#D87A32]" />
-              ストーリーログ
-            </button>
-
-            {/* Language Switch Button */}
-            <button
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-[#F7E7D3] border-2 border-[#E8D5BE] hover:border-[#D87A32]/50 transition-colors text-[#7A6652] font-medium tracking-wide"
-              onClick={() => {
-                setMenuOpen(false);
-                setShowLanguageSwitcher(true);
-              }}
-            >
-              <Globe className="w-5 h-5 text-[#2E5A5C]" />
-              {selectedLanguage === 'ja' ? '言語' : selectedLanguage === 'ko' ? '언어' : 'Language'}: {selectedLanguage.toUpperCase()}
-            </button>
-
-            {/* Score Mode Status / Disable (opt-out only) */}
-            {scoreModeEnabled ? (
-              <button
-                className="w-full flex items-center justify-between gap-3 px-4 py-3 rounded-xl border-2 transition-colors font-medium tracking-wide bg-amber-50 border-amber-300 text-amber-800 hover:border-amber-400"
-                onClick={() => {
-                  setMenuOpen(false);
-                  disableScoreMode();
-                }}
-              >
-                <div className="flex items-center gap-3">
-                  <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
-                  スコアモード
-                </div>
-                <span className="px-2 py-0.5 text-xs rounded-full bg-amber-200 text-amber-800">
-                  解除する
-                </span>
-              </button>
-            ) : scoreModeDecided && (
-              <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl border-2 bg-[#F7E7D3] border-[#E8D5BE] text-[#9B8A7A] font-medium tracking-wide">
-                <div className="flex items-center gap-3">
-                  <Star className="w-5 h-5 text-[#9B8A7A]" />
-                  スコアモード
-                </div>
-                <span className="px-2 py-0.5 text-xs rounded-full bg-[#E8D5BE] text-[#9B8A7A]">
-                  OFF
-                </span>
-              </div>
-            )}
-
-            {/* Report Issue Button */}
-            <button
-              className="w-full flex items-center gap-3 px-4 py-3 rounded-xl bg-[#F7E7D3] border-2 border-[#E8D5BE] hover:border-rose-300 transition-colors text-[#7A6652] font-medium tracking-wide"
-              onClick={() => {
-                setMenuOpen(false);
-                setShowFeedbackModal(true);
-                track('feedback_submit', { opened: true });
-              }}
-            >
-              <AlertCircle className="w-5 h-5 text-rose-500" />
-              {selectedLanguage === 'ja' ? '困っている・報告' : selectedLanguage === 'ko' ? '문제 신고' : 'Report Issue'}
-            </button>
-
-            {/* Quest info */}
-            <div className="mt-auto pt-6 border-t-2 border-[#E8D5BE]">
-              <div className="text-[#7A6652] text-xs uppercase tracking-widest mb-2">現在のクエスト</div>
-              <div className="text-[#3D2E1F] font-medium text-sm tracking-wide">{session?.title || "クエスト"}</div>
-              <div className="text-[#7A6652] text-xs mt-1 tracking-wide">
-                進捗: {session?.progressStep || 0}/{session?.spots.length || 0} スポット
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
       <div className="flex-1 relative flex flex-col overflow-hidden">
-        {/* Prologue overlay */}
-        {showPrologueOverlay && (
-      <div className="absolute inset-0 z-40 flex items-center justify-center bg-white/90 px-4">
-            <div className="w-full max-w-[420px] rounded-3xl bg-white shadow-2xl border border-[#eadfd0] p-5 space-y-4 text-center">
-              <div className="text-xs font-semibold text-[#c35f1f] uppercase tracking-wide">
-                Mission Briefing
+        {/* Prologue overlay - Cinematic Adventure Version (Map Background) */}
+        {showPrologueOverlay && session && (
+          <div
+            className="absolute inset-0 z-[100] flex flex-col items-center justify-center overflow-hidden transition-all duration-500"
+            onClick={() => {
+              // Advance to next message if not at the "Start" screen
+              if (prologueVisibleCount <= prologueMessages.length) {
+                setPrologueVisibleCount(c => c + 1);
+              }
+            }}
+          >
+            {/* Semi-transparent Light Paper Background with Blur to show Map */}
+            <div className="absolute inset-0 bg-[#FEF9F3]/85 backdrop-blur-sm z-0" />
+
+            {/* Vignette for cinematic focus - Sepia Tone */}
+            <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_20%,_#E8D5BE_120%)] z-0 pointer-events-none opacity-60" />
+
+            <div className="relative z-10 w-full h-full max-w-xl px-8 py-10 flex flex-col items-center justify-between pointer-events-none">
+
+              {/* Quest Title - Top Section */}
+              <div
+                className="flex flex-col items-center gap-2 mt-4 shrink-0 animate-in fade-in slide-in-from-bottom-4 duration-1000 fill-mode-both"
+                style={{ animationDelay: '500ms' }}
+              >
+                <div className="text-xs font-serif tracking-[0.3em] text-[#7A6652] uppercase text-center opacity-90">
+                  {session.title}
+                </div>
+                <div className="w-16 h-px bg-gradient-to-r from-transparent via-[#7A6652]/50 to-transparent" />
               </div>
-              <div className="text-xl font-bold text-[#2f1d0f] leading-tight">
-                {session?.title || "クエスト"}
-              </div>
-              {prologueMessages.length > 0 ? (
-                <div className="bg-[#f9f4ec] border border-[#eadfd0] rounded-2xl px-3 py-3 max-h-72 overflow-auto space-y-3 text-left">
-                  {prologueMessages.slice(0, prologueVisibleCount).map((m) => (
-                    <div
-                      key={m.id}
-                      className={`flex ${m.alignment === "right" ? "justify-end" : m.alignment === "center" ? "justify-center" : "justify-start"}`}
-                    >
+
+              {/* Main Content Area - Center Section */}
+              <div
+                className="flex-1 flex flex-col items-center justify-center w-full min-h-0 my-4 animate-in fade-in slide-in-from-bottom-8 duration-1000 fill-mode-both"
+                style={{ animationDelay: '1500ms' }}
+              >
+                {prologueVisibleCount <= prologueMessages.length ? (
+                  // Message Display Phase
+                  (() => {
+                    const msg = prologueMessages[prologueVisibleCount - 1];
+                    const isNarrator = msg?.speakerType === "narrator" || !msg?.speakerType;
+                    return (
                       <div
-                        className={`max-w-[85%] rounded-2xl px-3 py-2 text-sm leading-relaxed ${m.alignment === "right"
-                          ? "bg-[#ffe3c4] text-[#3b2615]"
-                          : m.alignment === "center"
-                            ? "bg-[#f1e8dc] text-[#3b2615]"
-                            : "bg-white text-[#3b2615] border border-[#eadfd0]"
-                          }`}
+                        key={msg?.id || prologueVisibleCount}
+                        className="flex flex-col items-center space-y-6 animate-in fade-in zoom-in-95 duration-700 fill-mode-both"
                       >
-                        {m.name && (
-                          <div className="text-xs font-semibold text-[#c35f1f] mb-1">
-                            {m.name}
+                        {/* Speaker Name */}
+                        {msg?.name && (
+                          <div className="flex items-center gap-3 shrink-0">
+                            <div className="h-px w-8 bg-[#7A6652]/40" />
+                            <div className="text-[#5C4532] text-sm font-bold tracking-widest uppercase py-0.5">
+                              {msg.name}
+                            </div>
+                            <div className="h-px w-8 bg-[#7A6652]/40" />
                           </div>
                         )}
-                        <div className="whitespace-pre-wrap">{m.text}</div>
+
+                        {/* Main Text - High Contrast */}
+                        <div
+                          className={`text-base md:text-lg leading-loose font-medium text-center font-serif tracking-wide whitespace-pre-wrap ${isNarrator ? "text-[#7A6652] italic" : "text-[#3D2E1F]"
+                            }`}
+                          style={{
+                            textShadow: '0 0 1px rgba(61, 46, 31, 0.1)'
+                          }}
+                        >
+                          {msg?.text?.replace(/([。！？]+)/g, "$1\n")}
+                        </div>
                       </div>
+                    );
+                  })()
+                ) : (
+                  // Ready to Start Phase
+                  <div className="flex flex-col items-center space-y-8 animate-in zoom-in-95 duration-700 pointer-events-auto">
+                    {/* Title with decorative lines to match Prologue style */}
+                    <div className="flex items-center gap-4 shrink-0">
+                      <div className="h-px w-8 md:w-12 bg-[#7A6652]/40" />
+                      <div className="flex items-center gap-3">
+                        <Flame className="w-5 h-5 text-[#D87A32] animate-pulse" fill="currentColor" />
+                        <div
+                          className="text-lg md:text-xl font-medium text-center font-serif text-[#3D2E1F] tracking-[0.2em] whitespace-nowrap"
+                          style={{ textShadow: '0 0 1px rgba(61, 46, 31, 0.1)' }}
+                        >
+                          物語をはじめよう
+                        </div>
+                      </div>
+                      <div className="h-px w-8 md:w-12 bg-[#7A6652]/40" />
                     </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-sm text-[#7c644c] max-h-60 overflow-auto whitespace-pre-wrap leading-relaxed text-left bg-[#f9f4ec] border border-[#eadfd0] rounded-2xl px-3 py-3">
-                  {prologueText || "プロローグは未設定です。準備ができたら任務を開始してください。"}
-                </div>
-              )}
-              <Button
-                className="w-full bg-gradient-to-r from-[#ffb566] to-[#e67a28] text-white"
-                onClick={() => {
-                  if (prologueMessages.length > 0 && prologueVisibleCount < prologueMessages.length) {
-                    setPrologueVisibleCount((c) => Math.min(c + 1, prologueMessages.length));
-                  } else {
-                    setShowPrologueOverlay(false);
-                    // スポット1の場合はプロローグ終了後に実到着処理へ
-                    if (session?.progressStep === 1) {
-                      executeSpotArrival();
-                    }
-                  }
-                }}
+
+                    <div className="relative group shrink-0">
+                      <div className="absolute -inset-1 rounded-full bg-[#D87A32] opacity-30 blur-lg animate-pulse" />
+                      <Button
+                        className="relative h-14 px-12 bg-gradient-to-r from-[#D87A32] to-[#B85A1F] hover:from-[#E88B43] hover:to-[#C96B30] text-[#FEF9F3] text-base md:text-lg font-medium font-serif rounded-full shadow-xl tracking-[0.2em] transition-all hover:scale-105 active:scale-95 border border-[#FEF9F3]/20"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setShowPrologueOverlay(false);
+                          if (session?.progressStep === 1) {
+                            executeSpotArrival();
+                          }
+                        }}
+                      >
+                        クエストを開始する
+                      </Button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Tap Prompt - Bottom Section */}
+              <div
+                className="h-10 flex items-center justify-center shrink-0 animate-in fade-in duration-1000 fill-mode-both"
+                style={{ animationDelay: '3000ms' }}
               >
-                {prologueMessages.length > 0 && prologueVisibleCount < prologueMessages.length
-                  ? "次へ"
-                  : "任務を開始する"}
-              </Button>
+                {prologueVisibleCount <= prologueMessages.length && (
+                  <div className="animate-pulse text-xs text-[#7A6652] tracking-widest border-b border-[#7A6652]/30 pb-0.5">
+                    Tap to continue
+                  </div>
+                )}
+              </div>
             </div>
           </div>
         )}
-        {renderEpilogueOverlay()}
         {renderMapUI()}
+
+        {/* Full Screen Mode Overlays */}
+        {gameMode === "story" && renderStoryScreen()}
+        {gameMode === "puzzle" && renderPuzzleScreen()}
+
+        {renderEpilogueOverlay()}
         {renderCompletedOverlay()}
         {showStoryLog && (
           <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/30 px-4">
@@ -2358,9 +2704,11 @@ const GamePlay = () => {
             </div>
           </div>
         )}
-        <div className="absolute bottom-0 left-0 right-0 pointer-events-none">
-          <div className="pointer-events-auto">{renderSheet()}</div>
-        </div>
+        {gameMode === 'travel' && !showPrologueOverlay && !showEpilogueOverlay && (
+          <div className="absolute bottom-0 left-0 right-0 pointer-events-none">
+            <div className="pointer-events-auto">{renderSheet()}</div>
+          </div>
+        )}
       </div>
 
       {/* Language Switcher Modal */}
@@ -2436,7 +2784,6 @@ const GamePlay = () => {
         </div>
       )}
 
-      {/* Feedback Modal */}
       <FeedbackModal
         isOpen={showFeedbackModal}
         onClose={() => setShowFeedbackModal(false)}
@@ -2447,6 +2794,9 @@ const GamePlay = () => {
         spotIndex={session?.progressStep || 0}
         language={selectedLanguage === 'ko' ? 'ko' : selectedLanguage === 'ja' ? 'ja' : 'en'}
       />
+
+      {/* Sidebar rendered last to be on top of everything */}
+      <RenderSidebar />
     </div>
   );
 };

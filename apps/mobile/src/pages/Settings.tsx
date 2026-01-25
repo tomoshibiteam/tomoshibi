@@ -111,142 +111,134 @@ const Settings = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground">読み込み中...</p>
+      <div className="min-h-screen flex items-center justify-center bg-[#FEF9F3]">
+        <div className="w-8 h-8 border-2 border-[#D87A32] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="container max-w-2xl mx-auto p-6 space-y-6">
-      <div className="text-center mb-8">
-        <h1 className="text-3xl font-bold text-foreground mb-2">
+    <div className="min-h-screen bg-[#FEF9F3] pb-24 px-4 font-serif text-[#3D2E1F]">
+      {/* Cinematic Vignette */}
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_center,_transparent_10%,_#E8D5BE_120%)] z-0 pointer-events-none opacity-60" />
+
+      <div className="relative z-10 pt-6 mb-8 text-center">
+        <h1 className="text-2xl font-bold tracking-widest mb-1">
           設定
         </h1>
-        <p className="text-muted-foreground">
-          プロフィールとアプリの設定
+        <p className="text-xs text-[#7A6652] tracking-wide">
+          冒険の記録と設定
         </p>
       </div>
 
-      {/* Profile Section */}
-      <Card
-        className="cursor-pointer hover:bg-muted/50 transition-colors"
+      {/* Profile Passport */}
+      <div
+        className="relative z-10 mb-8 p-5 rounded-3xl bg-white/80 border border-[#E8D5BE] shadow-[0_4px_20px_rgba(61,46,31,0.05)] cursor-pointer hover:bg-white transition-colors group"
         onClick={() => navigate("/profile/edit")}
       >
-        <CardContent className="p-4">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full overflow-hidden bg-muted flex items-center justify-center flex-shrink-0">
-              {profile?.profile_picture_url ? (
-                <img
-                  src={profile.profile_picture_url}
-                  alt="プロフィール画像"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <User className="w-8 h-8 text-muted-foreground" />
-              )}
-            </div>
-            <div className="flex-1 min-w-0">
-              <p className="font-bold text-lg truncate">
-                {profile?.name || "名前未設定"}
-              </p>
-              <p className="text-sm text-muted-foreground truncate">
-                {profile?.email || user?.email || ""}
-              </p>
-              <p className="text-xs text-primary mt-1">
-                プロフィールを編集
-              </p>
-            </div>
-            <ChevronRight className="w-5 h-5 text-muted-foreground flex-shrink-0" />
+        <div className="flex items-center gap-4">
+          <div className="w-16 h-16 rounded-full overflow-hidden bg-[#E8D5BE] flex items-center justify-center flex-shrink-0 border-2 border-white shadow-sm group-hover:scale-105 transition-transform">
+            {profile?.profile_picture_url ? (
+              <img
+                src={profile.profile_picture_url}
+                alt="Profile"
+                className="w-full h-full object-cover"
+              />
+            ) : (
+              <User className="w-8 h-8 text-[#FEF9F3]" />
+            )}
           </div>
-        </CardContent>
-      </Card>
-
-      {/* App Settings */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <SettingsIcon className="w-5 h-5 text-primary" />
-            <span>アプリ設定</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="flex items-center justify-between py-2">
-            <div className="flex items-center gap-3">
-              <Globe className="w-5 h-5 text-muted-foreground" />
-              <span>言語</span>
+          <div className="flex-1 min-w-0">
+            <p className="font-bold text-lg truncate text-[#3D2E1F]">
+              {profile?.name || "名前未設定"}
+            </p>
+            <p className="text-xs text-[#7A6652] truncate font-sans tracking-wide mb-1">
+              {profile?.email || user?.email || ""}
+            </p>
+            <div className="flex items-center gap-1 text-[#D87A32] text-[10px] font-bold tracking-widest">
+              <span>プロフィール編集</span>
+              <ChevronRight className="w-3 h-3" />
             </div>
-            <span className="text-muted-foreground">日本語</span>
           </div>
-          <div className="flex items-center justify-between py-2 border-t">
-            <div className="flex items-center gap-3">
-              <Info className="w-5 h-5 text-muted-foreground" />
-              <span>バージョン</span>
+        </div>
+      </div>
+
+      {/* Menu Groups */}
+      <div className="relative z-10 space-y-6">
+        {/* App Settings */}
+        <div>
+          <h2 className="text-xs font-bold text-[#7A6652] ml-4 mb-2 tracking-widest">アプリ設定</h2>
+          <div className="rounded-2xl bg-white/60 border border-[#E8D5BE] overflow-hidden">
+            <div className="flex items-center justify-between p-4 border-b border-[#E8D5BE]/50">
+              <div className="flex items-center gap-3">
+                <Globe className="w-5 h-5 text-[#D87A32]" />
+                <span className="text-sm font-bold">言語</span>
+              </div>
+              <span className="text-xs text-[#7A6652] font-sans">日本語</span>
             </div>
-            <span className="text-muted-foreground">1.0.0</span>
+            <div className="flex items-center justify-between p-4">
+              <div className="flex items-center gap-3">
+                <Info className="w-5 h-5 text-[#D87A32]" />
+                <span className="text-sm font-bold">バージョン</span>
+              </div>
+              <span className="text-xs text-[#7A6652] font-sans">1.0.0</span>
+            </div>
           </div>
-        </CardContent>
-      </Card>
+        </div>
 
-      {/* Account Section */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center space-x-2">
-            <User className="w-5 h-5 text-primary" />
-            <span>アカウント</span>
-          </CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-2">
-          {isAdmin && (
-            <Button
-              variant="outline"
-              className="w-full justify-start gap-3 border-primary/50 hover:border-primary text-primary"
-              onClick={() => navigate("/admin")}
-            >
-              <Shield className="w-5 h-5" />
-              運営ダッシュボード
-            </Button>
-          )}
-          <Button
-            variant="outline"
-            className="w-full justify-start gap-3"
-            onClick={handleLogout}
-          >
-            <LogOut className="w-5 h-5" />
-            ログアウト
-          </Button>
-
-          <AlertDialog>
-            <AlertDialogTrigger asChild>
-              <Button
-                variant="outline"
-                className="w-full justify-start gap-3 text-destructive hover:text-destructive border-destructive/50 hover:border-destructive"
+        {/* Account Actions */}
+        <div>
+          <h2 className="text-xs font-bold text-[#7A6652] ml-4 mb-2 tracking-widest">アカウント</h2>
+          <div className="rounded-2xl bg-white/60 border border-[#E8D5BE] overflow-hidden">
+            {isAdmin && (
+              <button
+                onClick={() => navigate("/admin")}
+                className="w-full flex items-center gap-3 p-4 border-b border-[#E8D5BE]/50 hover:bg-[#FEF9F3] transition-colors text-left"
               >
-                <Trash2 className="w-5 h-5" />
-                アカウントを削除
-              </Button>
-            </AlertDialogTrigger>
-            <AlertDialogContent>
-              <AlertDialogHeader>
-                <AlertDialogTitle>アカウントを削除しますか？</AlertDialogTitle>
-                <AlertDialogDescription>
-                  この操作は取り消せません。すべてのデータが永久に削除されます。
-                  アカウント削除をご希望の場合は、サポートまでお問い合わせください。
-                </AlertDialogDescription>
-              </AlertDialogHeader>
-              <AlertDialogFooter>
-                <AlertDialogCancel>キャンセル</AlertDialogCancel>
-                <AlertDialogAction
-                  onClick={handleDeleteAccount}
-                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                <Shield className="w-5 h-5 text-[#D87A32]" />
+                <span className="text-sm font-bold text-[#3D2E1F]">管理者ダッシュボード</span>
+              </button>
+            )}
+
+            <button
+              onClick={handleLogout}
+              className="w-full flex items-center gap-3 p-4 hover:bg-[#FEF9F3] transition-colors text-left group border-b border-[#E8D5BE]/50"
+            >
+              <LogOut className="w-5 h-5 text-[#7A6652] group-hover:text-[#3D2E1F]" />
+              <span className="text-sm font-bold text-[#7A6652] group-hover:text-[#3D2E1F] transition-colors">ログアウト</span>
+            </button>
+
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <button
+                  className="w-full flex items-center gap-3 p-4 hover:bg-[#B85A1F]/5 transition-colors text-left group"
                 >
-                  問い合わせる
-                </AlertDialogAction>
-              </AlertDialogFooter>
-            </AlertDialogContent>
-          </AlertDialog>
-        </CardContent>
-      </Card>
+                  <Trash2 className="w-5 h-5 text-[#B85A1F]/70 group-hover:text-[#B85A1F]" />
+                  <span className="text-sm font-bold text-[#B85A1F]/70 group-hover:text-[#B85A1F] transition-colors">アカウント削除</span>
+                </button>
+              </AlertDialogTrigger>
+              <AlertDialogContent className="bg-[#FEF9F3] border-[#E8D5BE] font-serif">
+                <AlertDialogHeader>
+                  <AlertDialogTitle className="text-[#3D2E1F]">アカウントを削除しますか？</AlertDialogTitle>
+                  <AlertDialogDescription className="text-[#7A6652]">
+                    この操作は取り消せません。すべてのデータが永久に削除されます。
+                    アカウント削除をご希望の場合は、サポートまでお問い合わせください。
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel className="border-[#E8D5BE] text-[#7A6652] hover:bg-[#E8D5BE]/20 font-serif">キャンセル</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={handleDeleteAccount}
+                    className="bg-[#B85A1F] text-white hover:bg-[#A04E15] font-serif"
+                  >
+                    問い合わせる
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };

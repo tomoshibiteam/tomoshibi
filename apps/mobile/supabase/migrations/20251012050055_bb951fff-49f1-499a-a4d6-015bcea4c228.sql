@@ -40,8 +40,8 @@ USING (true);
 
 -- Insert title templates
 INSERT INTO public.title_templates (id, name, ap_required, rank_order) VALUES
-('apprentice', '見習い探偵', 0, 1),
-('rookie', '駆け出しの探偵', 50, 2),
+('apprentice', '見習い冒険者', 0, 1),
+('rookie', '駆け出しの冒険者', 50, 2),
 ('investigator', '一人前の調査員', 200, 3),
 ('trusted_agent', '信頼できるエージェント', 500, 4),
 ('master', 'マスターディテクティブ', 1000, 5);
@@ -59,7 +59,7 @@ INSERT INTO public.achievement_templates (id, name, description, icon, ap_reward
 ('community_eyes', '地域の目', '日々の捜査報告を50件提出する', '👁️', 200, 'daily_investigation', 'daily_report', 50),
 ('clean_walker', 'クリーンウォーカー', 'ゴミ拾いカテゴリーで5件の報告を提出する', '🧹', 30, 'daily_investigation', 'daily_report_trash', 5),
 -- Special Commendations
-('first_step', '探偵の第一歩', 'アプリの登録を完了する', '👣', 5, 'special', 'registration', 1),
+('first_step', '冒険の第一歩', 'アプリの登録を完了する', '👣', 5, 'special', 'registration', 1),
 ('mark_trust', '信頼の証', '7日連続でログインする', '✨', 25, 'special', 'login_streak', 7),
 ('with_comrades', '仲間と共に', '2人以上のチームでイベントに参加する', '🤝', 50, 'special', 'team_event', 1);
 

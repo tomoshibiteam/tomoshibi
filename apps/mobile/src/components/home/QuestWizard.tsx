@@ -34,10 +34,10 @@ const QUESTIONS: Question[] = [
     {
         id: "genre",
         question: "どんな雰囲気・ジャンルがお好みですか？",
-        placeholder: "例：ホラー、探偵、ラブストーリー、歴史探訪",
+        placeholder: "例：ホラー、ミステリー、ラブストーリー、歴史探訪",
         icon: Sparkles,
         required: true,
-        suggestions: ["ホラー", "探偵・ミステリー", "ラブストーリー", "歴史探訪", "グルメ"],
+        suggestions: ["ホラー", "ミステリー", "ラブストーリー", "歴史探訪", "グルメ"],
     },
     {
         id: "purpose",
@@ -141,16 +141,16 @@ const QuestWizard = ({ onComplete, onLocationHint }: QuestWizardProps) => {
     // When all answers are collected, show a ready state and wait for explicit generation.
 
     return (
-        <div className="flex flex-col h-full pointer-events-auto bg-transparent md:max-w-md md:mx-auto">
-            <div className="p-4 border-b border-stone-100 flex items-center justify-between bg-stone-50/80 backdrop-blur-md sticky top-0 z-10">
+        <div className="flex flex-col h-full pointer-events-auto bg-transparent md:max-w-md md:mx-auto font-serif">
+            <div className="p-4 border-b border-[#E8D5BE] flex items-center justify-between bg-[#FEF9F3]/90 backdrop-blur-md sticky top-0 z-10">
                 <div className="flex items-center gap-2">
-                    <div className="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center text-white shadow-sm">
+                    <div className="w-8 h-8 rounded-full bg-[#E8D5BE] flex items-center justify-center text-[#7A6652] shadow-sm border border-white">
                         <Compass className="w-4 h-4" />
                     </div>
-                    <span className="font-bold text-stone-800">冒険の準備</span>
+                    <span className="font-bold text-[#3D2E1F] tracking-widest text-sm">冒険の準備</span>
                 </div>
-                <div className="flex items-center gap-1 text-xs font-medium text-stone-400">
-                    <Flame className={cn("w-3 h-3", isComplete ? "text-amber-500 fill-amber-500" : "text-stone-300")} />
+                <div className="flex items-center gap-1 text-xs font-bold text-[#7A6652]">
+                    <Flame className={cn("w-3 h-3", isComplete ? "text-[#D87A32] fill-[#D87A32]" : "text-[#E8D5BE]")} />
                     <span>{wizardAnswers.length} / {QUESTIONS.length}</span>
                 </div>
             </div>
@@ -159,7 +159,7 @@ const QuestWizard = ({ onComplete, onLocationHint }: QuestWizardProps) => {
             <div className="flex-1 overflow-y-auto px-4 py-4 space-y-6">
                 <div className="space-y-6 pb-20">
                     <div className="text-center py-6">
-                        <p className="text-sm text-stone-500">
+                        <p className="text-sm text-[#7A6652] leading-loose">
                             いくつか質問に答えて、<br />
                             あなただけの物語を見つけましょう
                         </p>
@@ -175,18 +175,18 @@ const QuestWizard = ({ onComplete, onLocationHint }: QuestWizardProps) => {
                         >
                             {/* Question Bubble */}
                             <div className="flex items-start gap-3">
-                                <div className="w-8 h-8 rounded-full bg-stone-100 flex items-center justify-center shrink-0 border border-stone-200">
-                                    {ans.icon && <ans.icon className="w-4 h-4 text-stone-400" />}
+                                <div className="w-8 h-8 rounded-full bg-white border border-[#E8D5BE] flex items-center justify-center shrink-0">
+                                    {ans.icon && <ans.icon className="w-4 h-4 text-[#7A6652]" />}
                                 </div>
-                                <div className="bg-white rounded-2xl rounded-tl-none px-4 py-3 shadow-sm border border-stone-100 max-w-[80%]">
-                                    <p className="text-sm text-stone-700">{ans.question}</p>
+                                <div className="bg-white/90 rounded-2xl rounded-tl-none px-4 py-3 shadow-sm border border-[#E8D5BE] max-w-[85%]">
+                                    <p className="text-sm text-[#3D2E1F] leading-relaxed">{ans.question}</p>
                                 </div>
                             </div>
 
                             {/* Answer Bubble */}
                             <div className="flex items-center justify-end gap-2">
-                                <div className="bg-amber-500 rounded-2xl rounded-tr-none px-4 py-2.5 shadow-md shadow-amber-500/20 max-w-[80%]">
-                                    <p className="text-sm font-medium text-white">{ans.answer}</p>
+                                <div className="bg-[#D87A32] rounded-2xl rounded-tr-none px-4 py-2.5 shadow-md shadow-[#D87A32]/20 max-w-[85%]">
+                                    <p className="text-sm font-bold text-[#FEF9F3]">{ans.answer}</p>
                                 </div>
                             </div>
                         </motion.div>
@@ -201,15 +201,15 @@ const QuestWizard = ({ onComplete, onLocationHint }: QuestWizardProps) => {
                             className="space-y-4 my-4"
                         >
                             <div className="flex items-start gap-3">
-                                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shrink-0 shadow-lg shadow-amber-200/50">
+                                <div className="w-10 h-10 rounded-2xl bg-gradient-to-br from-[#D87A32] to-[#B85A1F] flex items-center justify-center shrink-0 shadow-lg shadow-[#D87A32]/30 border border-white/20">
                                     <currentQuestion.icon className="w-5 h-5 text-white" />
                                 </div>
                                 <div className="flex-1 space-y-1 pt-1">
-                                    <p className="text-sm font-bold text-amber-900 leading-relaxed">
+                                    <p className="text-sm font-bold text-[#3D2E1F] leading-relaxed">
                                         {currentQuestion.question}
                                     </p>
-                                    <p className="text-[10px] text-amber-600/80">
-                                        {currentStep + 1}つ目の灯火を見つけましょう
+                                    <p className="text-[10px] text-[#7A6652] tracking-wide font-bold uppercase">
+                                        QUESTION {currentStep + 1}
                                     </p>
                                 </div>
                             </div>
@@ -224,7 +224,7 @@ const QuestWizard = ({ onComplete, onLocationHint }: QuestWizardProps) => {
                                             animate={{ opacity: 1, scale: 1 }}
                                             transition={{ delay: idx * 0.05 + 0.1 }}
                                             onClick={() => handleNext(suggestion)}
-                                            className="shrink-0 px-4 py-2.5 rounded-xl bg-white/60 border border-stone-200 shadow-sm text-xs text-stone-600 hover:bg-amber-50 hover:text-amber-800 hover:border-amber-200 transition-all active:scale-95"
+                                            className="shrink-0 px-4 py-2 rounded-xl bg-white/80 border border-[#E8D5BE] shadow-sm text-xs font-bold text-[#7A6652] hover:bg-[#D87A32] hover:text-white hover:border-[#D87A32] transition-all active:scale-95"
                                         >
                                             {suggestion}
                                         </motion.button>
@@ -242,19 +242,19 @@ const QuestWizard = ({ onComplete, onLocationHint }: QuestWizardProps) => {
                             className="py-10 flex flex-col items-center justify-center space-y-6"
                         >
                             <div className="relative">
-                                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center shadow-lg animate-pulse">
+                                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#D87A32] to-[#B85A1F] flex items-center justify-center shadow-lg animate-pulse border-2 border-white">
                                     <Sparkles className="w-8 h-8 text-white" />
                                 </div>
-                                <div className="absolute inset-0 bg-amber-400 rounded-full blur-xl opacity-40 animate-pulse" />
+                                <div className="absolute inset-0 bg-[#D87A32] rounded-full blur-xl opacity-40 animate-pulse" />
                             </div>
-                            <div className="text-center space-y-1">
-                                <h3 className="text-lg font-bold text-amber-900">準備が整いました</h3>
-                                <p className="text-xs text-amber-700">集めた灯火で未知の物語を生成します</p>
+                            <div className="text-center space-y-2">
+                                <h3 className="text-lg font-bold text-[#3D2E1F] tracking-widest">準備が整いました</h3>
+                                <p className="text-xs text-[#7A6652]">集めた灯火で未知の物語を生成します</p>
                             </div>
 
                             <Button
                                 onClick={() => completeWizard(wizardAnswers)}
-                                className="w-full max-w-xs bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white rounded-full py-6 text-lg font-bold shadow-xl active:scale-95 transition-all"
+                                className="w-full max-w-xs h-14 bg-gradient-to-r from-[#D87A32] to-[#B85A1F] hover:from-[#E88B43] hover:to-[#C96B30] text-white rounded-full text-base font-bold tracking-widest shadow-xl shadow-[#D87A32]/25 active:scale-95 transition-all"
                             >
                                 クエストを生成する
                             </Button>
@@ -265,7 +265,7 @@ const QuestWizard = ({ onComplete, onLocationHint }: QuestWizardProps) => {
                                     setWizardAnswers([]);
                                     setWizardStep(0);
                                 }}
-                                className="text-stone-400 hover:text-stone-600 text-xs"
+                                className="text-[#a59483] hover:text-[#7A6652] text-xs font-bold tracking-wide hover:bg-transparent"
                             >
                                 最初からやり直す
                             </Button>
@@ -278,19 +278,19 @@ const QuestWizard = ({ onComplete, onLocationHint }: QuestWizardProps) => {
 
             {/* Input Area - Hide if complete*/}
             {!isComplete && (
-                <div className="p-4 bg-white/80 backdrop-blur-md border-t border-stone-100 flex items-center gap-2">
+                <div className="p-4 bg-[#FEF9F3]/95 backdrop-blur-md border-t border-[#E8D5BE] flex items-center gap-2 pb-8 md:pb-4">
                     <Input
                         value={currentInput}
                         onChange={(e) => setCurrentInput(e.target.value)}
                         onKeyDown={handleKeyDown}
-                        placeholder={`${currentQuestion.question}（${currentQuestion.placeholder}）`}
-                        className="rounded-full bg-stone-100 border-transparent focus:bg-white transition-all h-12 px-6"
+                        placeholder={`${currentQuestion.placeholder}`}
+                        className="rounded-full bg-white border-[#E8D5BE] focus:border-[#D87A32] text-[#3D2E1F] placeholder:text-[#7A6652]/50 h-12 px-6 font-serif shadow-sm"
                     />
                     <Button
                         size="icon"
                         onClick={() => handleNext(currentInput)}
                         disabled={!currentInput.trim()}
-                        className="rounded-full h-12 w-12 shrink-0 bg-stone-900 hover:bg-stone-800 shadow-md"
+                        className="rounded-full h-12 w-12 shrink-0 bg-[#3D2E1F] hover:bg-[#2A1F15] shadow-md text-[#FEF9F3]"
                     >
                         <ArrowRight className="w-5 h-5" />
                     </Button>

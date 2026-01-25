@@ -16,7 +16,7 @@ BEGIN
     NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'name', 'ゲスト'),
     NEW.email,
-    '駆け出しの探偵',
+    '駆け出しの冒険者',
     '新米',
     1,
     0

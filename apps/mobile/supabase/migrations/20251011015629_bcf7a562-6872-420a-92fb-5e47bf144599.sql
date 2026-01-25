@@ -75,7 +75,7 @@ BEGIN
   VALUES (
     NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'name', 'ゲスト'),
-    '駆け出しの探偵',
+    '駆け出しの冒険者',
     '新米',
     1,
     0

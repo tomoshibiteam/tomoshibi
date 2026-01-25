@@ -96,10 +96,10 @@ const RankHierarchy = () => {
 
         <div className="text-center mb-8">
           <h1 className="text-3xl font-bold text-foreground mb-2">
-            探偵キャリアパス
+            ランクキャリアパス
           </h1>
           <p className="text-muted-foreground">
-            累計AP (totalAP) が貯まると、あなたの探偵ランクが自動的に昇格します。
+            累計AP (totalAP) が貯まると、あなたのランクが自動的に昇格します。
           </p>
         </div>
 

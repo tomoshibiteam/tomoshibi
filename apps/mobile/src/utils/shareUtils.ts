@@ -11,7 +11,9 @@ interface ShareOptions {
  * 固定URLを返す
  */
 export const getAppUrl = (): string => {
-  return "https://spr-topaz.vercel.app/";
+  const base = import.meta.env.BASE_URL || "/";
+  if (typeof window === "undefined") return base;
+  return `${window.location.origin}${base}`;
 };
 
 /**
@@ -19,7 +21,7 @@ export const getAppUrl = (): string => {
  * navigator.shareが使えない場合はクリップボードにコピー
  */
 export const triggerShare = async (options: ShareOptions): Promise<boolean> => {
-  const { title = "SPR探偵事務所", text } = options;
+  const { title = "TOMOSHIBI", text } = options;
   const url = getAppUrl();
   const fullText = `${text} ${url}`;
 
@@ -55,19 +57,19 @@ export const triggerShare = async (options: ShareOptions): Promise<boolean> => {
  * 功績達成時のシェアメッセージを生成
  */
 export const createAchievementShareText = (achievementName: string): string => {
-  return `功績「${achievementName}」を獲得しました！ 君も「SPR探偵事務所」で一緒に謎を解かないか？ #SPR探偵事務所`;
+  return `功績「${achievementName}」を獲得しました！ 君もTOMOSHIBIで一緒に謎を解こう！ #TOMOSHIBI`;
 };
 
 /**
  * 称号昇格時のシェアメッセージを生成
  */
 export const createTitleShareText = (titleName: string): string => {
-  return `探偵ランクが「${titleName}」に昇格しました！ 君も「SPR探偵事務所」で一緒に謎を解かないか？ #SPR探偵事務所`;
+  return `ランクが「${titleName}」に昇格しました！ 君もTOMOSHIBIで一緒に謎を解こう！ #TOMOSHIBI`;
 };
 
 /**
  * プロフィールシェア時のメッセージを生成
  */
 export const createProfileShareText = (titleName: string): string => {
-  return `私の現在の探偵ランクは「${titleName}」です。君も「SPR探偵事務所」で一緒に謎を解かないか？ #SPR探偵事務所`;
+  return `私の現在のランクは「${titleName}」です。君もTOMOSHIBIで一緒に謎を解こう！ #TOMOSHIBI`;
 };

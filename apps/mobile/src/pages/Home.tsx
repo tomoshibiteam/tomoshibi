@@ -40,7 +40,7 @@ const GENERATION_PHASES = [
 ];
 
 const LEGACY_SERIES = new Set(["灯りの回廊", "港町の手紙"]);
-const OFFICIAL_SERIES = "SPR探偵事務所の事件簿";
+const OFFICIAL_SERIES = "TOMOSHIBI公式クエスト";
 const DEFAULT_SPOT_COUNT = 7;
 const DEFAULT_DIFFICULTY: QuestGenerationRequest["difficulty"] = "medium";
 const DEFAULT_RADIUS_KM = 1.5;
@@ -319,7 +319,9 @@ const Home = () => {
 
       setPlayerPreview(output.player_preview);
       setCreatorPayload(creatorPayloadWithCover);
-      setViewMode("preview");
+      // Navigate to the output page instead of showing preview inline
+      navigate("/quest-generated");
+      setViewMode("idle");
     } catch (error: any) {
       console.error("Generation failed:", error);
       setViewMode("idle");
@@ -703,15 +705,15 @@ const Home = () => {
                 };
               })
               .filter(Boolean) as {
-              quest_id: string;
-              spot_id: string;
-              stage: string;
-              order_index: number;
-              speaker_type: string;
-              speaker_name: string;
-              avatar_url: string | null;
-              text: string;
-            }[];
+                quest_id: string;
+                spot_id: string;
+                stage: string;
+                order_index: number;
+                speaker_type: string;
+                speaker_name: string;
+                avatar_url: string | null;
+                text: string;
+              }[];
             if (storyMessageRows.length > 0) {
               await supabase.from("spot_story_messages").insert(storyMessageRows);
             }
@@ -839,8 +841,11 @@ const Home = () => {
   }, [handleIgnite, setDraftPrompt, fetchCurrentLocation, locationCoords]);
 
   return (
-    <div className="h-full bg-gradient-to-b from-stone-50 to-amber-50/30">
-      <div className="h-full">
+    <div className="h-full bg-[#FEF9F3] font-serif text-[#3D2E1F] relative overflow-hidden">
+      {/* Cinematic Vignette */}
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_transparent_10%,_#E8D5BE_120%)] z-0 pointer-events-none opacity-60" />
+
+      <div className="h-full relative z-10">
         <AnimatePresence mode="wait">
           {viewMode === "idle" && (
             <motion.div
@@ -863,69 +868,27 @@ const Home = () => {
             </motion.div>
           )}
 
-          {(viewMode === "generating" || viewMode === "preview") && (
+          {(viewMode === "generating") && (
             <motion.div
-              key={viewMode}
+              key="generating"
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               transition={{ duration: 0.3 }}
               className="h-full min-h-0"
             >
-              {viewMode === "preview" ? (
-                <div className="relative h-full overflow-y-auto bg-white">
-                  <div className="pb-24">
-                    <PlayerPreview
-                      basicInfo={detailBasicInfo}
-                      spots={detailSpots}
-                      story={detailStory}
-                      estimatedDuration={detailDuration}
-                      playerPreviewData={playerPreview}
-                      routeMetadata={detailRouteMetadata || undefined}
-                      difficultyExplanation={detailDifficultyExplanation}
-                      isGeneratingCover={isGeneratingCover}
-                      showActions={false}
-                      onPlay={() => { }}
-                      onEdit={() => { }}
-                      onSaveDraft={() => { }}
-                    />
-                  </div>
-                  <div className="sticky bottom-0 z-20 bg-white/90 backdrop-blur-md border-t border-stone-200/70">
-                    <div className="max-w-4xl mx-auto px-4 py-4 flex items-center gap-3">
-                      <button
-                        type="button"
-                        onClick={handleSave}
-                        disabled={isSaving}
-                        className="flex-1 rounded-full bg-gradient-to-r from-brand-gold to-amber-500 px-6 py-3 text-sm font-bold text-white shadow-lg shadow-brand-gold/20 disabled:opacity-60 active:scale-95 transition-all"
-                      >
-                        {isSaving ? "保存中..." : "保存する"}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={handleRegenerate}
-                        disabled={!canRegenerate}
-                        className="flex-1 rounded-full border border-stone-200 bg-white px-6 py-3 text-sm font-bold text-stone-600 hover:border-brand-gold/40 hover:text-brand-gold transition-all active:scale-95 disabled:opacity-50"
-                      >
-                        もう一度生成する
-                      </button>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <JourneyMapPreview
-                  isGenerating={viewMode === "generating"}
-                  generationPhase={generationPhase}
-                  title={journeyTitle}
-                  teaser={journeyTeaser}
-                  badges={journeyBadges}
-                  spots={previewSpots}
-                  center={mapCenter}
-                  coverImageUrl={coverImageUrl || undefined}
-                />
-              )}
+              <JourneyMapPreview
+                isGenerating={viewMode === "generating"}
+                generationPhase={generationPhase}
+                title={journeyTitle}
+                teaser={journeyTeaser}
+                badges={journeyBadges}
+                spots={previewSpots}
+                center={mapCenter}
+                coverImageUrl={coverImageUrl || undefined}
+              />
             </motion.div>
-          )
-          }
+          )}
         </AnimatePresence >
       </div >
     </div >

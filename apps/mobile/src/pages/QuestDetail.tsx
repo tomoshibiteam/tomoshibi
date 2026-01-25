@@ -66,6 +66,9 @@ const QuestDetail = () => {
     const [purchasing, setPurchasing] = useState(false);
     const [liked, setLiked] = useState(false);
 
+    // New state for prologue accordion
+    const [isDescriptionExpanded, setIsDescriptionExpanded] = useState(false);
+
     useEffect(() => {
         const fetchQuestDetails = async () => {
             if (!id) return;
@@ -163,165 +166,263 @@ const QuestDetail = () => {
         navigate(`/gameplay/${id}`);
     };
 
+    // Helper to calculate approximate steps (approx 1400 steps per km)
+    const steps = quest ? Math.round((quest.distance_km || 0) * 1400) : 0;
+
+    const difficulty = quest?.difficulty || "NORMAL";
+    const difficultyStyle = {
+        "EASY": "bg-[#2E5A5C] text-[#FEF9F3]",
+        "NORMAL": "bg-[#D87A32] text-[#FEF9F3]",
+        "HARD": "bg-[#B85A1F] text-[#FEF9F3]",
+    }[difficulty] || "bg-[#7A6652] text-[#FEF9F3]";
+
+    const difficultyLabel = {
+        "EASY": "初級",
+        "NORMAL": "中級",
+        "HARD": "上級",
+    }[difficulty] || "初級";
+
     if (loading) {
         return (
-            <div className="min-h-screen flex items-center justify-center">
-                <Loader2 className="w-8 h-8 text-[#e67a28] animate-spin" />
+            <div className="min-h-screen flex items-center justify-center bg-[#FEF9F3]">
+                <Loader2 className="w-8 h-8 text-[#D87A32] animate-spin" />
             </div>
         );
     }
 
     if (!quest) {
         return (
-            <div className="min-h-screen flex flex-col items-center justify-center text-center p-4">
-                <p className="text-[#7c644c] mb-4">クエストが見つかりませんでした</p>
-                <Button variant="outline" onClick={() => navigate("/quests")}>
-                    クエスト一覧に戻る
+            <div className="min-h-screen flex flex-col items-center justify-center text-center p-4 bg-[#FEF9F3]">
+                <p className="text-[#7A6652] mb-4 font-serif">物語が見つかりませんでした</p>
+                <Button variant="outline" onClick={() => navigate("/quests")} className="font-serif border-[#E8D5BE] text-[#7A6652]">
+                    物語一覧に戻る
                 </Button>
             </div>
         );
     }
 
-    const difficulty = quest.difficulty || "初級";
-    const difficultyStyle = {
-        "初級": "bg-emerald-100 text-emerald-700",
-        "中級": "bg-amber-100 text-amber-700",
-        "上級": "bg-rose-100 text-rose-700",
-    }[difficulty] || "bg-stone-100 text-stone-700";
-
     return (
-        <div className="min-h-screen pb-24">
-            {/* Hero Image */}
-            <div className="relative w-full aspect-[16/10] overflow-hidden bg-[#2f1d0f]">
+        <div className="min-h-screen bg-[#FEF9F3] pb-32 relative overflow-x-hidden font-serif text-[#3D2E1F]">
+            {/* Sepia Vignette for cinematic focus */}
+            <div className="fixed inset-0 bg-[radial-gradient(circle_at_center,_transparent_10%,_#E8D5BE_120%)] z-0 pointer-events-none opacity-60" />
+
+            {/* 1. Hero Section (Full Width) */}
+            <div className="relative w-full aspect-[4/3] z-10 shadow-md">
                 {quest.cover_image_url ? (
                     <img
                         src={quest.cover_image_url}
                         alt={quest.title || "Quest"}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover sepia-[.15]"
                     />
                 ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-[#f7efe5] to-[#eadfd0]" />
+                    <div className="w-full h-full bg-[#E8D5BE] flex items-center justify-center">
+                        <Compass className="w-16 h-16 text-[#FEF9F3]/50" />
+                    </div>
                 )}
-                {/* Gradient overlay */}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent" />
 
                 {/* Back button */}
                 <button
                     onClick={() => navigate(-1)}
-                    className="absolute top-4 left-4 p-2 rounded-full bg-white/20 backdrop-blur-md text-white z-10"
+                    className="absolute top-4 left-4 p-3 rounded-full bg-[#FEF9F3]/90 backdrop-blur-md text-[#3D2E1F] shadow-sm border border-[#E8D5BE] hover:bg-white transition-all active:scale-95 z-20"
                 >
                     <ChevronLeft size={20} />
                 </button>
 
-                {/* Like & Share */}
-                <div className="absolute top-4 right-4 flex gap-2 z-10">
+                {/* Header Actions */}
+                <div className="absolute top-4 right-4 flex gap-3 z-20">
                     <button
                         onClick={() => setLiked(!liked)}
-                        className={`p-2 rounded-full backdrop-blur-md transition-all ${liked ? "bg-rose-500/90 text-white" : "bg-white/20 text-white"
+                        className={`p-3 rounded-full backdrop-blur-md border border-[#E8D5BE] shadow-sm transition-all active:scale-95 ${liked ? "bg-[#D87A32] text-white border-[#D87A32]" : "bg-[#FEF9F3]/90 text-[#3D2E1F] hover:bg-white"
                             }`}
                     >
-                        <Heart size={18} className={liked ? "fill-current" : ""} />
+                        <Heart size={20} className={liked ? "fill-current" : ""} />
                     </button>
-                    <button className="p-2 rounded-full bg-white/20 backdrop-blur-md text-white">
-                        <Share2 size={18} />
+                    <button className="p-3 rounded-full bg-[#FEF9F3]/90 backdrop-blur-md text-[#3D2E1F] border border-[#E8D5BE] shadow-sm hover:bg-white transition-all active:scale-95">
+                        <Share2 size={20} />
                     </button>
                 </div>
 
-                {/* Title overlay */}
-                <div className="absolute bottom-0 left-0 right-0 p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${difficultyStyle}`}>
-                            {difficulty}
+                {/* Bottom Shadow Gradient for text readability if needed */}
+                <div className="absolute inset-x-0 bottom-0 h-10 bg-gradient-to-t from-[#FEF9F3] to-transparent" />
+            </div>
+
+            {/* Main Content Container */}
+            <div className="relative z-10 px-5 -mt-4">
+
+                {/* Title & Tags */}
+                <div className="mb-6">
+                    <div className="flex flex-wrap items-center gap-2 mb-3">
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-widest shadow-sm ${difficultyStyle}`}>
+                            {difficultyLabel}
                         </span>
                         {quest.area_name && (
-                            <span className="px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-[10px] font-medium flex items-center gap-1">
+                            <span className="px-3 py-1 rounded-full bg-white border border-[#E8D5BE] text-[#7A6652] text-[10px] font-bold tracking-wide flex items-center gap-1 shadow-sm">
                                 <MapPin size={10} />
                                 {quest.area_name}
                             </span>
                         )}
+                        <div className="flex items-center gap-1 ml-auto text-[#D87A32] bg-white px-2 py-1 rounded-full border border-[#E8D5BE] shadow-sm">
+                            <Star size={12} className="fill-current" />
+                            <span className="text-xs font-bold">{stats.rating.toFixed(1)}</span>
+                            <span className="text-[10px] text-[#7A6652] opacity-70">({stats.reviewCount})</span>
+                        </div>
                     </div>
-                    <h1
-                        className="text-2xl font-black text-white drop-shadow-xl leading-tight mb-2"
-                        style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}
-                    >
+
+                    <h1 className="text-2xl font-black text-[#3D2E1F] leading-tight mb-2 tracking-wide drop-shadow-sm">
                         {quest.title || "タイトル未設定"}
                     </h1>
-                    <div className="flex items-center gap-3 text-white/80 text-xs">
-                        <span className="flex items-center gap-1">
-                            <Star size={12} className="text-amber-400 fill-amber-400" />
-                            {stats.rating.toFixed(1)} ({stats.reviewCount}件)
+                </div>
+
+                {/* 2. Specs Visualization */}
+                <div className="grid grid-cols-3 gap-3 mb-8">
+                    <div className="bg-white/60 p-3 rounded-2xl border border-[#E8D5BE] flex flex-col items-center justify-center text-center shadow-sm">
+                        <Clock className="w-6 h-6 text-[#D87A32] mb-1" />
+                        <span className="text-lg font-black text-[#3D2E1F] leading-none mb-0.5">
+                            {Math.round((quest.duration_min || 60) / 5) * 5}
+                            <span className="text-[10px] font-normal ml-0.5">分</span>
                         </span>
-                        {stats.playCount > 0 && (
-                            <span className="flex items-center gap-1">
-                                <Users size={12} />
-                                {stats.playCount}人プレイ
-                            </span>
+                        <span className="text-[10px] text-[#7A6652] tracking-wide font-bold">所要時間</span>
+                    </div>
+                    <div className="bg-white/60 p-3 rounded-2xl border border-[#E8D5BE] flex flex-col items-center justify-center text-center shadow-sm">
+                        <Compass className="w-6 h-6 text-[#D87A32] mb-1" />
+                        <span className="text-lg font-black text-[#3D2E1F] leading-none mb-0.5">
+                            {(quest.distance_km || 2).toFixed(1)}
+                            <span className="text-[10px] font-normal ml-0.5">km</span>
+                        </span>
+                        <span className="text-[10px] text-[#7A6652] tracking-wide font-bold">移動距離</span>
+                    </div>
+                    <div className="bg-white/60 p-3 rounded-2xl border border-[#E8D5BE] flex flex-col items-center justify-center text-center shadow-sm">
+                        <Footprints className="w-6 h-6 text-[#D87A32] mb-1" />
+                        <span className="text-lg font-black text-[#3D2E1F] leading-none mb-0.5">
+                            {steps.toLocaleString()}
+                        </span>
+                        <span className="text-[10px] text-[#7A6652] tracking-wide font-bold">歩数</span>
+                    </div>
+                </div>
+
+                {/* 3. Prologue (Accordion) */}
+                <div className="mb-8">
+                    <h2 className="flex items-center gap-2 text-sm font-bold text-[#3D2E1F] mb-4 tracking-widest">
+                        <span className="w-8 h-px bg-[#D87A32]" />
+                        プロローグ
+                    </h2>
+
+                    <div className="relative">
+                        <div
+                            className={`text-sm text-[#5f4a35] leading-loose transition-all duration-500 overflow-hidden whitespace-pre-line ${isDescriptionExpanded ? "max-h-[1000px]" : "max-h-[5.5em]"
+                                }`}
+                        >
+                            {(() => {
+                                const text = quest.description || "街を歩きながら謎を解く、新しい体験型アドベンチャー。";
+                                // Add newline after punctuation if not already present to improve readability
+                                return text.replace(/([。！？])(?=[^」\n])/g, "$1\n");
+                            })()}
+                        </div>
+
+                        {!isDescriptionExpanded && (
+                            <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-[#FEF9F3] via-[#FEF9F3]/90 to-transparent flex items-end justify-center pointer-events-none" />
                         )}
                     </div>
+
+                    <button
+                        onClick={() => setIsDescriptionExpanded(!isDescriptionExpanded)}
+                        className="w-full mt-2 py-2 flex items-center justify-center gap-1 text-xs font-bold text-[#D87A32] hover:text-[#B85A1F] transition-colors uppercase tracking-widest group"
+                    >
+                        {isDescriptionExpanded ? "閉じる" : "続きを読む"}
+                        <ChevronLeft
+                            size={14}
+                            className={`transition-transform duration-300 ${isDescriptionExpanded ? "rotate-90" : "-rotate-90"}`}
+                        />
+                    </button>
                 </div>
+
+                {/* 4. Features (Cards Grid) */}
+                <div className="mb-8">
+                    <h2 className="flex items-center gap-2 text-sm font-bold text-[#3D2E1F] mb-4 tracking-widest">
+                        <span className="w-8 h-px bg-[#D87A32]" />
+                        特徴
+                    </h2>
+                    <div className="grid grid-cols-2 gap-3">
+                        <div className="p-4 rounded-2xl bg-white/50 border border-[#E8D5BE] flex flex-col items-start gap-2 h-full">
+                            <div className="w-8 h-8 rounded-full bg-[#D87A32]/10 flex items-center justify-center shrink-0 text-[#D87A32]">
+                                <Clock size={16} />
+                            </div>
+                            <div>
+                                <h3 className="text-xs font-bold text-[#3D2E1F] mb-1">いつでもプレイ</h3>
+                                <p className="text-[10px] text-[#7A6652] leading-tight">24時間いつでも開始可能</p>
+                            </div>
+                        </div>
+                        <div className="p-4 rounded-2xl bg-white/50 border border-[#E8D5BE] flex flex-col items-start gap-2 h-full">
+                            <div className="w-8 h-8 rounded-full bg-[#D87A32]/10 flex items-center justify-center shrink-0 text-[#D87A32]">
+                                <Shield size={16} />
+                            </div>
+                            <div>
+                                <h3 className="text-xs font-bold text-[#3D2E1F] mb-1">ヒント機能</h3>
+                                <p className="text-[10px] text-[#7A6652] leading-tight">初心者でも安心のサポート</p>
+                            </div>
+                        </div>
+                        <div className="p-4 rounded-2xl bg-white/50 border border-[#E8D5BE] flex flex-col items-start gap-2 h-full">
+                            <div className="w-8 h-8 rounded-full bg-[#D87A32]/10 flex items-center justify-center shrink-0 text-[#D87A32]">
+                                <Users size={16} />
+                            </div>
+                            <div>
+                                <h3 className="text-xs font-bold text-[#3D2E1F] mb-1">1人でも仲間とでも</h3>
+                                <p className="text-[10px] text-[#7A6652] leading-tight">自由なスタイルで</p>
+                            </div>
+                        </div>
+                        <div className="p-4 rounded-2xl bg-white/50 border border-[#E8D5BE] flex flex-col items-start gap-2 h-full">
+                            <div className="w-8 h-8 rounded-full bg-[#D87A32]/10 flex items-center justify-center shrink-0 text-[#D87A32]">
+                                <MapPin size={16} />
+                            </div>
+                            <div>
+                                <h3 className="text-xs font-bold text-[#3D2E1F] mb-1">開始地点</h3>
+                                <p className="text-[10px] text-[#7A6652] leading-tight truncate w-full">{quest.area_name || "エリア未設定"}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* Creator */}
+                {creator?.username && (
+                    <div className="mb-4">
+                        <h2 className="flex items-center gap-2 text-sm font-bold text-[#3D2E1F] mb-4 tracking-widest">
+                            <span className="w-8 h-px bg-[#D87A32]" />
+                            クリエイター
+                        </h2>
+                        <div className="flex items-center gap-4 p-4 rounded-2xl bg-[#fffcf9] border border-[#E8D5BE] shadow-sm">
+                            <div className="w-12 h-12 rounded-full bg-[#E8D5BE] flex items-center justify-center text-[#7A6652] font-serif font-bold text-lg border-2 border-white shadow-sm shrink-0">
+                                {creator.username.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                                <div className="text-sm font-bold text-[#3D2E1F]">{creator.username}</div>
+                                <div className="text-[10px] text-[#7A6652] tracking-widest">ストーリーテラー</div>
+                            </div>
+                        </div>
+                    </div>
+                )}
             </div>
 
-            {/* Content */}
-            <div className="p-4 space-y-6">
-                {/* Stats Grid */}
-                <div className="grid grid-cols-2 gap-2">
-                    <div className="flex items-center gap-2 p-3 rounded-xl bg-[#f7efe5]">
-                        <Clock size={16} className="text-[#e67a28]" />
-                        <div>
-                            <div className="text-sm font-bold text-[#2f1d0f]">
-                                約{Math.round((quest.duration_min || 60) / 5) * 5}分
-                            </div>
-                            <div className="text-[10px] text-[#7c644c]">所要時間</div>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2 p-3 rounded-xl bg-[#f7efe5]">
-                        <Compass size={16} className="text-[#e67a28]" />
-                        <div>
-                            <div className="text-sm font-bold text-[#2f1d0f]">
-                                {(quest.distance_km || 2).toFixed(1)}km
-                            </div>
-                            <div className="text-[10px] text-[#7c644c]">総距離</div>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2 p-3 rounded-xl bg-[#f7efe5]">
-                        <Footprints size={16} className="text-[#e67a28]" />
-                        <div>
-                            <div className="text-sm font-bold text-[#2f1d0f]">{spots.length}箇所</div>
-                            <div className="text-[10px] text-[#7c644c]">スポット数</div>
-                        </div>
-                    </div>
-                    <div className="flex items-center gap-2 p-3 rounded-xl bg-[#f7efe5]">
-                        <Trophy size={16} className="text-[#e67a28]" />
-                        <div>
-                            <div className="text-sm font-bold text-[#2f1d0f]">
-                                {stats.clearRate !== null ? `${stats.clearRate}%` : "—"}
-                            </div>
-                            <div className="text-[10px] text-[#7c644c]">クリア率</div>
-                        </div>
-                    </div>
-                </div>
-
-                {/* CTA Button - Above Description */}
-                <div className="mb-6">
+            {/* 5. Sticky Footer CTA */}
+            <div className="fixed bottom-16 left-0 right-0 p-4 bg-[#FEF9F3]/95 backdrop-blur-md border-t border-[#E8D5BE] z-50 shadow-[0_-4px_20px_rgba(61,46,31,0.05)]">
+                <div className="max-w-md mx-auto w-full">
                     {purchased ? (
                         <Button
                             onClick={handleStartQuest}
-                            className="w-full h-12 rounded-xl bg-gradient-to-r from-emerald-500 to-emerald-600 hover:from-emerald-600 hover:to-emerald-700 text-white font-bold text-sm flex items-center justify-center gap-2"
+                            className="w-full h-14 rounded-full bg-gradient-to-r from-[#D87A32] to-[#B85A1F] hover:from-[#E88B43] hover:to-[#C96B30] text-white font-bold tracking-widest text-base shadow-lg shadow-[#D87A32]/25 hover:shadow-xl hover:scale-[1.02] transition-all"
                         >
-                            <Play size={18} fill="currentColor" />
-                            クエストを開始する
+                            <Play size={20} fill="currentColor" className="mr-2" />
+                            物語を始める
                         </Button>
                     ) : (
                         <div className="flex items-center gap-3">
-                            <div className="shrink-0">
-                                <div className="text-[10px] text-[#7c644c]">参加費</div>
-                                <div className="text-base font-bold text-[#2f1d0f]">無料</div>
+                            <div className="w-1/3 flex flex-col items-center justify-center">
+                                <span className="text-[10px] font-bold text-[#7A6652] tracking-widest">参加費用</span>
+                                <span className="text-xl font-black text-[#3D2E1F]">無料</span>
                             </div>
                             <Button
                                 onClick={handlePurchase}
                                 disabled={purchasing}
-                                className="flex-1 h-12 rounded-xl bg-gradient-to-r from-[#ffb566] to-[#e67a28] hover:from-[#e67a28] hover:to-[#d66a18] text-white font-bold text-sm"
+                                className="flex-1 h-14 rounded-full bg-[#3D2E1F] hover:bg-[#2A1F15] text-[#FEF9F3] font-bold tracking-widest text-sm shadow-xl active:scale-95 transition-all"
                             >
                                 {purchasing ? (
                                     <Loader2 className="w-5 h-5 animate-spin" />
@@ -331,64 +432,6 @@ const QuestDetail = () => {
                             </Button>
                         </div>
                     )}
-                </div>
-
-                {/* Description */}
-                <div>
-                    <h2 className="text-sm font-bold text-[#2f1d0f] mb-2">概要</h2>
-                    <p className="text-sm text-[#5f4a35] leading-relaxed">
-                        {quest.description || "街を歩きながら謎を解く、新しい体験型アドベンチャー。"}
-                    </p>
-                </div>
-
-                {/* Features */}
-                <div className="p-4 rounded-xl bg-[#f7efe5] space-y-3">
-                    <h2 className="text-sm font-bold text-[#2f1d0f]">このクエストの特徴</h2>
-                    <div className="space-y-2">
-                        <div className="flex items-center gap-2 text-xs text-[#5f4a35]">
-                            <MapPin size={14} className="text-[#e67a28]" />
-                            スタート地点: {quest.area_name || "未設定"}
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-[#5f4a35]">
-                            <Clock size={14} className="text-[#e67a28]" />
-                            24時間いつでもプレイ可能
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-[#5f4a35]">
-                            <Shield size={14} className="text-[#e67a28]" />
-                            初心者でも安心のヒント機能付き
-                        </div>
-                        <div className="flex items-center gap-2 text-xs text-[#5f4a35]">
-                            <Users size={14} className="text-[#e67a28]" />
-                            1人でも仲間とでも楽しめます
-                        </div>
-                    </div>
-                </div>
-
-                {/* Creator */}
-                {creator?.username && (
-                    <div>
-                        <h2 className="text-sm font-bold text-[#2f1d0f] mb-2">クリエーター</h2>
-                        <div className="flex items-center gap-3 p-3 rounded-xl bg-[#f7efe5]">
-                            <div className="w-10 h-10 rounded-full bg-[#e67a28]/20 flex items-center justify-center text-[#e67a28] font-bold">
-                                {creator.username.charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                                <div className="text-sm font-bold text-[#2f1d0f]">{creator.username}</div>
-                                <div className="text-[10px] text-[#7c644c]">クエストクリエーター</div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
-                {/* Notice */}
-                <div className="p-3 rounded-xl bg-amber-50 border border-amber-200 flex gap-2">
-                    <AlertCircle size={16} className="text-amber-600 shrink-0 mt-0.5" />
-                    <div>
-                        <div className="text-xs font-bold text-amber-800 mb-0.5">ご注意</div>
-                        <p className="text-[10px] text-amber-700 leading-relaxed">
-                            このクエストは屋外を歩きながら進めます。歩きやすい服装・靴でご参加ください。
-                        </p>
-                    </div>
                 </div>
             </div>
         </div>

@@ -14,8 +14,7 @@ import RankHierarchy from "./pages/RankHierarchy";
 import Cases from "./pages/Cases";
 import EventDetail from "./pages/EventDetail";
 import GamePlay from "./pages/GamePlay";
-import Investigation from "./pages/Investigation";
-import Tools from "./pages/Tools";
+
 import Auth from "./pages/Auth";
 import AdminDashboard from "./pages/AdminDashboard";
 import Setup from "./pages/Setup";
@@ -26,6 +25,7 @@ import Buddies from "./pages/Buddies";
 import NotFound from "./pages/NotFound";
 import LanguageOnboarding from "./pages/LanguageOnboarding";
 import QuestDetail from "./pages/QuestDetail";
+import QuestGenerated from "./pages/QuestGenerated";
 
 import { QuestProvider } from "./contexts/QuestContext";
 
@@ -59,8 +59,8 @@ const App = () => (
               <Route path="/rank-hierarchy" element={<RankHierarchy />} />
               <Route path="/cases" element={<Cases />} />
               <Route path="/cases/:id" element={<EventDetail />} />
-              <Route path="/investigation" element={<Investigation />} />
-              <Route path="/tools" element={<Tools />} />
+              <Route path="/quest-generated" element={<QuestGenerated />} />
+
               <Route path="/settings" element={<Settings />} />
               <Route path="/buddies" element={<Buddies />} />
               <Route path="/friend-management" element={<FriendManagement />} />

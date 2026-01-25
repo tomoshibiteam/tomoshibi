@@ -367,8 +367,9 @@ const EventDetail = () => {
   };
 
   const handleShare = async () => {
-    const shareText = `${event.title} - 君も「SPR探偵事務所」で一緒に謎を解かないか？ #SPR探偵事務所`;
-    const appUrl = "https://spr-topaz.vercel.app/";
+    const shareText = `${event.title} - 君もTOMOSHIBIで一緒に謎を解こう！ #TOMOSHIBI`;
+    const base = import.meta.env.BASE_URL || "/";
+    const appUrl = typeof window === "undefined" ? base : `${window.location.origin}${base}`;
     const fullText = `${shareText} ${appUrl}`;
 
     if (navigator.share) {
@@ -452,8 +453,7 @@ const EventDetail = () => {
 
           {/* Title */}
           <div>
-            <h1 className="text-3xl font-bold mb-2">SPR探偵事務所の事件簿 その１</h1>
-            <h2 className="text-2xl font-bold text-primary">「失われた虹色のメロディーの秘密」</h2>
+            <h1 className="text-3xl font-bold mb-2">{event.title}</h1>
           </div>
 
           {/* Event Info */}
@@ -462,7 +462,7 @@ const EventDetail = () => {
             {applicationCount > 0 && (
               <div className="mb-4 p-3 bg-primary/10 rounded-lg">
                 <p className="text-sm font-medium text-primary">
-                  🎉 現在 {applicationCount} 名の探偵が応募中
+                  🎉 現在 {applicationCount} 名が応募中
                 </p>
               </div>
             )}
@@ -525,14 +525,14 @@ const EventDetail = () => {
 
           {/* Experience System */}
           <Card className="shadow-card p-6">
-            <h3 className="font-bold text-lg mb-4">探偵の心得：任務遂行の仕組み</h3>
+            <h3 className="font-bold text-lg mb-4">プレイの流れ</h3>
             <div className="space-y-6">
               <div className="flex items-start gap-3">
                 <Smartphone className="w-6 h-6 text-primary mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="font-medium mb-1">探偵ツール（本アプリ）で任務を遂行</p>
+                  <p className="font-medium mb-1">アプリで物語と謎解きを進める</p>
                   <p className="text-sm text-muted-foreground">
-                    このアプリが君の相棒だ。物語の進行、謎の答えの入力、そしてヒントの閲覧まで、すべてをサポートする。
+                    物語の進行、答えの入力、ヒントの確認まで、このアプリですべて完結します。
                   </p>
                 </div>
               </div>
@@ -540,9 +540,9 @@ const EventDetail = () => {
               <div className="flex items-start gap-3">
                 <Dumbbell className="w-6 h-6 text-primary mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="font-medium mb-1">日常の捜査で、道具を育てる</p>
+                  <p className="font-medium mb-1">日常のアクションで道具を育てる</p>
                   <p className="text-sm text-muted-foreground">
-                    日々の捜査報告（ごみ拾いの写真報告など）で『AP』を貯めよう。貯めたポイントで、君の『調査道具』を強化できる。
+                    日々のアクション報告（ごみ拾いの写真報告など）でAPを貯め、道具を強化できます。
                   </p>
                 </div>
               </div>
@@ -550,9 +550,9 @@ const EventDetail = () => {
               <div className="flex items-start gap-3">
                 <Lightbulb className="w-6 h-6 text-primary mt-0.5 flex-shrink-0" />
                 <div>
-                  <p className="font-medium mb-1">強化した道具で、ヒントを得よ</p>
+                  <p className="font-medium mb-1">強化した道具でヒントを解放</p>
                   <p className="text-sm text-muted-foreground">
-                    任務中に行き詰まっても、強化した道具（ルーペなど）があれば、レベルに応じたヒントを解放できる。
+                    行き詰まっても、強化した道具（ルーペなど）があればレベルに応じたヒントを開放できます。
                   </p>
                 </div>
               </div>
@@ -561,11 +561,11 @@ const EventDetail = () => {
 
           {/* Participation Steps */}
           <Card className="shadow-card p-6">
-            <h3 className="font-bold text-lg mb-4">任務への参加手順</h3>
+            <h3 className="font-bold text-lg mb-4">参加手順</h3>
             <ol className="space-y-3 list-decimal list-inside text-muted-foreground">
-              <li>探偵登録と事件への参加を完了する</li>
-              <li>当日、受付で「事件開始コード」を入手する（参加費と引き換え）</li>
-              <li>アプリでコードを入力し、任務を開始する</li>
+              <li>アカウント登録と参加を完了する</li>
+              <li>当日、受付で「開始コード」を入手する（参加費と引き換え）</li>
+              <li>アプリでコードを入力し、プレイを開始する</li>
             </ol>
           </Card>
 
@@ -582,7 +582,7 @@ const EventDetail = () => {
               <AccordionItem value="item-2">
                 <AccordionTrigger>一人でも参加できますか？</AccordionTrigger>
                 <AccordionContent>
-                  もちろんです。多くの探偵が一人で事件を解決しています。
+                  もちろんです。多くのプレイヤーが一人でクリアしています。
                 </AccordionContent>
               </AccordionItem>
             </Accordion>
@@ -605,10 +605,10 @@ const EventDetail = () => {
                     className="w-full h-14 text-lg font-bold sticky bottom-4 shadow-lg"
                     size="lg"
                   >
-                    探偵登録する
+                    アカウント登録する
                   </Button>
                   <p className="text-sm text-muted-foreground text-center">
-                    依頼に参加するには、探偵登録をお願いします
+                    依頼に参加するには、アカウント登録をお願いします
                   </p>
                 </>
               ) : (

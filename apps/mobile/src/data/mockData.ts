@@ -72,7 +72,7 @@ export const achievements: Achievement[] = [
   },
   {
     id: "5",
-    name: "環境保護探偵",
+    name: "環境保護チャレンジャー",
     description: "エコな選択を20回記録",
     icon: "🌱",
     earned: false,

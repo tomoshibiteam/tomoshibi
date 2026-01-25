@@ -40,9 +40,11 @@ const AppLayout = () => {
 
   const getProfileDisplay = () => {
     if (profile?.profile_picture_url) {
+      // Attempt to get higher res for Google images
+      const highResUrl = profile.profile_picture_url.replace("=s96-c", "=s400-c");
       return (
         <img
-          src={profile.profile_picture_url}
+          src={highResUrl}
           alt="Profile"
           className="w-full h-full object-cover rounded-full"
         />
@@ -63,31 +65,31 @@ const AppLayout = () => {
     <MobileFrame
       enableFontScale
       header={
-        <div className="flex items-center justify-between px-4 py-3 border-b border-amber-200 bg-amber-50/95 backdrop-blur-sm shadow-sm">
+        <div className="flex items-center justify-between px-4 py-3 border-b border-[#E8D5BE] bg-[#f7f0e5]/95 backdrop-blur-sm shadow-[0_1px_5px_rgba(61,46,31,0.05)] relative z-50">
           <div
             className="flex items-center gap-2 cursor-pointer active:opacity-70 transition-opacity"
             onClick={() => navigate("/")}
           >
-            <p className="text-[14px] font-bold tracking-[0.2em] text-amber-900">
+            <p className="text-[14px] font-bold font-serif tracking-[0.25em] text-[#3D2E1F] whitespace-nowrap">
               TOMOSHIBI
             </p>
           </div>
           <div className="flex items-center gap-2">
             {authLoading ? (
-              <div className="w-8 h-8 rounded-full bg-amber-100 animate-pulse" />
+              <div className="w-8 h-8 rounded-full bg-[#E8D5BE]/30 animate-pulse" />
             ) : user ? (
               <button
                 onClick={() => navigate("/profile")}
-                className="w-9 h-9 rounded-full bg-gradient-to-br from-amber-400 to-amber-600 flex items-center justify-center text-white shadow-md hover:shadow-lg hover:scale-105 transition-all active:scale-95 border border-amber-100 overflow-hidden"
+                className="w-9 h-9 rounded-full bg-[#FEF9F3] flex items-center justify-center text-[#7A6652] shadow-sm hover:shadow-md hover:scale-105 transition-all active:scale-95 border border-[#E8D5BE] overflow-hidden"
               >
                 {getProfileDisplay()}
               </button>
             ) : (
               <button
                 onClick={() => navigate("/auth")}
-                className="px-4 py-2 rounded-full bg-amber-600 text-white text-xs font-bold hover:bg-amber-700 transition-all shadow-md active:scale-95"
+                className="px-5 py-2 rounded-full bg-gradient-to-r from-[#D87A32] to-[#B85A1F] hover:from-[#E88B43] hover:to-[#C96B30] text-white text-[10px] font-serif font-bold tracking-widest transition-all shadow-md active:scale-95"
               >
-                ログイン
+                LOGIN
               </button>
             )}
           </div>

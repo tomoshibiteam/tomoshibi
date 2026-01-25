@@ -296,7 +296,7 @@ const FriendManagement = () => {
                 </Badge>
               )}
             </TabsTrigger>
-            <TabsTrigger value="search">探偵を探す</TabsTrigger>
+            <TabsTrigger value="search">仲間を探す</TabsTrigger>
           </TabsList>
 
           <TabsContent value="friends" className="space-y-3">
@@ -304,7 +304,7 @@ const FriendManagement = () => {
               <Card className="p-8 text-center">
                 <p className="text-muted-foreground">
                   まだ仲間がいません。<br />
-                  「探偵を探す」から仲間を見つけましょう！
+                  「仲間を探す」から仲間を見つけましょう！
                 </p>
               </Card>
             ) : (
@@ -384,7 +384,7 @@ const FriendManagement = () => {
           <TabsContent value="search" className="space-y-4">
             <div className="flex gap-2">
               <Input
-                placeholder="探偵の名前で検索..."
+                placeholder="プレイヤー名で検索..."
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyPress={(e) => e.key === 'Enter' && handleSearch()}

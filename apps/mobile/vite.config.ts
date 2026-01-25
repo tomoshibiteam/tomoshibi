@@ -35,7 +35,7 @@ export default defineConfig(({ mode }) => {
         manifest: {
           name: 'TOMOSHIBI | 街歩き×謎解きプラットフォーム',
           short_name: 'TOMOSHIBI',
-          description: '日常の行動がポイントになり、現地の謎を解くゲーム化された探偵アプリ。功績を積んで、より難しい依頼に挑戦しよう。',
+          description: 'AIで街歩きクエストを生成し、現地で物語と謎解きを楽しむTOMOSHIBIのモバイルアプリ。',
           theme_color: '#006633',
           background_color: '#f0e6d8',
           display: 'standalone',

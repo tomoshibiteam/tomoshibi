@@ -313,9 +313,9 @@ const Buddies = () => {
     <Layout>
       <div className="container max-w-2xl mx-auto p-6">
         <div className="mb-6">
-          <h1 className="text-2xl font-bold mb-2">探偵仲間</h1>
+          <h1 className="text-2xl font-bold mb-2">仲間</h1>
           <p className="text-sm text-muted-foreground">
-            調査活動を共に行う仲間と繋がりましょう
+            冒険を共にする仲間と繋がりましょう
           </p>
         </div>
 
@@ -324,7 +324,7 @@ const Buddies = () => {
             <TabsTrigger value="feed">活動フィード</TabsTrigger>
             <TabsTrigger value="friends">仲間一覧</TabsTrigger>
             <TabsTrigger value="search">
-              探偵を探す
+              仲間を探す
               {pendingRequests.length > 0 && (
                 <Badge variant="destructive" className="ml-2 h-5 w-5 rounded-full p-0 flex items-center justify-center text-xs">
                   {pendingRequests.length}
@@ -483,10 +483,10 @@ const Buddies = () => {
             )}
 
             <div className="space-y-3">
-              <h3 className="font-bold">探偵をIDまたは名前で探す</h3>
+              <h3 className="font-bold">仲間をIDまたは名前で探す</h3>
               <div className="flex gap-2">
                 <Input
-                  placeholder="探偵の名前で検索..."
+                  placeholder="プレイヤー名で検索..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   onKeyPress={(e) => e.key === 'Enter' && handleSearch()}

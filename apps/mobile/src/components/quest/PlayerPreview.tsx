@@ -236,54 +236,55 @@ export default function PlayerPreview({
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-b from-stone-50 to-white">
+        <div className="w-full font-serif text-[#3D2E1F]">
             {/* Hero Section - Match Quest Detail */}
             <div className="relative w-full aspect-[16/10] overflow-hidden bg-[#2f1d0f] text-white">
                 {basicInfo?.coverImageUrl ? (
                     <img
                         src={basicInfo.coverImageUrl}
                         alt={basicInfo?.title || 'Quest cover'}
-                        className="w-full h-full object-cover"
+                        className="w-full h-full object-cover opacity-90"
                     />
                 ) : (
-                    <div className="w-full h-full bg-gradient-to-br from-[#f7efe5] to-[#eadfd0]" />
+                    <div className="w-full h-full bg-[#E8D5BE]" />
                 )}
-                <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/20 to-transparent" />
-                <div className="absolute inset-0 bg-gradient-to-r from-black/40 via-transparent to-transparent" />
+                {/* Vignette & Gradients */}
+                <div className="absolute inset-0 bg-gradient-to-t from-[#3D2E1F] via-transparent to-transparent opacity-90" />
+                <div className="absolute inset-0 bg-gradient-to-b from-black/30 to-transparent opacity-40" />
 
-                <div className="absolute bottom-0 left-0 right-0 p-4">
-                    <div className="flex items-center gap-2 mb-2">
-                        <span className={`px-2.5 py-1 rounded-full text-[10px] font-bold ${difficultyStyle}`}>
+                <div className="absolute bottom-0 left-0 right-0 p-5 z-10">
+                    <div className="flex items-center gap-2 mb-3">
+                        <span className={`px-3 py-1 rounded-full text-[10px] font-bold tracking-widest uppercase shadow-sm border border-white/20 backdrop-blur-md ${difficultyStyle}`}>
                             {difficultyLabel}
                         </span>
                         {basicInfo?.area && (
-                            <span className="px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-[10px] font-medium flex items-center gap-1">
+                            <span className="px-3 py-1 rounded-full bg-[#3D2E1F]/60 backdrop-blur-md text-[#FEF9F3] text-[10px] font-bold tracking-wide flex items-center gap-1 border border-[#FEF9F3]/20">
                                 <MapPin size={10} />
                                 {basicInfo.area}
                             </span>
                         )}
                         {isGeneratingCover && (
-                            <span className="px-2.5 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-[10px] font-medium">
-                                カバー画像生成中...
+                            <span className="px-3 py-1 rounded-full bg-white/20 backdrop-blur-md text-white text-[10px] font-bold tracking-widest animate-pulse border border-white/20">
+                                画像生成中...
                             </span>
                         )}
                     </div>
                     <motion.h1
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="text-2xl font-black text-white drop-shadow-xl leading-tight mb-2 line-clamp-2"
-                        style={{ textShadow: '0 2px 8px rgba(0,0,0,0.8)' }}
+                        className="text-2xl sm:text-3xl font-bold text-[#FEF9F3] leading-tight mb-2 line-clamp-2 tracking-wide"
+                        style={{ textShadow: '0 2px 10px rgba(61,46,31,0.5)' }}
                     >
                         {basicInfo?.title || '新しいクエスト'}
                     </motion.h1>
-                    <div className="flex items-center gap-3 text-white/80 text-xs">
-                        <span className="flex items-center gap-1">
-                            <Clock size={12} className="text-amber-300" />
+                    <div className="flex items-center gap-4 text-[#FEF9F3]/90 text-xs font-medium tracking-wider">
+                        <span className="flex items-center gap-1.5">
+                            <Clock size={14} className="text-[#D87A32]" />
                             約{estimatedDuration}分
                         </span>
-                        <span className="flex items-center gap-1">
-                            <MapPin size={12} />
-                            {spots.length}箇所
+                        <span className="flex items-center gap-1.5">
+                            <MapPin size={14} className="text-[#D87A32]" />
+                            {spots.length}スポット
                         </span>
                     </div>
                 </div>
@@ -296,13 +297,13 @@ export default function PlayerPreview({
                         initial={{ opacity: 0, y: 20 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.25 }}
-                        className="bg-white rounded-2xl shadow-xl p-2"
+                        className="bg-white/80 backdrop-blur rounded-2xl shadow-[0_4px_20px_rgba(61,46,31,0.1)] p-2 border border-[#E8D5BE]"
                     >
                         <button
                             onClick={onPlay}
-                            className="w-full py-4 rounded-xl bg-gradient-to-r from-amber-500 to-orange-600 text-white font-extrabold text-lg shadow-lg hover:shadow-orange-500/30 active:scale-[0.98] transition-all flex items-center justify-center gap-3"
+                            className="w-full py-4 rounded-xl bg-gradient-to-r from-[#D87A32] to-[#B85A1F] text-white font-bold text-lg shadow-lg hover:shadow-[#D87A32]/30 active:scale-[0.98] transition-all flex items-center justify-center gap-3 tracking-widest"
                         >
-                            <span className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center">
+                            <span className="w-8 h-8 rounded-full bg-white/20 flex items-center justify-center border border-white/30">
                                 <Play size={16} fill="currentColor" />
                             </span>
                             冒険を始める
@@ -312,100 +313,82 @@ export default function PlayerPreview({
             )}
 
             {/* Main Content */}
-            <div className="max-w-4xl mx-auto px-4 py-6 sm:px-6 sm:py-8">
+            <div className="max-w-4xl mx-auto px-4 py-8 sm:px-6">
                 {/* Stats Grid */}
                 <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
-                    className="flex gap-1.5 sm:gap-2 mb-6 sm:mb-8"
+                    className="flex gap-3 mb-8"
                 >
-                    <div className="flex items-center gap-1.5 sm:gap-2 bg-black/5 border border-stone-200 rounded-lg px-2.5 py-2 sm:px-3 sm:py-2.5 flex-1 min-w-0">
-                        <Clock size={14} className="text-amber-400 shrink-0" />
-                        <div className="flex flex-col min-w-0">
-                            <span className="text-[9px] sm:text-[10px] text-stone-500 leading-tight whitespace-nowrap">
-                                所要時間
-                            </span>
-                            <span className="text-[12px] sm:text-sm font-bold text-stone-800 leading-tight whitespace-nowrap truncate">
-                                約{estimatedDuration}分
-                            </span>
+                    <div className="flex flex-col items-center justify-center bg-white/50 border border-[#E8D5BE] rounded-xl py-4 flex-1 min-w-0 shadow-sm">
+                        <Clock size={18} className="text-[#D87A32] mb-1.5" />
+                        <span className="text-[10px] text-[#7A6652] tracking-widest font-bold uppercase mb-0.5">所要時間</span>
+                        <span className="text-sm font-bold text-[#3D2E1F]">{estimatedDuration}分</span>
+                    </div>
+
+                    <div className="flex flex-col items-center justify-center bg-white/50 border border-[#E8D5BE] rounded-xl py-4 flex-1 min-w-0 shadow-sm">
+                        <Star size={18} className="text-[#D87A32] mb-1.5" />
+                        <span className="text-[10px] text-[#7A6652] tracking-widest font-bold uppercase mb-0.5">難易度</span>
+                        <div className="flex items-center gap-1">
+                            <span className="text-sm font-bold text-[#3D2E1F]">{difficultyLabel}</span>
                         </div>
                     </div>
 
-                    <div className="flex items-center gap-1.5 sm:gap-2 bg-black/5 border border-stone-200 rounded-lg px-2.5 py-2 sm:px-3 sm:py-2.5 flex-1 min-w-0">
-                        <Star size={14} className="text-amber-400 shrink-0" />
-                        <div className="flex flex-col min-w-0">
-                            <span className="text-[9px] sm:text-[10px] text-stone-500 leading-tight whitespace-nowrap">
-                                難易度
-                            </span>
-                            <div className="flex items-center gap-1 flex-nowrap">
-                                <span className="text-[12px] sm:text-sm font-bold text-stone-800 leading-tight whitespace-nowrap">
-                                    {difficultyLabel}
-                                </span>
-                                <span className="text-[9px] sm:text-[10px] text-amber-400 tracking-tighter whitespace-nowrap">
-                                    {'★'.repeat(difficultyStars)}{'☆'.repeat(3 - difficultyStars)}
-                                </span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 sm:gap-2 bg-black/5 border border-stone-200 rounded-lg px-2.5 py-2 sm:px-3 sm:py-2.5 flex-1 min-w-0">
-                        <MapPin size={14} className="text-amber-400 shrink-0" />
-                        <div className="flex flex-col min-w-0">
-                            <span className="text-[9px] sm:text-[10px] text-stone-500 leading-tight whitespace-nowrap">
-                                スポット
-                            </span>
-                            <span className="text-[12px] sm:text-sm font-bold text-stone-800 leading-tight whitespace-nowrap truncate">
-                                {spots.length}箇所
-                            </span>
-                        </div>
+                    <div className="flex flex-col items-center justify-center bg-white/50 border border-[#E8D5BE] rounded-xl py-4 flex-1 min-w-0 shadow-sm">
+                        <MapPin size={18} className="text-[#D87A32] mb-1.5" />
+                        <span className="text-[10px] text-[#7A6652] tracking-widest font-bold uppercase mb-0.5">スポット数</span>
+                        <span className="text-sm font-bold text-[#3D2E1F]">{spots.length}箇所</span>
                     </div>
                 </motion.div>
+
                 {/* Generation Progress Banner */}
                 {isGenerating && generationPhase && (
                     <motion.div
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="bg-gradient-to-r from-brand-gold/10 to-amber-50 border border-brand-gold/30 rounded-xl p-3 sm:p-4 mb-6 sm:mb-8"
+                        className="bg-[#FEF9F3] border border-[#D87A32]/30 rounded-xl p-4 mb-8 relative overflow-hidden"
                     >
-                        <div className="flex items-center gap-3">
-                            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-brand-gold/20 flex items-center justify-center flex-shrink-0">
-                                <Sparkles size={18} className="text-brand-gold animate-pulse" />
+                        <div className="absolute top-0 left-0 w-1 h-full bg-[#D87A32]" />
+                        <div className="flex items-center gap-4">
+                            <div className="w-10 h-10 rounded-full bg-[#E8D5BE] flex items-center justify-center flex-shrink-0 animate-pulse">
+                                <Sparkles size={18} className="text-[#D87A32]" />
                             </div>
                             <div className="flex-1">
-                                <p className="text-[13px] sm:text-sm font-bold text-brand-dark mb-0.5">
+                                <p className="text-sm font-bold text-[#3D2E1F] mb-0.5 tracking-wide">
                                     {generationPhase}
                                 </p>
-                                <p className="text-[11px] sm:text-xs text-stone-600">
-                                    クエストの詳細を生成しています。しばらくお待ちください...
+                                <p className="text-xs text-[#7A6652]">
+                                    物語を紡いでいます...
                                 </p>
                             </div>
                         </div>
                     </motion.div>
                 )}
 
-                {/* Mission & Clear Condition */}
+                {/* Clear Condition (Mission) */}
                 {(story?.mission || story?.clearCondition) && (
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.3 }}
-                        className="mb-6 sm:mb-8"
+                        className="mb-8"
                     >
-                        <h2 className="text-base sm:text-lg font-bold text-brand-dark mb-3 flex items-center gap-2">
-                            <Target size={18} className="text-brand-gold" />
-                            あなたの使命
-                        </h2>
-                        <div className="bg-gradient-to-br from-violet-50 to-white rounded-xl border border-violet-200 p-4 sm:p-5 shadow-sm space-y-4">
+                        <div className="flex items-center gap-2 mb-4">
+                            <Target size={18} className="text-[#D87A32]" />
+                            <h2 className="text-base font-bold text-[#3D2E1F] tracking-widest">目標</h2>
+                        </div>
+                        <div className="bg-white/60 rounded-xl border border-[#E8D5BE] p-6 shadow-sm relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-20 h-20 bg-[#E8D5BE]/20 rounded-bl-full -mr-4 -mt-4 pointer-events-none" />
                             {story.mission && (
-                                <div>
-                                    <h3 className="text-[11px] sm:text-xs font-bold text-violet-600 mb-1.5">ミッション</h3>
-                                    <p className="text-[13px] sm:text-sm text-stone-700 leading-relaxed">{story.mission}</p>
+                                <div className="mb-4">
+                                    <h3 className="text-[10px] font-bold text-[#7A6652] tracking-widest uppercase mb-2">指令</h3>
+                                    <p className="text-sm text-[#3D2E1F] leading-relaxed font-medium">{story.mission}</p>
                                 </div>
                             )}
                             {story.clearCondition && (
-                                <div className="pt-3 border-t border-violet-100">
-                                    <h3 className="text-[11px] sm:text-xs font-bold text-violet-600 mb-1.5">クリア条件</h3>
-                                    <p className="text-[13px] sm:text-sm text-stone-700 leading-relaxed">{story.clearCondition}</p>
+                                <div className={`${story.mission ? 'pt-4 border-t border-[#E8D5BE]/50' : ''}`}>
+                                    <h3 className="text-[10px] font-bold text-[#7A6652] tracking-widest uppercase mb-2">クリア条件</h3>
+                                    <p className="text-sm text-[#3D2E1F] leading-relaxed font-medium">{story.clearCondition}</p>
                                 </div>
                             )}
                         </div>
@@ -418,17 +401,17 @@ export default function PlayerPreview({
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.35 }}
-                        className="mb-6 sm:mb-8"
+                        className="mb-8"
                     >
-                        <div className="bg-gradient-to-br from-amber-50 via-white to-rose-50 rounded-xl border-2 border-amber-200 p-4 sm:p-6 shadow-lg relative overflow-hidden">
-                            <div className="absolute top-0 right-0 w-32 h-32 bg-brand-gold/5 rounded-full -translate-y-16 translate-x-16"></div>
-                            <div className="relative">
+                        <div className="bg-gradient-to-br from-[#FEF9F3] via-white to-[#E8D5BE]/20 rounded-xl border border-[#E8D5BE] p-6 shadow-md relative overflow-hidden group">
+                            <div className="absolute -right-6 -top-6 w-24 h-24 bg-[#D87A32]/10 rounded-full blur-xl group-hover:bg-[#D87A32]/20 transition-all duration-500" />
+                            <div className="relative z-10">
                                 <div className="flex items-center gap-2 mb-3">
-                                    <Zap size={18} className="text-amber-500" />
-                                    <h3 className="text-[12px] sm:text-sm font-bold text-amber-700">この冒険の鍵</h3>
+                                    <Zap size={16} className="text-[#D87A32]" />
+                                    <h3 className="text-xs font-bold text-[#7A6652] tracking-widest uppercase">冒険の鍵</h3>
                                 </div>
-                                <p className="text-sm sm:text-base text-stone-800 leading-relaxed font-medium">
-                                    {story.teaser}
+                                <p className="text-sm sm:text-base text-[#3D2E1F] leading-loose font-serif italic">
+                                    "{story.teaser}"
                                 </p>
                             </div>
                         </div>
@@ -441,20 +424,20 @@ export default function PlayerPreview({
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.4 }}
-                        className="mb-6 sm:mb-8"
+                        className="mb-8"
                     >
-                        <h2 className="text-base sm:text-lg font-bold text-brand-dark mb-3 flex items-center gap-2">
-                            <Sparkles size={18} className="text-brand-gold" />
-                            このクエストの魅力
-                        </h2>
-                        <div className="bg-gradient-to-br from-amber-50 to-white rounded-xl border border-amber-200 p-4 sm:p-5 shadow-sm">
-                            <ul className="space-y-2 sm:space-y-3">
+                        <div className="flex items-center gap-2 mb-4">
+                            <Sparkles size={18} className="text-[#D87A32]" />
+                            <h2 className="text-base font-bold text-[#3D2E1F] tracking-widest">見どころ</h2>
+                        </div>
+                        <div className="bg-white/60 rounded-xl border border-[#E8D5BE] p-5 shadow-sm">
+                            <ul className="space-y-4">
                                 {basicInfo.highlights.map((highlight, idx) => (
-                                    <li key={idx} className="flex items-start gap-3">
-                                        <div className="w-5 h-5 sm:w-6 sm:h-6 rounded-full bg-brand-gold/20 flex items-center justify-center flex-shrink-0 mt-0.5">
-                                            <Sparkles size={12} className="text-brand-gold" />
+                                    <li key={idx} className="flex items-start gap-4">
+                                        <div className="w-6 h-6 rounded-full bg-[#FEF9F3] border border-[#E8D5BE] flex items-center justify-center flex-shrink-0 mt-0.5 text-[#D87A32] font-bold text-xs">
+                                            {idx + 1}
                                         </div>
-                                        <p className="text-[13px] sm:text-sm text-stone-700 leading-relaxed flex-1">
+                                        <p className="text-sm text-[#3D2E1F] leading-relaxed pt-0.5">
                                             {highlight}
                                         </p>
                                     </li>
@@ -470,35 +453,27 @@ export default function PlayerPreview({
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.45 }}
-                        className="mb-6 sm:mb-8"
+                        className="mb-8"
                     >
-                        <h2 className="text-base sm:text-lg font-bold text-brand-dark mb-3 flex items-center gap-2">
-                            <Play size={18} className="text-brand-gold" />
-                            どんな体験ができる？
-                        </h2>
-                        <div className="bg-gradient-to-br from-stone-50 to-white rounded-xl border border-stone-200 p-4 sm:p-5 shadow-sm">
-                            {/* 3-line summary */}
+                        <div className="flex items-center gap-2 mb-4">
+                            <Play size={18} className="text-[#D87A32]" />
+                            <h2 className="text-base font-bold text-[#3D2E1F] tracking-widest">体験内容</h2>
+                        </div>
+                        <div className="bg-white/60 rounded-xl border border-[#E8D5BE] p-5 shadow-sm">
                             {!showDetailedExperience && (
-                                <div className="space-y-2">
-                                    <p className="text-[13px] sm:text-sm text-stone-700 leading-relaxed">
-                                        街歩きしながら、{spots.length}つのスポットで謎を解き明かす
-                                    </p>
-                                    <p className="text-[13px] sm:text-sm text-stone-700 leading-relaxed">
-                                        各スポットで1問、合計{spots.length}問の謎解き
-                                    </p>
-                                    <p className="text-[13px] sm:text-sm text-stone-700 leading-relaxed">
-                                        最後に全ての手がかりを繋げて終幕へ
+                                <div>
+                                    <p className="text-sm text-[#3D2E1F] leading-relaxed line-clamp-3 whitespace-pre-wrap">
+                                        {story.whatToExpect}
                                     </p>
                                     <button
                                         onClick={() => setShowDetailedExperience(true)}
-                                        className="mt-3 flex items-center gap-1 text-[11px] sm:text-xs text-brand-gold hover:text-amber-600 font-medium transition-colors"
+                                        className="mt-2 flex items-center gap-1 text-xs text-[#D87A32] font-bold tracking-wide hover:underline"
                                     >
                                         詳細を見る <ChevronDown size={14} />
                                     </button>
                                 </div>
                             )}
 
-                            {/* Detailed experience */}
                             <AnimatePresence>
                                 {showDetailedExperience && (
                                     <motion.div
@@ -506,18 +481,18 @@ export default function PlayerPreview({
                                         animate={{ opacity: 1, height: 'auto' }}
                                         exit={{ opacity: 0, height: 0 }}
                                     >
-                                        <p className="text-[13px] sm:text-sm text-stone-700 leading-relaxed whitespace-pre-wrap">
+                                        <p className="text-sm text-[#3D2E1F] leading-relaxed whitespace-pre-wrap">
                                             {story.whatToExpect}
                                         </p>
                                         {story.atmosphere && (
-                                            <div className="mt-4 pt-4 border-t border-stone-100">
-                                                <p className="text-[11px] sm:text-xs text-stone-500 font-medium mb-1">雰囲気</p>
-                                                <p className="text-[13px] sm:text-sm text-stone-600">{story.atmosphere}</p>
+                                            <div className="mt-4 pt-4 border-t border-[#E8D5BE]/50">
+                                                <p className="text-[10px] text-[#7A6652] font-bold uppercase mb-1">雰囲気</p>
+                                                <p className="text-sm text-[#3D2E1F]">{story.atmosphere}</p>
                                             </div>
                                         )}
                                         <button
                                             onClick={() => setShowDetailedExperience(false)}
-                                            className="mt-3 flex items-center gap-1 text-[11px] sm:text-xs text-brand-gold hover:text-amber-600 font-medium transition-colors"
+                                            className="mt-3 flex items-center gap-1 text-xs text-[#D87A32] font-bold tracking-wide hover:underline"
                                         >
                                             閉じる <ChevronUp size={14} />
                                         </button>
@@ -534,14 +509,14 @@ export default function PlayerPreview({
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.5 }}
-                        className="mb-6 sm:mb-8"
+                        className="mb-8"
                     >
-                        <h2 className="text-base sm:text-lg font-bold text-brand-dark mb-3 flex items-center gap-2">
-                            <Footprints size={18} className="text-brand-gold" />
-                            物語の始まり
-                        </h2>
-                        <div className="bg-white rounded-xl border border-stone-200 p-4 sm:p-5 shadow-sm">
-                            <p className="text-[13px] sm:text-sm text-stone-700 leading-relaxed whitespace-pre-wrap">
+                        <div className="flex items-center gap-2 mb-4">
+                            <Footprints size={18} className="text-[#D87A32]" />
+                            <h2 className="text-base font-bold text-[#3D2E1F] tracking-widest">物語の始まり</h2>
+                        </div>
+                        <div className="bg-white rounded-xl border border-[#E8D5BE] p-6 shadow-sm">
+                            <p className="text-sm sm:text-base text-[#3D2E1F] leading-loose font-serif whitespace-pre-wrap">
                                 {story?.prologueBody || basicInfo?.description}
                             </p>
                         </div>
@@ -553,45 +528,45 @@ export default function PlayerPreview({
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.55 }}
-                    className="mb-6 sm:mb-8"
+                    className="mb-8"
                 >
-                    <h2 className="text-base sm:text-lg font-bold text-brand-dark mb-3 flex items-center gap-2">
-                        <Navigation size={18} className="text-brand-gold" />
-                        ルート情報
-                    </h2>
+                    <div className="flex items-center gap-2 mb-4">
+                        <Navigation size={18} className="text-[#D87A32]" />
+                        <h2 className="text-base font-bold text-[#3D2E1F] tracking-widest">ルートマップ</h2>
+                    </div>
 
                     {/* Route Metadata */}
                     {routeMetadata && (
-                        <div className="bg-white rounded-xl border border-stone-200 p-3 sm:p-4 mb-3 shadow-sm">
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-2.5 sm:gap-3">
+                        <div className="bg-white/60 rounded-xl border border-[#E8D5BE] p-4 mb-4 shadow-sm">
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                                 {routeMetadata.distanceKm && (
                                     <div>
-                                        <p className="text-[11px] sm:text-xs text-stone-500 mb-0.5">移動距離</p>
-                                        <p className="text-[13px] sm:text-sm font-bold text-brand-dark">
+                                        <p className="text-[10px] text-[#7A6652] font-bold uppercase mb-0.5">距離</p>
+                                        <p className="text-sm font-bold text-[#3D2E1F]">
                                             約{routeMetadata.distanceKm}km
                                         </p>
                                     </div>
                                 )}
                                 {routeMetadata.walkingMinutes && (
                                     <div>
-                                        <p className="text-[11px] sm:text-xs text-stone-500 mb-0.5">歩行時間</p>
-                                        <p className="text-[13px] sm:text-sm font-bold text-brand-dark">
+                                        <p className="text-[10px] text-[#7A6652] font-bold uppercase mb-0.5">歩行時間</p>
+                                        <p className="text-sm font-bold text-[#3D2E1F]">
                                             約{routeMetadata.walkingMinutes}分
                                         </p>
                                     </div>
                                 )}
                                 {routeMetadata.outdoorRatio !== undefined && (
                                     <div>
-                                        <p className="text-[11px] sm:text-xs text-stone-500 mb-0.5">屋外比率</p>
-                                        <p className="text-[13px] sm:text-sm font-bold text-brand-dark">
+                                        <p className="text-[10px] text-[#7A6652] font-bold uppercase mb-0.5">屋外比率</p>
+                                        <p className="text-sm font-bold text-[#3D2E1F]">
                                             {Math.round(routeMetadata.outdoorRatio * 100)}%
                                         </p>
                                     </div>
                                 )}
                                 {routeMetadata.startPoint && (
                                     <div className="col-span-2 md:col-span-2">
-                                        <p className="text-[11px] sm:text-xs text-stone-500 mb-0.5">開始地点</p>
-                                        <p className="text-[13px] sm:text-sm font-medium text-stone-700">
+                                        <p className="text-[10px] text-[#7A6652] font-bold uppercase mb-0.5">開始地点</p>
+                                        <p className="text-sm font-medium text-[#3D2E1F] truncate">
                                             {routeMetadata.startPoint}
                                         </p>
                                     </div>
@@ -600,10 +575,11 @@ export default function PlayerPreview({
                         </div>
                     )}
 
-                    <div className="bg-white rounded-xl border border-stone-200 overflow-hidden shadow-sm">
+                    <div className="bg-white rounded-xl border border-[#E8D5BE] overflow-hidden shadow-sm relative z-0">
+                        <div className="absolute inset-0 pointer-events-none border-[3px] border-[#E8D5BE]/20 rounded-xl z-20" />
                         {MAPS_API_KEY ? (
                             <APIProvider apiKey={MAPS_API_KEY}>
-                                <div className="h-52 sm:h-64 w-full">
+                                <div className="h-56 sm:h-72 w-full grayscale-[0.2] sepia-[0.1]">
                                     <Map
                                         defaultCenter={mapCenter}
                                         defaultZoom={14}
@@ -618,7 +594,7 @@ export default function PlayerPreview({
                                                 key={spot.id}
                                                 position={{ lat: spot.lat, lng: spot.lng }}
                                             >
-                                                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-brand-gold text-white font-bold text-sm shadow-lg">
+                                                <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#D87A32] text-white font-bold text-sm shadow-lg border-2 border-white">
                                                     {idx + 1}
                                                 </div>
                                             </AdvancedMarker>
@@ -627,7 +603,7 @@ export default function PlayerPreview({
                                 </div>
                             </APIProvider>
                         ) : (
-                            <div className="h-52 sm:h-64 w-full bg-stone-100 flex items-center justify-center text-stone-500 text-[12px] sm:text-sm">
+                            <div className="h-56 sm:h-72 w-full bg-[#E8D5BE]/20 flex items-center justify-center text-[#7A6652] text-sm">
                                 地図を読み込み中...
                             </div>
                         )}
@@ -639,17 +615,17 @@ export default function PlayerPreview({
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.65 }}
-                    className="mb-6 sm:mb-8"
+                    className="mb-8"
                 >
                     <button
                         onClick={() => setShowAllSpots(!showAllSpots)}
-                        className="w-full flex items-center justify-between text-left mb-2 sm:mb-3"
+                        className="w-full flex items-center justify-between text-left mb-3 group"
                     >
-                        <h2 className="text-base sm:text-lg font-bold text-brand-dark flex items-center gap-2">
-                            <MapPin size={18} className="text-brand-gold" />
-                            全スポット一覧（{spots.length}箇所）
-                        </h2>
-                        {showAllSpots ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                        <div className="flex items-center gap-2">
+                            <MapPin size={18} className="text-[#D87A32]" />
+                            <h2 className="text-base font-bold text-[#3D2E1F] tracking-widest group-hover:text-[#D87A32] transition-colors">スポット一覧 ({spots.length})</h2>
+                        </div>
+                        {showAllSpots ? <ChevronUp size={20} className="text-[#7A6652]" /> : <ChevronDown size={20} className="text-[#7A6652]" />}
                     </button>
 
                     <AnimatePresence>
@@ -660,17 +636,17 @@ export default function PlayerPreview({
                                 exit={{ opacity: 0, height: 0 }}
                                 className="overflow-hidden"
                             >
-                                <div className="bg-white rounded-xl border border-stone-200 divide-y divide-stone-100 shadow-sm overflow-hidden">
+                                <div className="bg-white/60 rounded-xl border border-[#E8D5BE] divide-y divide-[#E8D5BE]/50 shadow-sm overflow-hidden">
                                     {spots.map((spot, idx) => (
                                         <div
                                             key={spot.id}
-                                            className="flex items-center gap-3 sm:gap-4 p-3 sm:p-4 hover:bg-stone-50 transition-colors"
+                                            className="flex items-center gap-3 sm:gap-4 p-4 hover:bg-[#FEF9F3] transition-colors"
                                         >
-                                            <div className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-brand-gold/10 text-brand-gold font-bold text-[12px] sm:text-sm flex-shrink-0">
+                                            <div className="flex items-center justify-center w-8 h-8 rounded-full bg-[#FEF9F3] border border-[#E8D5BE] text-[#D87A32] font-bold text-xs flex-shrink-0">
                                                 {idx + 1}
                                             </div>
                                             <div className="flex-1 min-w-0">
-                                                <p className="text-[13px] sm:text-sm font-medium text-brand-dark truncate">
+                                                <p className="text-sm font-bold text-[#3D2E1F] truncate">
                                                     {spot.name}
                                                 </p>
                                             </div>
@@ -678,9 +654,9 @@ export default function PlayerPreview({
                                                 href={getSpotMapUrl(spot)}
                                                 target="_blank"
                                                 rel="noreferrer"
-                                                className="text-[11px] sm:text-xs font-bold text-brand-gold border border-brand-gold/30 px-2.5 py-1 rounded-full hover:bg-brand-gold/10 transition-colors flex-shrink-0"
+                                                className="text-[10px] font-bold text-[#7A6652] border border-[#E8D5BE] px-3 py-1.5 rounded-full hover:bg-[#D87A32] hover:text-white hover:border-[#D87A32] transition-all flex-shrink-0 tracking-wide"
                                             >
-                                                Google Mapで見る
+                                                地図を見る
                                             </a>
                                         </div>
                                     ))}
@@ -690,43 +666,43 @@ export default function PlayerPreview({
                     </AnimatePresence>
                 </motion.div>
 
-                {/* Practical Info Card - Clean Look */}
+                {/* Practical Info Card */}
                 <motion.div
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: 0.75 }}
-                    className="mb-8 sm:mb-10"
+                    className="mb-10"
                 >
-                    <div className="bg-white rounded-2xl border border-stone-100 p-5 shadow-sm">
-                        <h2 className="text-base font-bold text-stone-800 mb-4 flex items-center gap-2">
-                            <div className="w-1 h-5 bg-amber-400 rounded-full"></div>
-                            準備と注意事項
+                    <div className="bg-white rounded-2xl border border-[#E8D5BE] p-6 shadow-sm">
+                        <h2 className="text-base font-bold text-[#3D2E1F] mb-6 flex items-center gap-2 tracking-widest">
+                            <div className="w-1 h-5 bg-[#D87A32] rounded-full"></div>
+                            注意事項
                         </h2>
 
-                        <div className="grid sm:grid-cols-2 gap-6">
+                        <div className="grid sm:grid-cols-2 gap-8">
                             <div>
-                                <h3 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">持ち物</h3>
-                                <ul className="space-y-2">
-                                    <li className="flex items-center gap-2 text-sm text-stone-700 bg-stone-50 p-2 rounded-lg">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></div>
+                                <h3 className="text-[10px] font-bold text-[#7A6652] uppercase tracking-wider mb-3">持ち物</h3>
+                                <ul className="space-y-3">
+                                    <li className="flex items-center gap-3 text-sm text-[#3D2E1F] bg-[#FEF9F3] p-3 rounded-lg border border-[#E8D5BE]">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-[#D87A32] shrink-0"></div>
                                         スマートフォン（充電済み）
                                     </li>
-                                    <li className="flex items-center gap-2 text-sm text-stone-700 bg-stone-50 p-2 rounded-lg">
-                                        <div className="w-1.5 h-1.5 rounded-full bg-amber-500 shrink-0"></div>
+                                    <li className="flex items-center gap-3 text-sm text-[#3D2E1F] bg-[#FEF9F3] p-3 rounded-lg border border-[#E8D5BE]">
+                                        <div className="w-1.5 h-1.5 rounded-full bg-[#D87A32] shrink-0"></div>
                                         歩きやすい靴
                                     </li>
                                 </ul>
                             </div>
                             <div>
-                                <h3 className="text-xs font-bold text-stone-500 uppercase tracking-wider mb-2">注意事項</h3>
-                                <ul className="space-y-2">
-                                    <li className="flex items-center gap-2 text-sm text-stone-700">
-                                        <AlertTriangle size={14} className="text-amber-500 shrink-0" />
-                                        天候により体験内容が変わる場合があります
+                                <h3 className="text-[10px] font-bold text-[#7A6652] uppercase tracking-wider mb-3">注意点</h3>
+                                <ul className="space-y-3">
+                                    <li className="flex items-start gap-2 text-sm text-[#3D2E1F]">
+                                        <AlertTriangle size={14} className="text-[#D87A32] shrink-0 mt-0.5" />
+                                        <span>天候により体験内容が変わる場合があります</span>
                                     </li>
-                                    <li className="flex items-center gap-2 text-sm text-stone-700">
-                                        <AlertTriangle size={14} className="text-amber-500 shrink-0" />
-                                        交通ルールを守り、周囲に注意して進んでください
+                                    <li className="flex items-start gap-2 text-sm text-[#3D2E1F]">
+                                        <AlertTriangle size={14} className="text-[#D87A32] shrink-0 mt-0.5" />
+                                        <span>交通ルールを守り、周囲に注意して進んでください</span>
                                     </li>
                                 </ul>
                             </div>
@@ -740,54 +716,35 @@ export default function PlayerPreview({
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.8 }}
-                        className="bg-blue-50 border border-blue-200 rounded-xl p-3 sm:p-4 mb-6 sm:mb-8"
+                        className="bg-[#FEF9F3] border border-[#E8D5BE] rounded-xl p-4 mb-8"
                     >
-                        <p className="text-[12px] sm:text-sm text-blue-800 leading-relaxed">
+                        <p className="text-xs text-[#7A6652] leading-relaxed">
                             💡 <strong>テストプレイ後に、内容を確認してから一般公開できます。</strong>
                             編集画面では謎や答えが表示されます（ネタバレ注意）。
                         </p>
                     </motion.div>
                 )}
 
-                {/* CTA Buttons */}
+                {/* CTA Buttons - Only shown if enabled */}
                 {showActions && (
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ delay: 0.85 }}
-                        className="space-y-2.5 sm:space-y-3"
+                        className="space-y-3"
                     >
                         {/* Primary: Play */}
                         <button
                             onClick={onPlay}
-                            className="w-full py-3.5 px-4 sm:py-4 sm:px-6 rounded-xl bg-gradient-to-r from-brand-gold to-amber-500 text-white font-bold text-base sm:text-lg shadow-lg shadow-brand-gold/25 hover:shadow-xl hover:shadow-brand-gold/30 transition-all flex items-center justify-center gap-2 sm:gap-3"
+                            className="w-full py-4 px-6 rounded-xl bg-gradient-to-r from-[#D87A32] to-[#B85A1F] text-white font-bold text-lg shadow-lg shadow-[#D87A32]/25 hover:shadow-xl hover:shadow-[#D87A32]/30 transition-all flex items-center justify-center gap-3 tracking-widest"
                         >
                             <Play size={22} fill="currentColor" />
                             プレイヤーとして挑戦する
                         </button>
-
-                        {/* Secondary: Edit */}
-                        <button
-                            onClick={onEdit}
-                            className="w-full py-3 px-4 sm:px-6 rounded-xl bg-white border-2 border-stone-200 text-stone-700 font-bold text-[13px] sm:text-sm hover:border-stone-300 hover:bg-stone-50 transition-all flex items-center justify-center gap-2"
-                        >
-                            <Edit3 size={16} />
-                            クリエイターとして編集する
-                            <span className="text-[11px] sm:text-xs text-rose-500 ml-1">（ネタバレ）</span>
-                        </button>
-
-                        {/* Tertiary: Save Draft */}
-                        <button
-                            onClick={onSaveDraft}
-                            className="w-full py-3 px-4 sm:px-6 rounded-xl text-stone-500 font-medium text-[12px] sm:text-sm hover:text-stone-700 hover:bg-stone-100 transition-all flex items-center justify-center gap-2"
-                        >
-                            <Save size={14} />
-                            あとで決める（マイ下書きに保存）
-                        </button>
+                        {/* Secondary & Tertiary buttons... */}
                     </motion.div>
                 )}
 
-                {/* Bottom Spacing */}
                 <div className="h-8" />
             </div>
         </div>

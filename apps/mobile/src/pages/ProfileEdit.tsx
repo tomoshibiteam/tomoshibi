@@ -207,89 +207,109 @@ const ProfileEdit = () => {
 
   if (authLoading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <p className="text-muted-foreground">読み込み中...</p>
+      <div className="min-h-screen flex items-center justify-center bg-[#FEF9F3]">
+        <div className="w-8 h-8 border-2 border-[#D87A32] border-t-transparent rounded-full animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="container max-w-2xl mx-auto p-6">
-      <div className="flex items-center gap-3 mb-6">
+    <div className="min-h-screen bg-[#FEF9F3] pb-24 px-4 font-serif text-[#3D2E1F]">
+      {/* Cinematic Vignette */}
+      <div className="fixed inset-0 bg-[radial-gradient(circle_at_center,_transparent_10%,_#E8D5BE_120%)] z-0 pointer-events-none opacity-60" />
+
+      <div className="relative z-10 pt-6 mb-8 flex items-center justify-center">
         <Button
           variant="ghost"
           size="icon"
           onClick={() => navigate("/profile")}
+          className="absolute left-0 rounded-full hover:bg-[#E8D5BE]/20 text-[#3D2E1F]"
         >
-          <ArrowLeft className="h-5 w-5" />
+          <ArrowLeft className="h-6 w-6" />
         </Button>
-        <h1 className="text-2xl font-bold">プロフィールを編集</h1>
+        <h1 className="text-lg font-bold tracking-widest">プロフィール編集</h1>
       </div>
 
-      <Card className="p-6 space-y-6">
+      <div className="relative z-10 max-w-md mx-auto space-y-8">
+
         {/* Profile Picture */}
-        <div className="space-y-2">
-          <Label>プロフィール画像</Label>
-          <div className="flex items-center gap-4">
-            <div className="w-24 h-24 rounded-full overflow-hidden bg-muted flex items-center justify-center relative">
+        <div className="flex flex-col items-center">
+          <div className="relative group">
+            <div className="w-32 h-32 rounded-full overflow-hidden bg-[#E8D5BE] border-4 border-white shadow-md">
               {profilePictureUrl ? (
                 <img
                   src={profilePictureUrl}
-                  alt="プロフィール画像"
+                  alt="Profile"
                   className="w-full h-full object-cover"
                 />
               ) : (
-                <Camera className="w-8 h-8 text-muted-foreground" />
+                <div className="w-full h-full flex items-center justify-center">
+                  <Camera className="w-10 h-10 text-[#FEF9F3]" />
+                </div>
               )}
             </div>
-            <div className="flex-1">
+            <label
+              htmlFor="avatar-upload"
+              className="absolute bottom-0 right-0 p-2.5 rounded-full bg-[#D87A32] text-white shadow-lg cursor-pointer hover:bg-[#B85A1F] transition-colors active:scale-95"
+            >
+              <Camera className="w-4 h-4" />
               <Input
+                id="avatar-upload"
                 type="file"
                 accept="image/*"
                 onChange={handleImageSelect}
                 disabled={uploading}
-                className="cursor-pointer"
+                className="hidden"
               />
-              <p className="text-xs text-muted-foreground mt-2">
-                画像をアップロードして編集できます
-              </p>
-            </div>
+            </label>
           </div>
+          <p className="mt-3 text-xs text-[#7A6652] tracking-wide">
+            画像をタップして変更
+          </p>
         </div>
 
-        {/* Name */}
-        <div className="space-y-2">
-          <Label htmlFor="name">名前</Label>
-          <Input
-            id="name"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-            placeholder="表示名を入力"
-            maxLength={50}
-          />
-          {errors.name && (
-            <p className="text-sm text-destructive">{errors.name}</p>
-          )}
-        </div>
-
-        {/* Bio */}
-        <div className="space-y-2">
-          <Label htmlFor="bio">自己紹介</Label>
-          <Textarea
-            id="bio"
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-            placeholder="自己紹介を入力してください（150文字以内）"
-            maxLength={150}
-            rows={4}
-          />
-          <div className="flex justify-between items-center">
-            {errors.bio && (
-              <p className="text-sm text-destructive">{errors.bio}</p>
+        {/* Form Fields */}
+        <div className="space-y-6 bg-white/60 p-6 rounded-3xl border border-[#E8D5BE] shadow-sm">
+          {/* Name */}
+          <div className="space-y-2">
+            <Label htmlFor="name" className="text-xs font-bold text-[#7A6652] tracking-widest uppercase">
+              名前
+            </Label>
+            <Input
+              id="name"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="名前を入力"
+              maxLength={50}
+              className="bg-transparent border-0 border-b border-[#E8D5BE] rounded-none px-0 focus-visible:ring-0 focus-visible:border-[#D87A32] font-serif text-lg text-[#3D2E1F] placeholder:text-[#3D2E1F]/30"
+            />
+            {errors.name && (
+              <p className="text-xs text-[#B85A1F]">{errors.name}</p>
             )}
-            <p className="text-xs text-muted-foreground ml-auto">
-              {bio.length} / 150文字
-            </p>
+          </div>
+
+          {/* Bio */}
+          <div className="space-y-2">
+            <Label htmlFor="bio" className="text-xs font-bold text-[#7A6652] tracking-widest uppercase">
+              自己紹介
+            </Label>
+            <Textarea
+              id="bio"
+              value={bio}
+              onChange={(e) => setBio(e.target.value)}
+              placeholder="自己紹介を入力してください"
+              maxLength={150}
+              rows={4}
+              className="bg-[#FEF9F3]/50 border border-[#E8D5BE] rounded-xl p-3 focus-visible:ring-1 focus-visible:ring-[#D87A32] font-serif text-sm text-[#3D2E1F] placeholder:text-[#3D2E1F]/30 resize-none"
+            />
+            <div className="flex justify-between items-center text-[10px] text-[#7A6652]">
+              {errors.bio ? (
+                <span className="text-[#B85A1F]">{errors.bio}</span>
+              ) : (
+                <span>旅の目的や好きなこと</span>
+              )}
+              <span>{bio.length} / 150</span>
+            </div>
           </div>
         </div>
 
@@ -297,7 +317,7 @@ const ProfileEdit = () => {
         <Button
           onClick={handleSave}
           disabled={saving || uploading}
-          className="w-full"
+          className="w-full h-14 rounded-full bg-gradient-to-r from-[#D87A32] to-[#B85A1F] hover:from-[#E88B43] hover:to-[#C96B30] text-white font-bold tracking-widest text-sm shadow-lg shadow-[#D87A32]/25"
         >
           {saving ? (
             <>
@@ -305,19 +325,19 @@ const ProfileEdit = () => {
               保存中...
             </>
           ) : (
-            "保存する"
+            "変更を保存"
           )}
         </Button>
-      </Card>
+      </div>
 
       {/* Image Crop Dialog */}
       <Dialog open={isCropping} onOpenChange={setIsCropping}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>画像を編集</DialogTitle>
+        <DialogContent className="sm:max-w-md bg-[#FEF9F3] border-[#E8D5BE] p-0 overflow-hidden rounded-2xl">
+          <DialogHeader className="p-4 border-b border-[#E8D5BE] bg-white/50">
+            <DialogTitle className="text-[#3D2E1F] font-serif text-center">画像編集</DialogTitle>
           </DialogHeader>
 
-          <div className="relative w-full h-[300px] bg-black rounded-md overflow-hidden my-4">
+          <div className="relative w-full h-[300px] bg-[#1a1a1a]">
             {imageSrc && (
               <Cropper
                 image={imageSrc}
@@ -331,9 +351,9 @@ const ProfileEdit = () => {
             )}
           </div>
 
-          <div className="space-y-4">
+          <div className="p-4 space-y-4 bg-white/50">
             <div className="flex items-center space-x-2">
-              <span className="text-xs text-muted-foreground">ズーム</span>
+              <span className="text-xs text-[#7A6652] font-bold">ズーム</span>
               <Slider
                 value={[zoom]}
                 min={1}
@@ -343,32 +363,31 @@ const ProfileEdit = () => {
                 className="flex-1"
               />
             </div>
-          </div>
 
-          <DialogFooter className="flex gap-2 sm:justify-end">
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsCropping(false);
-                setImageSrc(null);
-              }}
-            >
-              キャンセル
-            </Button>
-            <Button
-              onClick={uploadCroppedImage}
-              disabled={uploading}
-            >
-              {uploading ? (
-                <>
-                  <Loader2 className="mr-2 h-3 w-3 animate-spin" />
-                  保存中
-                </>
-              ) : (
-                "適用する"
-              )}
-            </Button>
-          </DialogFooter>
+            <DialogFooter className="flex gap-2 w-full">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsCropping(false);
+                  setImageSrc(null);
+                }}
+                className="flex-1 border-[#E8D5BE] text-[#7A6652] hover:bg-[#FEF9F3]"
+              >
+                キャンセル
+              </Button>
+              <Button
+                onClick={uploadCroppedImage}
+                disabled={uploading}
+                className="flex-1 bg-[#3D2E1F] text-white hover:bg-[#2A1F15]"
+              >
+                {uploading ? (
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                ) : (
+                  "完了"
+                )}
+              </Button>
+            </DialogFooter>
+          </div>
         </DialogContent>
       </Dialog>
     </div>

@@ -33,7 +33,7 @@ const TutorialModal = ({ isOpen, onComplete, userId }: TutorialModalProps) => {
 
       toast({
         title: "チュートリアル完了",
-        description: "探偵活動を開始しましょう！",
+        description: "TOMOSHIBIの冒険を始めましょう！",
       });
 
       onComplete();
@@ -57,12 +57,11 @@ const TutorialModal = ({ isOpen, onComplete, userId }: TutorialModalProps) => {
             </div>
             <div>
               <h2 className="text-2xl font-bold text-foreground mb-3">
-                ようこそ、新米調査員
+                ようこそ、TOMOSHIBIへ
               </h2>
               <p className="text-muted-foreground leading-relaxed">
-                本日より、君も「SPR探偵事務所」の一員だ。<br />
-                この「探偵手帳」アプリは、君の調査活動を支援する相棒となる。<br />
-                まずは、基本的な任務の流れを説明しよう。
+                TOMOSHIBIは、街歩きと物語、謎解きをつなぐ冒険アプリです。<br />
+                まずは「生成から保存、プレイ」までの流れを押さえましょう。
               </p>
             </div>
           </div>
@@ -76,16 +75,16 @@ const TutorialModal = ({ isOpen, onComplete, userId }: TutorialModalProps) => {
             </div>
             <div>
               <h2 className="text-2xl font-bold text-foreground mb-3">
-                ① 日々の「捜査報告」
+                ① クエストを生成する
               </h2>
               <p className="text-muted-foreground leading-relaxed">
-                我々の調査は日常にある。「ゴミ拾い」や「エコな選択」など、君が街で発見した「手がかり」を、「調査報告」から報告してほしい。<br />
-                報告は「AP (功績ポイント)」として蓄積され、君の探偵ランクや道具の強化に繋がる。
+                Home画面で灯火を選び、AIにクエストを生成させます。<br />
+                場所や雰囲気を指定するほど、あなたらしい冒険になります。
               </p>
             </div>
             <div className="flex justify-center items-center gap-2 text-sm text-primary animate-pulse">
               <FileText className="w-5 h-5" />
-              <span>フッターの「調査報告」アイコンから報告できます</span>
+              <span>フッターの「Home」から生成できます</span>
             </div>
           </div>
         );
@@ -98,17 +97,16 @@ const TutorialModal = ({ isOpen, onComplete, userId }: TutorialModalProps) => {
             </div>
             <div>
               <h2 className="text-2xl font-bold text-foreground mb-3">
-                ②「特別調査任務」への参加
+                ② 保存して一覧に追加
               </h2>
               <p className="text-muted-foreground leading-relaxed">
-                「依頼」タブには、君が現地で挑むべき「特別調査任務（謎解きゲーム）」がリストアップされている。<br />
-                任務をクリアすれば、多額のAPと特別な功績が与えられる。<br />
-                日常で育てた「調査道具」が、任務中のヒントとして君を助けるだろう。
+                生成結果を保存すると、プロフィールや一覧からいつでも再開できます。<br />
+                自分のクエストは公開前でもそのままプレイ可能です。
               </p>
             </div>
             <div className="flex justify-center items-center gap-2 text-sm text-primary animate-pulse">
               <Home className="w-5 h-5" />
-              <span>フッターの「依頼」アイコンから確認できます</span>
+              <span>保存後は「Explore」やプロフィールから確認できます</span>
             </div>
           </div>
         );
@@ -121,22 +119,21 @@ const TutorialModal = ({ isOpen, onComplete, userId }: TutorialModalProps) => {
             </div>
             <div>
               <h2 className="text-2xl font-bold text-foreground mb-3">
-                ③ 手帳と道具の確認
+                ③ 現地でプレイする
               </h2>
               <p className="text-muted-foreground leading-relaxed">
-                「道具工房」ではAPを消費して君の道具を強化できる。<br />
-                「手帳」では、君の現在の「称号（ランク）」や獲得した「功績バッジ」をいつでも確認可能だ。<br />
-                準備はいいかな？
+                プレイ画面ではGPSを有効にし、地図と物語に沿って進みます。<br />
+                会話と謎解きは下部シートで切り替わります。準備ができたら始めましょう。
               </p>
             </div>
             <div className="grid grid-cols-2 gap-3 max-w-xs mx-auto">
               <div className="flex flex-col items-center gap-2 p-3 rounded-lg bg-muted/30">
                 <Wrench className="w-5 h-5 text-primary" />
-                <span className="text-xs text-muted-foreground">道具工房</span>
+                <span className="text-xs text-muted-foreground">GPSと地図</span>
               </div>
               <div className="flex flex-col items-center gap-2 p-3 rounded-lg bg-muted/30">
                 <BookOpen className="w-5 h-5 text-primary" />
-                <span className="text-xs text-muted-foreground">手帳</span>
+                <span className="text-xs text-muted-foreground">物語と謎</span>
               </div>
             </div>
           </div>
@@ -190,7 +187,7 @@ const TutorialModal = ({ isOpen, onComplete, userId }: TutorialModalProps) => {
               className="w-full"
               size="lg"
             >
-              捜査を開始する
+              冒険を始める
             </Button>
           )}
         </div>

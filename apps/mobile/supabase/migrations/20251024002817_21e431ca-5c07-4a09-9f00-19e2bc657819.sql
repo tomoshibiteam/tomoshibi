@@ -15,13 +15,13 @@ SET current_title_id = NULL;
 DELETE FROM public.title_templates;
 
 INSERT INTO public.title_templates (id, name, ap_required, rank_order) VALUES
-  ('apprentice', '見習い探偵', 0, 1),
-  ('rookie', '駆け出しの探偵', 50, 2),
+  ('apprentice', '見習い冒険者', 0, 1),
+  ('rookie', '駆け出しの冒険者', 50, 2),
   ('investigator', '一人前の調査員', 200, 3),
   ('trusted_agent', '信頼できるエージェント', 500, 4),
-  ('ace_detective', 'エース探偵', 1000, 5),
+  ('ace_detective', 'エース冒険者', 1000, 5),
   ('master_detective', 'マスターディテクティブ', 2000, 6),
-  ('legendary_detective', '伝説の探偵', 5000, 7);
+  ('legendary_detective', '伝説の冒険者', 5000, 7);
 
 -- Update profiles to set correct title based on total_ap
 UPDATE public.profiles
@@ -49,7 +49,7 @@ DELETE FROM public.achievement_templates;
 
 INSERT INTO public.achievement_templates (id, name, description, icon, category, requirement_type, requirement_value, ap_reward) VALUES
   -- 始まりの功績
-  ('first_report', '探偵の第一歩', '初めて「捜査報告」を行う', '🎯', '始まりの功績', 'daily_reports', 1, 20),
+  ('first_report', '冒険の第一歩', '初めて「捜査報告」を行う', '🎯', '始まりの功績', 'daily_reports', 1, 20),
   ('first_event', '初めての任務', '初めて「特別調査任務」に参加する', '🗺️', '始まりの功績', 'event_participation', 1, 50),
   ('first_clear', '初めての事件解決', '初めて「特別調査任務」をクリアする', '🏆', '始まりの功績', 'event_clear', 1, 100),
   

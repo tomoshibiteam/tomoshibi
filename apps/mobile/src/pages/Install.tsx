@@ -70,7 +70,7 @@ const Install = () => {
               アプリをインストール
             </h1>
             <p className="text-sm text-muted-foreground">
-              ホーム画面に追加して、いつでもすぐに調査を開始
+              ホーム画面に追加して、いつでもすぐに冒険を開始
             </p>
           </div>
 
@@ -84,7 +84,7 @@ const Install = () => {
                 インストール済み
               </h2>
               <p className="text-sm text-muted-foreground">
-                SPR探偵事務所アプリは既にインストールされています
+                TOMOSHIBIアプリは既にインストールされています
               </p>
             </Card>
           ) : deferredPrompt ? (
@@ -140,7 +140,7 @@ const Install = () => {
                   <div>
                     <h3 className="font-bold text-sm mb-1">アプリライクな体験</h3>
                     <p className="text-xs text-muted-foreground">
-                      フルスクリーン表示で、没入感のある調査体験
+                      フルスクリーン表示で、没入感のある冒険体験
                     </p>
                   </div>
                 </div>

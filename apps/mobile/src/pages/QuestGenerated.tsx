@@ -275,6 +275,218 @@ const QuestGenerated = () => {
                 if (detailRows.length > 0) {
                     await supabase.from("spot_details").insert(detailRows);
                 }
+
+                // --- 3.5. Save Spot Story Messages (for GamePlay display) ---
+                // First delete existing messages for this quest's spots
+                const insertedSpotIds = insertedSpots.map(s => s.id);
+                await supabase.from("spot_story_messages").delete().in("spot_id", insertedSpotIds);
+
+                // Prepare story messages from dialogues or summary_actions
+                const storyMessageRows: {
+                    quest_id: string;
+                    spot_id: string;
+                    stage: string;
+                    order_index: number;
+                    speaker_type: string;
+                    speaker_name: string;
+                    avatar_url: string | null;
+                    text: string;
+                }[] = [];
+
+                insertedSpots.forEach((spot) => {
+                    const idx = (spot.order_index || 1) - 1;
+                    const srcSpot = creatorPayload.spots?.[idx];
+
+                    // Pre-mission dialogue
+                    if (srcSpot?.pre_mission_dialogue && srcSpot.pre_mission_dialogue.length > 0) {
+                        srcSpot.pre_mission_dialogue.forEach((line, lineIdx) => {
+                            const char = creatorPayload.characters?.find(c => c.id === line.character_id);
+                            storyMessageRows.push({
+                                quest_id: questId,
+                                spot_id: spot.id,
+                                stage: "pre_puzzle",
+                                order_index: lineIdx + 1,
+                                speaker_type: "character",
+                                speaker_name: char?.name || "キャラクター",
+                                avatar_url: char?.image_url || null,
+                                text: line.text,
+                            });
+                        });
+                    } else {
+                        // Fallback to summary_actions for pre_puzzle
+                        const messageText = summaryActions[idx] || "";
+                        if (messageText) {
+                            storyMessageRows.push({
+                                quest_id: questId,
+                                spot_id: spot.id,
+                                stage: "pre_puzzle",
+                                order_index: 1,
+                                speaker_type: "narrator",
+                                speaker_name: "案内人",
+                                avatar_url: null,
+                                text: messageText,
+                            });
+                        }
+                    }
+
+                    // Post-mission dialogue
+                    if (srcSpot?.post_mission_dialogue && srcSpot.post_mission_dialogue.length > 0) {
+                        srcSpot.post_mission_dialogue.forEach((line, lineIdx) => {
+                            const char = creatorPayload.characters?.find(c => c.id === line.character_id);
+                            storyMessageRows.push({
+                                quest_id: questId,
+                                spot_id: spot.id,
+                                stage: "post_puzzle",
+                                order_index: lineIdx + 1,
+                                speaker_type: "character",
+                                speaker_name: char?.name || "キャラクター",
+                                avatar_url: char?.image_url || null,
+                                text: line.text,
+                            });
+                        });
+                    }
+                });
+
+                if (storyMessageRows.length > 0) {
+                    await supabase.from("spot_story_messages").insert(storyMessageRows);
+                }
+
+                // --- 4. Save Characters ---
+                // Clean old characters (Cascade should handle dialogues)
+                await supabase.from("quest_characters" as any).delete().eq("quest_id", questId);
+
+                const charIdMap = new Map<string, string>(); // "char_1" -> "uuid"
+
+                if (creatorPayload.characters && creatorPayload.characters.length > 0) {
+                    const charRows = creatorPayload.characters.map((char) => ({
+                        quest_id: questId,
+                        name: char.name,
+                        role: char.role,
+                        personality: char.personality,
+                        image_prompt: char.image_prompt,
+                        image_url: char.image_url || null,
+                    }));
+
+                    const { data: insertedChars, error: charErr } = await supabase
+                        .from("quest_characters" as any)
+                        .insert(charRows)
+                        .select("id, name"); // We might need name to match if ID is not reliable, but we used array index mapping? 
+                    // Wait, we need to map "char_1" to the inserted UUID. 
+                    // Since we insert in order, we can assume array index matches IF "char_1" corresponds to index 0.
+                    // Better rely on index.
+
+                    if (charErr) {
+                        console.error("Char save error", charErr);
+                        // Non-blocking for now, but good to know
+                    }
+
+                    if (insertedChars) {
+                        creatorPayload.characters.forEach((char, idx) => {
+                            if (insertedChars[idx]) {
+                                charIdMap.set(char.id, insertedChars[idx].id);
+                            }
+                        });
+                    }
+                }
+
+                // --- 5. Save Dialogues ---
+                // We rely on spot insertion result `insertedSpots` which has `id` and `order_index`.
+                const dialogueRows: any[] = [];
+
+                insertedSpots.forEach((spot) => {
+                    const idx = (spot.order_index || 1) - 1;
+                    const srcSpot = creatorPayload.spots?.[idx];
+                    if (!srcSpot) return;
+
+                    // Pre-mission
+                    srcSpot.pre_mission_dialogue?.forEach((line, lineIdx) => {
+                        dialogueRows.push({
+                            spot_id: spot.id,
+                            character_id: charIdMap.get(line.character_id) || null,
+                            timing: "pre_mission",
+                            text: line.text,
+                            expression: line.expression || "neutral",
+                            order_index: lineIdx + 1
+                        });
+                    });
+
+                    // Post-mission
+                    srcSpot.post_mission_dialogue?.forEach((line, lineIdx) => {
+                        dialogueRows.push({
+                            spot_id: spot.id,
+                            character_id: charIdMap.get(line.character_id) || null,
+                            timing: "post_mission",
+                            text: line.text,
+                            expression: line.expression || "neutral",
+                            order_index: lineIdx + 1
+                        });
+                    });
+                });
+
+                if (dialogueRows.length > 0) {
+                    await supabase.from("quest_dialogues" as any).insert(dialogueRows);
+                }
+            }
+
+            // --- 6. Save Story Timelines (prologue & epilogue) ---
+            const prologue =
+                creatorPayload.main_plot?.premise ||
+                playerPreview.trailer ||
+                playerPreview.one_liner ||
+                "";
+            const epilogue =
+                creatorPayload.main_plot?.final_reveal_outline ||
+                creatorPayload.main_plot?.goal ||
+                playerPreview.mission ||
+                "";
+
+            if (prologue || epilogue) {
+                const { error: timelineErr } = await supabase
+                    .from("story_timelines")
+                    .upsert(
+                        {
+                            quest_id: questId,
+                            prologue,
+                            epilogue,
+                        },
+                        { onConflict: "quest_id" }
+                    );
+                if (timelineErr) {
+                    // If upsert fails (e.g., no unique constraint), try insert
+                    const errorText = `${timelineErr.message || ""} ${timelineErr.details || ""}`.toLowerCase();
+                    if (!errorText.includes("no unique") && !errorText.includes("constraint")) {
+                        console.error("story_timelines upsert error:", timelineErr);
+                    } else {
+                        await supabase.from("story_timelines").insert({
+                            quest_id: questId,
+                            prologue,
+                            epilogue,
+                        });
+                    }
+                }
+            }
+
+            // --- 7. Create Purchase Record (for profile display) ---
+            // Check if purchase already exists
+            const { data: existingPurchase } = await supabase
+                .from("purchases")
+                .select("id")
+                .eq("user_id", user.id)
+                .eq("quest_id", questId)
+                .maybeSingle();
+
+            if (!existingPurchase) {
+                const { error: purchaseErr } = await supabase
+                    .from("purchases")
+                    .insert({
+                        user_id: user.id,
+                        quest_id: questId,
+                        purchased_at: new Date().toISOString(),
+                    });
+                if (purchaseErr) {
+                    console.error("Purchase record insert failed:", purchaseErr);
+                    // Non-blocking, but log for debugging
+                }
             }
 
             setSavedQuestId(questId);
@@ -313,6 +525,7 @@ const QuestGenerated = () => {
                         basicInfo={detailBasicInfo}
                         spots={detailSpots}
                         story={detailStory}
+                        characters={creatorPayload?.characters || []}
                         estimatedDuration={detailDuration}
                         playerPreviewData={playerPreview}
                         routeMetadata={detailRouteMetadata || undefined}

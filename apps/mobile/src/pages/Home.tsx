@@ -1,11 +1,18 @@
 import { useState, useCallback, useEffect, useMemo, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MapPin } from "lucide-react";
+import { MapPin, MessageSquare, Wand2, Send, Sparkles, Book, Plus } from "lucide-react";
 import { generateUUID } from "@/lib/uuid";
 import LanternPrompt from "@/components/home/LanternPrompt";
 import QuestWizard from "@/components/home/QuestWizard";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -60,6 +67,8 @@ const Home = () => {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isGeneratingCover, setIsGeneratingCover] = useState(false);
   const [generationError, setGenerationError] = useState("");
+  const [inputMode, setInputMode] = useState<"wizard" | "expert">("wizard");
+
 
   const [locationStatus, setLocationStatus] = useState<"idle" | "loading" | "ready" | "error">(
     "idle"
@@ -213,13 +222,15 @@ const Home = () => {
 
   const handleIgnite = useCallback(async (
     overridePrompt?: string,
-    overrideLocation?: { lat: number; lng: number } | null
+    overrideLocation?: { lat: number; lng: number } | null,
+    overrideSeries?: string | null
   ) => {
     const promptToUse = typeof overridePrompt === "string" ? overridePrompt : draftPrompt;
     const trimmed = promptToUse.trim();
     if (!trimmed || isGenerating) return;
     const effectiveLocation =
       overrideLocation !== undefined ? overrideLocation : locationCoords;
+    const effectiveSeries = overrideSeries !== undefined ? overrideSeries : selectedSeries;
 
     if (!user) {
       toast({
@@ -232,7 +243,7 @@ const Home = () => {
 
     const prefixTokens = [
       ...(effectiveLocation ? ["現在地周辺で"] : []),
-      ...(selectedSeries ? [`シリーズ「${selectedSeries}」`] : []),
+      ...(effectiveSeries ? [`シリーズ「${effectiveSeries}」`] : []),
     ];
     const combinedPrompt = prefixTokens.length > 0 ? `${prefixTokens.join("、")}、${trimmed}` : trimmed;
 
@@ -275,6 +286,8 @@ const Home = () => {
         "";
 
       let coverImageUrl = existingCover;
+
+      // 1. Cover Image Generation
       if (!coverImageUrl) {
         setGenerationPhase("カバー画像生成中...");
         const questId = generateUUID();
@@ -313,12 +326,52 @@ const Home = () => {
         });
       }
 
-      const creatorPayloadWithCover = coverImageUrl
-        ? { ...output.creator_payload, cover_image_url: coverImageUrl }
-        : output.creator_payload;
+      // 2. Character Image Generation
+      const characterQuestId = savedQuestId || generateUUID();
+      let charactersWithImages = output.creator_payload.characters || [];
+      if (charactersWithImages.length > 0) {
+        setGenerationPhase("キャラクターを描画中...");
+        // Extract quest theme info for consistent character art style
+        const questTitle = output.creator_payload?.quest_title || output.player_preview?.title || "";
+        const questTheme = output.player_preview?.tags?.slice(0, 3).join(", ") || "";
+
+        const charPromises = charactersWithImages.map(async (char) => {
+          if (!char.image_prompt) return char;
+          try {
+            const response = await supabase.functions.invoke("generate-character-image", {
+              body: {
+                characterId: char.id,
+                name: char.name,
+                role: char.role,
+                personality: char.personality,
+                imagePrompt: char.image_prompt,
+                questId: characterQuestId,
+                questTitle: questTitle,
+                questTheme: questTheme,
+              },
+            });
+            if (response.error) {
+              console.warn(`Character ${char.id} image generation failed:`, response.error);
+              return char;
+            }
+            const imageUrl = response.data?.imageUrl || "";
+            return { ...char, image_url: imageUrl };
+          } catch (e) {
+            console.warn(`Character ${char.id} image generation failed:`, e);
+            return char;
+          }
+        });
+        charactersWithImages = await Promise.all(charPromises);
+      }
+
+      const creatorPayloadWithImages = {
+        ...output.creator_payload,
+        cover_image_url: coverImageUrl,
+        characters: charactersWithImages
+      };
 
       setPlayerPreview(output.player_preview);
-      setCreatorPayload(creatorPayloadWithCover);
+      setCreatorPayload(creatorPayloadWithImages);
       // Navigate to the output page instead of showing preview inline
       navigate("/quest-generated");
       setViewMode("idle");
@@ -827,6 +880,14 @@ const Home = () => {
       promptParts.push(`（${answers.playStyle}）`);
     }
 
+    let overrideSeries: string | null = null;
+    if (answers.series && answers.series !== "指定なし") {
+      overrideSeries = answers.series;
+      setSelectedSeries(answers.series);
+    } else {
+      setSelectedSeries(null); // Clear selection if user chose "none"
+    }
+
     const finalPrompt = promptParts.join("");
     setDraftPrompt(finalPrompt);
 
@@ -837,8 +898,62 @@ const Home = () => {
       : undefined;
 
     // Trigger generation immediately with the calculated prompt
-    handleIgnite(finalPrompt, overrideLocation);
-  }, [handleIgnite, setDraftPrompt, fetchCurrentLocation, locationCoords]);
+    handleIgnite(finalPrompt, overrideLocation, overrideSeries);
+  }, [handleIgnite, setDraftPrompt, fetchCurrentLocation, locationCoords, setSelectedSeries]);
+
+  const handleExpertSubmit = useCallback(async () => {
+    if (!draftPrompt.trim() || isGenerating) return;
+
+    // Use current location helper
+    let location = locationCoords;
+    if (!location) {
+      try {
+        location = await fetchCurrentLocation();
+      } catch (e) {
+        console.warn("Location fetch failed in expert mode", e);
+        // Continue without location if failed
+      }
+    }
+
+    handleIgnite(draftPrompt, location || undefined);
+  }, [draftPrompt, isGenerating, locationCoords, fetchCurrentLocation, handleIgnite]);
+
+  const seriesSelector = (
+    <div className="min-w-[200px] relative z-50">
+      <Select
+        value={selectedSeries || "none"}
+        onValueChange={(val) => {
+          if (val === "new_series") {
+            setIsSeriesOpen(true);
+          } else if (val === "none") {
+            setSelectedSeries(null);
+          } else {
+            setSelectedSeries(val);
+          }
+        }}
+      >
+        <SelectTrigger className="w-full bg-white/80 backdrop-blur-sm border-[#E8D5BE] text-[#3D2E1F] font-serif shadow-sm h-9 hover:bg-white/90 transition-colors">
+          <Book className="w-4 h-4 mr-2 text-[#D87A32]" />
+          <SelectValue placeholder="シリーズを選択" />
+        </SelectTrigger>
+        <SelectContent className="font-serif bg-[#FEF9F3] border-[#E8D5BE]">
+          <SelectItem value="none" className="text-[#3D2E1F]">シリーズなし</SelectItem>
+          {seriesOptions.map((opt) => (
+            <SelectItem key={opt} value={opt} className="text-[#3D2E1F]">
+              {opt}
+            </SelectItem>
+          ))}
+          <div className="border-t border-[#E8D5BE]/30 my-1" />
+          <SelectItem value="new_series" className="text-[#D87A32] font-bold">
+            <div className="flex items-center">
+              <Plus className="w-3 h-3 mr-2" />
+              新しいシリーズ...
+            </div>
+          </SelectItem>
+        </SelectContent>
+      </Select>
+    </div>
+  );
 
   return (
     <div className="h-full bg-[#FEF9F3] font-serif text-[#3D2E1F] relative overflow-hidden">
@@ -860,10 +975,109 @@ const Home = () => {
                 {/* 3D Background - Retro Globe */}
                 <RetroGlobe />
 
-                {/* Quest Wizard */}
-                <div className="absolute inset-0 z-10">
-                  <QuestWizard onComplete={handleWizardComplete} onLocationHint={handleLocationHint} />
+                {/* Mode Toggle Button */}
+                <div className="absolute top-4 right-4 z-50">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="bg-white/80 backdrop-blur-md border-[#E8D5BE] text-[#7A6652] hover:bg-[#FEF9F3] shadow-sm rounded-full px-4 gap-2 font-serif font-bold tracking-wider"
+                    onClick={() => setInputMode(prev => prev === "wizard" ? "expert" : "wizard")}
+                  >
+                    {inputMode === "wizard" ? (
+                      <>
+                        <MessageSquare className="w-4 h-4" />
+                        自由入力
+                      </>
+                    ) : (
+                      <>
+                        <Wand2 className="w-4 h-4" />
+                        ガイド入力
+                      </>
+                    )}
+                  </Button>
                 </div>
+
+                {/* Input Modes */}
+                {inputMode === "wizard" ? (
+                  <div className="absolute inset-0 z-10">
+                    <QuestWizard
+                      onComplete={handleWizardComplete}
+                      onLocationHint={handleLocationHint}
+                      seriesOptions={seriesOptions}
+                      onAddSeriesRequest={() => setIsSeriesOpen(true)}
+                    />
+                  </div>
+                ) : (
+                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center p-6 bg-black/40 backdrop-blur-sm">
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                      animate={{ opacity: 1, scale: 1, y: 0 }}
+                      className="w-full max-w-lg relative"
+                    >
+                      {/* Paper Stack Effect */}
+                      <div className="absolute inset-0 top-2 left-2 bg-[#F0E6D8] rounded-sm transform rotate-1 shadow-2xl border border-[#D6C4AD] z-0" />
+
+                      {/* Main Letter Sheet */}
+                      <div className="relative bg-[#FEF9F3] rounded-sm p-8 shadow-xl border border-[#E8D5BE] z-10 flex flex-col gap-6">
+                        {/* Corner Accents */}
+                        <div className="absolute top-0 left-0 w-8 h-8 border-t-2 border-l-2 border-[#D87A32]/20 m-2" />
+                        <div className="absolute top-0 right-0 w-8 h-8 border-t-2 border-r-2 border-[#D87A32]/20 m-2" />
+                        <div className="absolute bottom-0 left-0 w-8 h-8 border-b-2 border-l-2 border-[#D87A32]/20 m-2" />
+                        <div className="absolute bottom-0 right-0 w-8 h-8 border-b-2 border-r-2 border-[#D87A32]/20 m-2" />
+
+                        {/* Header Area */}
+                        <div className="text-center space-y-3 pt-2">
+                          <h2 className="text-2xl font-bold font-serif text-[#3D2E1F] tracking-[0.3em] drop-shadow-sm">
+                            物語の設計図
+                          </h2>
+                          <div className="w-12 h-[1px] bg-[#D87A32]/40 mx-auto" />
+                          <p className="text-xs text-[#7A6652] font-serif tracking-widest leading-loose">
+                            あなたの想像する冒険の断片を<br />ここに記してください
+                          </p>
+                        </div>
+
+                        {/* Letter-style Textarea */}
+                        <div className="relative group px-1">
+                          <textarea
+                            className="w-full h-64 bg-transparent border-none p-0 text-[#3D2E1F] placeholder:text-[#7A6652]/30 resize-none focus:outline-none focus:ring-0 font-serif text-base leading-9 tracking-wide"
+                            style={{
+                              backgroundImage: "linear-gradient(transparent 35px, #E8D5BE 36px)",
+                              backgroundSize: "100% 36px",
+                              lineHeight: "36px"
+                            }}
+                            placeholder="（例）&#13;&#10;京都の路地裏に潜む、古びた狐の面を探す旅。&#13;&#10;夕暮れ時に現れる不思議な案内人に導かれ、&#13;&#10;参加者は失われた神社の場所を特定していく。&#13;&#10;少し切なく、でも心温まるような物語にしてほしい。"
+                            value={draftPrompt}
+                            onChange={(e) => setDraftPrompt(e.target.value)}
+                          />
+                        </div>
+
+                        {/* Action Button */}
+                        <div className="flex justify-center pt-2 pb-2">
+                          <Button
+                            className={`
+                              h-16 px-10 rounded-full font-bold font-serif tracking-[0.2em] shadow-xl transition-all
+                              bg-gradient-to-r from-[#D87A32] to-[#B85A1F] text-white hover:from-[#E88B43] hover:to-[#C96B30]
+                              border border-[#FEF9F3]/20
+                              ${(!draftPrompt.trim() || isGenerating) ? "opacity-50 cursor-not-allowed" : "hover:scale-105 active:scale-95"}
+                            `}
+                            onClick={handleExpertSubmit}
+                            disabled={!draftPrompt.trim() || isGenerating}
+                          >
+                            {isGenerating ? (
+                              <div className="flex items-center gap-3">
+                                <div className="w-2 h-2 bg-white rounded-full animate-bounce" />
+                                <div className="w-2 h-2 bg-white rounded-full animate-bounce [animation-delay:0.2s]" />
+                                <div className="w-2 h-2 bg-white rounded-full animate-bounce [animation-delay:0.4s]" />
+                              </div>
+                            ) : (
+                              <span className="text-lg">クエストを生成する</span>
+                            )}
+                          </Button>
+                        </div>
+                      </div>
+                    </motion.div>
+                  </div>
+                )}
               </div>
             </motion.div>
           )}
@@ -890,6 +1104,35 @@ const Home = () => {
             </motion.div>
           )}
         </AnimatePresence >
+
+        {/* Series Creation Dialog */}
+        <AlertDialog open={isSeriesOpen} onOpenChange={setIsSeriesOpen}>
+          <AlertDialogContent className="bg-[#FEF9F3] border-[#E8D5BE]">
+            <AlertDialogHeader>
+              <AlertDialogTitle className="font-serif text-[#3D2E1F]">新しいシリーズを作成</AlertDialogTitle>
+              <AlertDialogDescription className="text-[#7A6652]">
+                作成するシリーズの名前を入力してください。
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <div className="py-4">
+              <Input
+                value={newSeriesName}
+                onChange={(e) => setNewSeriesName(e.target.value)}
+                placeholder="シリーズ名"
+                className="bg-white/50 border-[#E8D5BE] font-serif text-[#3D2E1F]"
+              />
+            </div>
+            <AlertDialogFooter>
+              <AlertDialogCancel className="bg-transparent border-[#E8D5BE] text-[#7A6652] hover:bg-[#E8D5BE]/20">キャンセル</AlertDialogCancel>
+              <AlertDialogAction
+                onClick={handleAddSeries}
+                className="bg-[#D87A32] text-white hover:bg-[#B85A1F]"
+              >
+                作成
+              </AlertDialogAction>
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
       </div >
     </div >
   );

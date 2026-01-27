@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { MapPin, Sparkles, Heart, Clock, ArrowRight, Compass, Flame } from "lucide-react";
+import { MapPin, Sparkles, Heart, Clock, ArrowRight, Compass, Flame, Book, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -55,15 +55,25 @@ const QUESTIONS: Question[] = [
         required: true,
         suggestions: ["30分", "1時間", "2時間"],
     },
+    {
+        id: "series",
+        question: "シリーズに追加しますか？（任意）",
+        placeholder: "シリーズ名を入力または選択",
+        icon: Book,
+        required: false,
+        suggestions: [],
+    },
 ];
 
 interface QuestWizardProps {
     onComplete: (answers: Record<string, string>) => void;
     onLocationHint?: (value: string) => void;
     onCancel?: () => void;
+    seriesOptions?: string[];
+    onAddSeriesRequest?: () => void;
 }
 
-const QuestWizard = ({ onComplete, onLocationHint }: QuestWizardProps) => {
+const QuestWizard = ({ onComplete, onLocationHint, seriesOptions = [], onAddSeriesRequest }: QuestWizardProps) => {
     // Use QuestContext for persistence
     const { wizardAnswers, setWizardAnswers, wizardStep, setWizardStep } = useQuest();
 
@@ -120,7 +130,7 @@ const QuestWizard = ({ onComplete, onLocationHint }: QuestWizardProps) => {
 
         const newAnswer: ContextAnswer = {
             questionId: currentQuestion.id,
-            answer: trimmed || (currentQuestion.placeholder.split("例：")[1] || "指定なし"),
+            answer: trimmed || (currentQuestion.id === "series" ? "指定なし" : (currentQuestion.placeholder.split("例：")[1] || "指定なし")),
         };
 
         const newAnswers = [...wizardAnswers, newAnswer];
@@ -215,21 +225,56 @@ const QuestWizard = ({ onComplete, onLocationHint }: QuestWizardProps) => {
                             </div>
 
                             {/* Suggestions Grid */}
-                            {currentQuestion.suggestions && (
+                            {currentQuestion.id === "series" ? (
                                 <div className="flex flex-wrap gap-2 pl-2">
-                                    {currentQuestion.suggestions.map((suggestion, idx) => (
+                                    <motion.button
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        onClick={() => handleNext("指定なし")}
+                                        className="shrink-0 px-4 py-2 rounded-xl bg-white/80 border border-[#E8D5BE] shadow-sm text-xs font-bold text-[#7A6652] hover:bg-[#D87A32] hover:text-white hover:border-[#D87A32] transition-all active:scale-95"
+                                    >
+                                        指定なし
+                                    </motion.button>
+                                    {seriesOptions.slice(0, 5).map((series, idx) => (
                                         <motion.button
-                                            key={suggestion}
+                                            key={series}
                                             initial={{ opacity: 0, scale: 0.9 }}
                                             animate={{ opacity: 1, scale: 1 }}
                                             transition={{ delay: idx * 0.05 + 0.1 }}
-                                            onClick={() => handleNext(suggestion)}
+                                            onClick={() => handleNext(series)}
                                             className="shrink-0 px-4 py-2 rounded-xl bg-white/80 border border-[#E8D5BE] shadow-sm text-xs font-bold text-[#7A6652] hover:bg-[#D87A32] hover:text-white hover:border-[#D87A32] transition-all active:scale-95"
                                         >
-                                            {suggestion}
+                                            {series}
                                         </motion.button>
                                     ))}
+                                    <motion.button
+                                        initial={{ opacity: 0, scale: 0.9 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        transition={{ delay: 0.3 }}
+                                        onClick={onAddSeriesRequest}
+                                        className="shrink-0 px-4 py-2 rounded-xl bg-[#FEF9F3] border border-[#D87A32] border-dashed shadow-sm text-xs font-bold text-[#D87A32] hover:bg-[#D87A32]/10 transition-all active:scale-95 flex items-center gap-1"
+                                    >
+                                        <Plus className="w-3 h-3" />
+                                        新規作成...
+                                    </motion.button>
                                 </div>
+                            ) : (
+                                currentQuestion.suggestions && (
+                                    <div className="flex flex-wrap gap-2 pl-2">
+                                        {currentQuestion.suggestions.map((suggestion, idx) => (
+                                            <motion.button
+                                                key={suggestion}
+                                                initial={{ opacity: 0, scale: 0.9 }}
+                                                animate={{ opacity: 1, scale: 1 }}
+                                                transition={{ delay: idx * 0.05 + 0.1 }}
+                                                onClick={() => handleNext(suggestion)}
+                                                className="shrink-0 px-4 py-2 rounded-xl bg-white/80 border border-[#E8D5BE] shadow-sm text-xs font-bold text-[#7A6652] hover:bg-[#D87A32] hover:text-white hover:border-[#D87A32] transition-all active:scale-95"
+                                            >
+                                                {suggestion}
+                                            </motion.button>
+                                        ))}
+                                    </div>
+                                )
                             )}
                         </motion.div>
                     )}

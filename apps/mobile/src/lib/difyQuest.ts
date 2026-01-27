@@ -56,6 +56,21 @@ export interface QuestMainPlot {
   final_reveal_outline?: string;
 }
 
+export interface QuestCharacter {
+  id: string; // "char_1", "char_2", "char_3"
+  name: string;
+  role: string; // e.g., "熱血漢のリーダー", "冷静な参謀", "お調子者のムードメーカー"
+  personality: string;
+  image_prompt: string; // Character visual description for image generation
+  image_url?: string; // Generated image URL
+}
+
+export interface DialogueLine {
+  character_id: string; // Refers to QuestCharacter.id
+  text: string;
+  expression?: string; // e.g., "smile", "surprise", "neutral"
+}
+
 export interface QuestSpotScene {
   spot_id?: string;
   spot_name: string;
@@ -70,6 +85,10 @@ export interface QuestSpotScene {
   answer_text?: string;
   hint_text?: string;
   explanation_text?: string;
+
+  // New conversation fields
+  pre_mission_dialogue?: DialogueLine[];
+  post_mission_dialogue?: DialogueLine[];
 }
 
 export interface QuestCreatorPayload {
@@ -78,6 +97,7 @@ export interface QuestCreatorPayload {
   cover_image_url?: string;
   coverImageUrl?: string;
   main_plot?: QuestMainPlot;
+  characters?: QuestCharacter[]; // List of 3 characters
   spots?: QuestSpotScene[];
   meta_puzzle?: { explanation?: string };
   generation_metadata?: {

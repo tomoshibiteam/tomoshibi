@@ -17,6 +17,8 @@ import {
     Target,
     Zap,
     Navigation,
+    Users,
+    User,
 } from 'lucide-react';
 import { PlayerPreviewOutput } from '@/lib/difyQuest';
 
@@ -51,10 +53,19 @@ interface StoryPreview {
     teaser?: string;
 }
 
+interface CharacterPreview {
+    id: string;
+    name: string;
+    role: string;
+    personality: string;
+    image_url?: string;
+}
+
 interface PlayerPreviewProps {
     basicInfo: BasicInfoPreview | null;
     spots: SpotPreviewData[];
     story: StoryPreview | null;
+    characters?: CharacterPreview[];
     estimatedDuration?: number;
     isGenerating?: boolean;
     generationPhase?: string;
@@ -111,6 +122,7 @@ export default function PlayerPreview({
     basicInfo,
     spots,
     story,
+    characters = [],
     estimatedDuration = 60,
     isGenerating = false,
     generationPhase = '',
@@ -443,6 +455,57 @@ export default function PlayerPreview({
                                     </li>
                                 ))}
                             </ul>
+                        </div>
+                    </motion.div>
+                )}
+
+                {/* Characters Section */}
+                {characters && characters.length > 0 && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ delay: 0.42 }}
+                        className="mb-8"
+                    >
+                        <div className="flex items-center gap-2 mb-4">
+                            <Users size={18} className="text-[#D87A32]" />
+                            <h2 className="text-base font-bold text-[#3D2E1F] tracking-widest">登場人物</h2>
+                        </div>
+                        <div className="bg-white/60 rounded-xl border border-[#E8D5BE] p-5 shadow-sm">
+                            <div className="grid gap-4">
+                                {characters.map((char) => (
+                                    <div key={char.id} className="flex items-start gap-4 p-3 bg-[#FEF9F3] rounded-lg border border-[#E8D5BE]/50">
+                                        {/* Character Avatar */}
+                                        <div className="flex-shrink-0">
+                                            {char.image_url ? (
+                                                <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-[#D87A32] shadow-md">
+                                                    <img
+                                                        src={char.image_url}
+                                                        alt={char.name}
+                                                        className="w-full h-full object-cover object-top"
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <div className="w-16 h-16 rounded-full bg-gradient-to-br from-[#E8D5BE] to-[#D87A32]/30 flex items-center justify-center border-2 border-[#D87A32]/50">
+                                                    <User size={24} className="text-[#7A6652]" />
+                                                </div>
+                                            )}
+                                        </div>
+                                        {/* Character Info */}
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <h3 className="text-sm font-bold text-[#3D2E1F]">{char.name}</h3>
+                                                <span className="px-2 py-0.5 bg-[#D87A32]/10 text-[#D87A32] text-[10px] font-bold rounded-full tracking-wide">
+                                                    {char.role}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-[#7A6652] leading-relaxed line-clamp-2">
+                                                {char.personality}
+                                            </p>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
                         </div>
                     </motion.div>
                 )}

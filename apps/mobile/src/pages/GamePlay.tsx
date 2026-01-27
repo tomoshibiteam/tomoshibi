@@ -514,16 +514,16 @@ const GamePlay = () => {
       let pgStatus: "not_started" | "in_progress" | "completed" =
         (progressData?.status as any) || "not_started";
 
-      // 初回プレイなら progress を作成
+      // 初回プレイなら progress を作成 (upsertで重複エラーを防止)
       if (!progressData && user) {
         const { data: inserted, error: insertErr } = await supabase
           .from("user_progress")
-          .insert({
+          .upsert({
             user_id: user.id,
             quest_id: questId,
             current_step: normalizedStep,
             status: "in_progress",
-          })
+          }, { onConflict: "user_id,quest_id" })
           .select("id, status, current_step")
           .maybeSingle();
         if (!insertErr && inserted?.id) {
@@ -531,6 +531,8 @@ const GamePlay = () => {
           pgStatus = (inserted.status as any) || "in_progress";
           initialStep = inserted.current_step || 1;
           normalizedStep = Math.min(Math.max(1, initialStep), sortedSpots.length);
+        } else if (insertErr) {
+          console.warn("user_progress upsert warning:", insertErr);
         }
       }
 
@@ -1154,6 +1156,63 @@ const GamePlay = () => {
     );
   };
 
+  const handleSkip = useCallback(() => {
+    if (gameMode !== "story") return;
+
+    // Auto-advance logic for skip
+    if (storyStage === "pre") {
+      startPuzzle();
+    } else if (storyStage === "post") {
+      setGameMode("travel");
+      if (isLastSpot) {
+        handleComplete();
+      } else {
+        handleNext();
+      }
+    }
+  }, [gameMode, storyStage, startPuzzle, isLastSpot, handleComplete, handleNext]);
+
+  /* Story advancement handler */
+  const handleStoryAdvance = useCallback(() => {
+    // If not showing story screen or menu is open, ignore
+    if (gameMode !== "story" && gameMode !== "intro" && !showEpilogueOverlay && !showPrologueOverlay) return;
+    if (menuOpen) return;
+
+    // Epilogue advancement
+    if (showEpilogueOverlay) {
+      if (epilogueVisibleCount <= epilogueMessages.length) {
+        setEpilogueVisibleCount((c) => c + 1);
+      }
+      return;
+    }
+
+    // Prologue advancement
+    if (showPrologueOverlay) {
+      if (prologueVisibleCount <= prologueMessages.length) {
+        setPrologueVisibleCount(c => c + 1);
+      }
+      return;
+    }
+
+    // Main Story advancement
+    if (storyVisibleCount < storyMessages.length) {
+      setStoryVisibleCount((c) => c + 1);
+      track('story_advance', { spot_id: currentSpot?.id, count: storyVisibleCount + 1 });
+    }
+  }, [
+    gameMode,
+    storyVisibleCount,
+    storyMessages.length,
+    currentSpot,
+    showEpilogueOverlay,
+    epilogueVisibleCount,
+    epilogueMessages.length,
+    menuOpen,
+    showPrologueOverlay,
+    prologueVisibleCount,
+    prologueMessages.length
+  ]);
+
   if (loading) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-2 text-sm text-[#7c644c]">
@@ -1346,7 +1405,7 @@ const GamePlay = () => {
           </div>
 
           {/* Action Buttons */}
-          <div className="w-full mt-8 grid gap-3 animate-in fade-in slide-in-from-bottom-8 duration-1000 fill-mode-both" style={{ animationDelay: '1000ms' }}>
+          <div className="w-full mt-8 grid gap-3 animate-in fade-in slide-in-from-bottom-8 duration-1000 fill-mode-both p-2" style={{ animationDelay: '1000ms' }}>
             <Button
               className="w-full h-12 bg-gradient-to-r from-[#D87A32] to-[#B85A1F] hover:from-[#E88B43] hover:to-[#C96B30] text-white font-serif font-medium text-base rounded-full shadow-xl tracking-widest"
               onClick={() => {
@@ -1671,8 +1730,8 @@ const GamePlay = () => {
                     <div className="h-px w-8 md:w-12 bg-[#7A6652]/40" />
                   </div>
 
-                  <div className="relative group shrink-0">
-                    <div className="absolute -inset-1 rounded-full bg-[#D87A32] opacity-30 blur-lg animate-pulse" />
+                  <div className="relative group shrink-0 p-2">
+                    <div className="absolute inset-0 rounded-full bg-[#D87A32] opacity-30 blur-lg animate-pulse" />
                     <Button
                       className="relative h-14 px-12 bg-gradient-to-r from-[#D87A32] to-[#B85A1F] hover:from-[#E88B43] hover:to-[#C96B30] text-[#FEF9F3] text-base md:text-lg font-medium font-serif rounded-full shadow-xl tracking-[0.2em] transition-all hover:scale-105 active:scale-95 border border-[#FEF9F3]/20"
                       onClick={(e) => {
@@ -1827,7 +1886,7 @@ const GamePlay = () => {
                 <div className="mb-4 p-4 bg-[#F7E7D3]/50 rounded-xl border border-[#E8D5BE]">
                   <div className="flex items-center gap-2 mb-2">
                     <span className="w-1.5 h-1.5 rounded-full bg-[#D87A32]" />
-                    <span className="text-[#7A6652] text-[10px] font-bold font-serif uppercase tracking-widest">Mission Detail</span>
+                    <span className="text-[#7A6652] text-[10px] font-bold font-serif uppercase tracking-widest">スポット情報</span>
                   </div>
                   <p className="text-[#3D2E1F] text-sm font-serif leading-relaxed whitespace-pre-wrap opacity-90">
                     {currentSpot.description}
@@ -1900,47 +1959,6 @@ const GamePlay = () => {
       );
     }
     return null;
-  };
-
-  const handleStoryAdvance = () => {
-    if (storyVisibleCount < storyMessages.length) {
-      setStoryVisibleCount((c) => Math.min(storyMessages.length, c + 1));
-      return;
-    }
-    // すべて表示済み
-    setGameMode("travel");
-    if (storyStage === "pre") {
-      // 謎へ進む
-      startPuzzle();
-    } else if (storyStage === "post") {
-      // 次のスポットへ
-      if (isLastSpot) {
-        handleComplete();
-      } else {
-        handleNext();
-      }
-    }
-  };
-
-  const handleSkip = () => {
-    if (gameMode === "story") {
-      if (storyStage === "pre") {
-        startPuzzle();
-        return;
-      }
-      if (storyStage === "post") {
-        setGameMode("travel");
-        if (isLastSpot) {
-          handleComplete();
-        } else {
-          handleNext();
-        }
-      }
-      return;
-    }
-    if (gameMode === "puzzle") {
-      proceedAfterPuzzle();
-    }
   };
 
   /* New Full Screen Story Renderer */
@@ -2101,7 +2119,10 @@ const GamePlay = () => {
         </div>
 
         {/* Footer / Controls */}
-        <div className="relative z-20 p-6 pb-12 bg-gradient-to-t from-[#FEF9F3] via-[#FEF9F3]/90 to-transparent">
+        <div className={`relative z-20 p-6 pb-12 ${bgImage
+          ? "bg-gradient-to-t from-black/90 via-black/60 to-transparent"
+          : "bg-gradient-to-t from-[#FEF9F3] via-[#FEF9F3]/90 to-transparent"
+          }`}>
           {/* If end of story */}
           {(storyStage === "post" && storyVisibleCount >= storyMessages.length && !isLastSpot) ||
             (storyStage === "pre" && storyVisibleCount >= storyMessages.length) ? (
@@ -2112,9 +2133,8 @@ const GamePlay = () => {
                 if (storyStage === "pre") {
                   startPuzzle();
                 } else {
-                  const nextSpot = session?.spots[session.progressStep];
-                  openNavigation(nextSpot ? { lat: nextSpot.lat ?? null, lng: nextSpot.lng ?? null } : null);
                   handleNext();
+                  setGameMode("travel");
                 }
               }}
             >
@@ -2132,16 +2152,19 @@ const GamePlay = () => {
             </Button>
           ) : (
             // Tap prompt
-            <div className="flex flex-col items-center gap-2 opacity-80">
-              <div className="w-1.5 h-1.5 rounded-full bg-[#7A6652] animate-bounce" />
-              <span className="text-[10px] font-serif tracking-[0.3em] text-[#7A6652] uppercase">タップして次へ</span>
+            <div className="flex flex-col items-center gap-2 opacity-80 pointer-events-none">
+              <div className={`w-1.5 h-1.5 rounded-full animate-bounce ${bgImage ? "bg-white" : "bg-[#7A6652]"}`} />
+              <span className={`text-[10px] font-serif tracking-[0.3em] uppercase ${bgImage ? "text-white/90" : "text-[#7A6652]"}`}>タップして次へ</span>
             </div>
           )}
 
           {/* Skip button logic */}
           <div className="absolute top-4 right-4">
             <button
-              className="text-[10px] text-[#7A6652]/60 hover:text-[#7A6652] transition-colors bg-[#7A6652]/10 px-3 py-1 rounded-full backdrop-blur-md"
+              className={`text-[10px] transition-colors px-3 py-1 rounded-full backdrop-blur-md ${bgImage
+                ? "text-white/60 hover:text-white bg-white/10"
+                : "text-[#7A6652]/60 hover:text-[#7A6652] bg-[#7A6652]/10"
+                }`}
               onClick={(e) => {
                 e.stopPropagation();
                 handleSkip();
@@ -2599,8 +2622,8 @@ const GamePlay = () => {
                       <div className="h-px w-8 md:w-12 bg-[#7A6652]/40" />
                     </div>
 
-                    <div className="relative group shrink-0">
-                      <div className="absolute -inset-1 rounded-full bg-[#D87A32] opacity-30 blur-lg animate-pulse" />
+                    <div className="relative group shrink-0 p-2">
+                      <div className="absolute inset-0 rounded-full bg-[#D87A32] opacity-30 blur-lg animate-pulse" />
                       <Button
                         className="relative h-14 px-12 bg-gradient-to-r from-[#D87A32] to-[#B85A1F] hover:from-[#E88B43] hover:to-[#C96B30] text-[#FEF9F3] text-base md:text-lg font-medium font-serif rounded-full shadow-xl tracking-[0.2em] transition-all hover:scale-105 active:scale-95 border border-[#FEF9F3]/20"
                         onClick={(e) => {
